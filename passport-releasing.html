@@ -3021,14 +3021,31 @@ async function deleteReleasedByTracking() {
 }
 
 async function exportReleasedCSV() {
+  // Get date filters from UI
+  const from = document.getElementById('releasedDateFrom').value;
+  const to = document.getElementById('releasedDateTo').value;
+
+  // Require at least one date to be selected
+  if (!from && !to) {
+    toast('⚠ Please select at least one date (From or To) to filter the export', 'warning');
+    return;
+  }
+
   let allRows = [];
   let offset = 0;
   const BATCH_SIZE = 1000;
   let isFetching = true;
 
+  // Build query with date filters
+  let qs = `released_entries?order=released_date.desc,id.desc`;
+  if (from) qs += `&released_date=gte.${from}`;
+  if (to) qs += `&released_date=lte.${to}`;
+
+  toast(`Exporting records from ${from || 'beginning'} to ${to || 'today'}...`, 'info');
+
   while (isFetching) {
     try {
-      const batch = await sbFetch(`released_entries?order=released_date.desc,id.desc&limit=${BATCH_SIZE}&offset=${offset}`);
+      const batch = await sbFetch(`${qs}&limit=${BATCH_SIZE}&offset=${offset}`);
       if (!batch || batch.length === 0) {
         isFetching = false;
       } else {
@@ -3042,7 +3059,7 @@ async function exportReleasedCSV() {
     }
   }
 
-  if (allRows.length === 0) { toast('No released records to export', 'warning'); return; }
+  if (allRows.length === 0) { toast('No released records found for the selected date range', 'warning'); return; }
 
   const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
   const dateFile = new Date().toISOString().slice(0,10).replace(/-/g,'');
