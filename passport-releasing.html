@@ -153,11 +153,35 @@
 
   /* TOAST */
   .toast-wrap { position: fixed; bottom: 24px; right: 24px; z-index: 999; display: flex; flex-direction: column; gap: 8px; }
-  .toast { padding: 14px 18px; border-radius: 12px; font-size: 13px; font-weight: 600; max-width: 380px; animation: slideIn 0.3s ease; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border-left: 4px solid; }
-  .toast-success { background: linear-gradient(135deg, rgba(16,185,129,0.15) 0%, rgba(16,185,129,0.1) 100%); color: #6ee7b7; border-left-color: var(--success); }
-  .toast-error { background: linear-gradient(135deg, rgba(239,68,68,0.15) 0%, rgba(239,68,68,0.1) 100%); color: #fca5a5; border-left-color: var(--danger); }
-  .toast-info { background: linear-gradient(135deg, rgba(6,182,212,0.15) 0%, rgba(6,182,212,0.1) 100%); color: #67e8f9; border-left-color: var(--info); }
-  .toast-warning { background: linear-gradient(135deg, rgba(245,158,11,0.15) 0%, rgba(245,158,11,0.1) 100%); color: #fcd34d; border-left-color: var(--warning); }
+  .toast { display: flex; align-items: flex-start; gap: 10px; padding: 14px 16px; border-radius: 14px; font-size: 13px; font-weight: 700; max-width: 390px; animation: slideIn 0.3s ease; box-shadow: 0 16px 40px rgba(79,143,127,0.16); border-left: 4px solid; background: rgba(255,255,255,0.96); color: var(--text); }
+  .toast-icon { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 50%; font-size: 12px; font-weight: 900; flex-shrink: 0; }
+  .toast-success { border-left-color: var(--success); }
+  .toast-success .toast-icon { background: rgba(76,155,114,0.16); color: var(--success); }
+  .toast-error { border-left-color: var(--danger); }
+  .toast-error .toast-icon { background: rgba(201,107,107,0.16); color: var(--danger); }
+  .toast-info { border-left-color: var(--info); }
+  .toast-info .toast-icon { background: rgba(79,143,127,0.14); color: var(--accent); }
+  .toast-warning { border-left-color: var(--warning); }
+  .toast-warning .toast-icon { background: rgba(185,135,70,0.16); color: var(--warning); }
+  .status-bar { display: flex; align-items: center; gap: 10px; margin: 14px 24px 0; padding: 10px 14px; border-radius: 999px; background: rgba(255,255,255,0.9); border: 1px solid rgba(79,143,127,0.12); box-shadow: 0 8px 18px rgba(79,143,127,0.06); color: var(--muted); font-size: 12px; font-weight: 700; }
+  .status-bar .status-dot { width: 10px; height: 10px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(76,155,114,0.12); }
+  .status-bar.status-error .status-dot { background: var(--danger); box-shadow: 0 0 0 4px rgba(201,107,107,0.12); }
+  .status-bar.status-warning .status-dot { background: var(--warning); box-shadow: 0 0 0 4px rgba(185,135,70,0.12); }
+  .status-bar.status-info .status-dot { background: var(--accent); box-shadow: 0 0 0 4px rgba(79,143,127,0.12); }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+  .summary-card { background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(244,248,245,0.98) 100%); border: 1px solid rgba(79,143,127,0.12); border-radius: 16px; padding: 14px; box-shadow: 0 10px 22px rgba(79,143,127,0.06); }
+  .summary-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 6px; }
+  .summary-value { font-size: 24px; font-weight: 800; color: var(--accent); }
+  .quick-actions { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+  .quick-actions .btn { width: 100%; justify-content: center; }
+  .activity-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+  .activity-item { background: rgba(79,143,127,0.06); border: 1px solid rgba(79,143,127,0.10); border-radius: 12px; padding: 10px; text-align: center; }
+  .activity-label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 4px; }
+  .activity-value { font-size: 18px; font-weight: 800; color: var(--accent); }
+  .save-badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; background: rgba(79,143,127,0.08); color: var(--accent); font-size: 11px; font-weight: 700; }
+  .save-badge.saving { background: rgba(185,135,70,0.12); color: var(--warning); }
+  .save-badge.saved { background: rgba(76,155,114,0.12); color: var(--success); }
+  .save-badge.failed { background: rgba(201,107,107,0.12); color: var(--danger); }
   @keyframes slideIn { from { transform: translateX(100px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
 
   /* DASHBOARD */
@@ -352,9 +376,54 @@
 
 <!-- ========== SCANNER PAGE ========== -->
 <div id="page-scanner" class="page active">
-  <div class="scanner-grid">
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Current Session</div>
+      <div class="summary-value" id="summarySession">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Blocked</div>
+      <div class="summary-value" id="summaryBlocked">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Ready</div>
+      <div class="summary-value" id="summaryReady">0</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Active DB</div>
+      <div class="summary-value" id="summaryDB">ASEANA</div>
+    </div>
+  </div>
+  <div class="status-bar" id="statusBar">
+    <span class="status-dot"></span>
+    <span id="statusText">Ready for scanning</span>
+    <span id="autoSaveBadge" class="save-badge saved">Auto-save: saved</span>
+  </div>
+  <div class="scanner-grid" style="margin-top:12px;">
     <!-- LEFT PANEL -->
     <div>
+      <div class="panel" style="margin-bottom:12px;">
+        <div class="panel-title">Today’s Activity</div>
+        <div class="activity-grid">
+          <div class="activity-item"><span class="activity-label">Scans</span><span class="activity-value" id="todayScans">0</span></div>
+          <div class="activity-item"><span class="activity-label">Releases</span><span class="activity-value" id="todayReleases">0</span></div>
+          <div class="activity-item"><span class="activity-label">Exports</span><span class="activity-value" id="todayExports">0</span></div>
+          <div class="activity-item"><span class="activity-label">Imports</span><span class="activity-value" id="todayImports">0</span></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-bottom:12px;">
+        <div class="panel-title">Quick Actions</div>
+        <div class="quick-actions">
+          <button class="btn btn-primary" onclick="showPage('db')">Open DB</button>
+          <button class="btn btn-info" onclick="showPage('search')">Global Search</button>
+          <button class="btn btn-released" onclick="showPage('released-db')">Released DB</button>
+          <button class="btn btn-success" onclick="exportManifest()">Export Manifest</button>
+          <button class="btn btn-muted" onclick="showPage('import')">Import</button>
+          <button class="btn btn-warning" onclick="showPage('bulk-delete')">Bulk Delete</button>
+        </div>
+      </div>
+
       <div class="panel" style="margin-bottom:12px;">
         <div class="panel-title">Target Database</div>
         <select id="dbDropdown" class="form-control" onchange="selectDB(this.value)" style="font-weight:700;font-size:13px;padding:10px 12px;border:2px solid var(--accent);border-radius:8px;color:#1f2937;background:#f0f5ff;">
@@ -1752,6 +1821,7 @@ function selectDB(db) {
   }
   currentDB = db;
   document.getElementById('currentDB').textContent = db;
+  updateDashboardSummary();
   // Sync dropdown value
   const dd = document.getElementById('dbDropdown');
   if (dd) dd.value = db;
@@ -1762,8 +1832,72 @@ const TRACKING_LENGTH = 12;   // exact digit count of your tracking numbers
 const scanQueue = [];          // queue of tracking numbers waiting to be processed
 let scanProcessing = false;    // true while queue is being drained
 let scanBufferTimer = null;
+let todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: '' };
+
+function getTodayKey() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function loadTodayActivity() {
+  try {
+    const raw = localStorage.getItem('dfampc_today_activity');
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.day === getTodayKey()) {
+        todayActivity = { ...todayActivity, ...parsed };
+      } else {
+        todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: getTodayKey() };
+      }
+    } else {
+      todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: getTodayKey() };
+    }
+  } catch (e) {
+    todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: getTodayKey() };
+  }
+  updateTodayActivityWidget();
+}
+
+function bumpTodayActivity(key, amount = 1) {
+  if (!todayActivity || todayActivity.day !== getTodayKey()) {
+    todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: getTodayKey() };
+  }
+  todayActivity[key] = Math.max(0, (todayActivity[key] || 0) + amount);
+  todayActivity.day = getTodayKey();
+  try { localStorage.setItem('dfampc_today_activity', JSON.stringify(todayActivity)); } catch (e) {}
+  updateTodayActivityWidget();
+}
+
+function updateTodayActivityWidget() {
+  const scansEl = document.getElementById('todayScans');
+  const releasesEl = document.getElementById('todayReleases');
+  const exportsEl = document.getElementById('todayExports');
+  const importsEl = document.getElementById('todayImports');
+  if (scansEl) scansEl.textContent = todayActivity.scans || 0;
+  if (releasesEl) releasesEl.textContent = todayActivity.releases || 0;
+  if (exportsEl) exportsEl.textContent = todayActivity.exports || 0;
+  if (importsEl) importsEl.textContent = todayActivity.imports || 0;
+}
+
+function setAutoSaveState(state) {
+  const badge = document.getElementById('autoSaveBadge');
+  if (!badge) return;
+  const labels = { saving: 'Auto-save: saving…', saved: 'Auto-save: saved', failed: 'Auto-save: failed' };
+  badge.textContent = labels[state] || 'Auto-save: saved';
+  badge.className = `save-badge ${state}`;
+}
 
 const scanInputEl = document.getElementById('scanInput');
+
+function submitScanInput() {
+  if (!scanInputEl) return false;
+  const val = scanInputEl.value.trim();
+  scanInputEl.value = '';
+  if (!val) return false;
+  for (let i = 0; i < val.length; i += TRACKING_LENGTH) {
+    enqueue(val.slice(i, i + TRACKING_LENGTH));
+  }
+  return true;
+}
 
 // â”€â”€ CORE: grab digits instantly on every input event â”€â”€
 if (scanInputEl) {
@@ -1795,16 +1929,31 @@ if (scanInputEl) {
     if (e.key === 'Enter') {
       e.preventDefault();
       clearTimeout(scanBufferTimer);
-      const val = this.value.trim();
-      this.value = '';
-      if (!val) return;
-      // Split any concatenated remainder
-      for (let i = 0; i < val.length; i += TRACKING_LENGTH) {
-        enqueue(val.slice(i, i + TRACKING_LENGTH));
-      }
+      submitScanInput();
     }
   });
 }
+
+document.addEventListener('keydown', function(e) {
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const key = e.key.toLowerCase();
+  if (key === 'enter') {
+    e.preventDefault();
+    if (scanInputEl) {
+      scanInputEl.focus();
+      submitScanInput();
+    }
+  } else if (key === 'z' && !e.shiftKey) {
+    e.preventDefault();
+    undoScan();
+  } else if (key === 'l') {
+    e.preventDefault();
+    clearScanner();
+  } else if (key === 'e' && e.shiftKey) {
+    e.preventDefault();
+    exportManifest();
+  }
+});
 
 // â”€â”€ Enqueue and drain â”€â”€
 function enqueue(trackingNum) {
@@ -1941,6 +2090,7 @@ async function processScan(trackingNum) {
   const item = { tracking: trackingNum, name: fullName, status, source: foundSource, blocked: false, color, verifier, id: record.id, row: record };
   scanHistory.push([...scanSession]);
   redoStack = [];
+  bumpTodayActivity('scans');
   addToScanList(item);
   writeLog('SCAN', `Scanned ${trackingNum} — ${fullName}`, `DB: ${foundSource}`);
   toast(`Scanned: ${trackingNum}`, 'success');
@@ -1957,6 +2107,7 @@ let saveSessionTimer = null;
 async function saveScanSession() {
   if (!currentUser) return;
   const sessionKey = `scan_session_${currentUser.id}`;
+  setAutoSaveState('saving');
   try {
     // Store the full session array â€” serialize row data too
     const payload = {
@@ -1982,7 +2133,8 @@ async function saveScanSession() {
       method: 'DELETE'
     });
     await sbFetch('scan_sessions', { method: 'POST', body: JSON.stringify(payload) });
-  } catch(e) { console.warn('Session save failed:', e.message); }
+    setAutoSaveState('saved');
+  } catch(e) { console.warn('Session save failed:', e.message); setAutoSaveState('failed'); }
 }
 
 async function loadScanSession() {
@@ -2036,6 +2188,7 @@ async function clearScanSession() {
 // Debounced save â€” saves 800ms after last scan to avoid hammering DB
 function scheduleSave() {
   clearTimeout(saveSessionTimer);
+  setAutoSaveState('saving');
   saveSessionTimer = setTimeout(saveScanSession, 800);
 }
 
@@ -2065,6 +2218,21 @@ function filterScanList() {
     const text = row.textContent.toLowerCase();
     row.style.display = text.includes(query) ? '' : 'none';
   });
+}
+
+function updateDashboardSummary() {
+  const sessionEl = document.getElementById('summarySession');
+  const blockedEl = document.getElementById('summaryBlocked');
+  const readyEl = document.getElementById('summaryReady');
+  const dbEl = document.getElementById('summaryDB');
+  if (!sessionEl || !blockedEl || !readyEl || !dbEl) return;
+
+  const blocked = scanSession.filter(s => s.blocked).length;
+  const ready = scanSession.filter(s => !s.blocked && s.status !== 'not-found').length;
+  sessionEl.textContent = scanSession.length;
+  blockedEl.textContent = blocked;
+  readyEl.textContent = ready;
+  dbEl.textContent = currentDB || '—';
 }
 
 function renderScanList() {
@@ -2113,12 +2281,14 @@ function renderScanList() {
     list.appendChild(div);
   });
   document.getElementById('scanListCount').textContent = scanSession.length;
+  updateDashboardSummary();
   filterScanList();
 }
 
 function updateScanStats() {
   document.getElementById('scanCount').textContent = scanSession.filter(s => !s.blocked && s.status !== 'not-found').length;
   document.getElementById('scanBlocked').textContent = scanSession.filter(s => s.blocked).length;
+  updateDashboardSummary();
 }
 
 function confirmRemoveScanItem(identifier) {
@@ -2671,6 +2841,7 @@ async function exportManifest() {
   );
   await downloadWorkbook(wb, `DFAMPC-${dbName}-MANIFEST-${dateFile}.xlsx`);
   valid.forEach(s => unprinted.delete(s.tracking));
+  bumpTodayActivity('exports');
   writeLog('EXPORT', `Exported Manifest â€” ${valid.length} items`, `DB: ${dbName}`);
   scanSession = [];
   clearScanSession();
@@ -2718,6 +2889,8 @@ async function exportReleased() {
       await sbFetch('released_entries', { method: 'POST', body: JSON.stringify(releasedRecords.slice(i, i + BATCH)) });
     }
   } catch(e) { toast('Failed to insert to Released DB: ' + e.message, 'error'); return; }
+
+  bumpTodayActivity('releases');
 
   // 3. Delete from entries â€” use tracking_number (always present) not just id
   const trackingsToDelete = valid.map(s => s.tracking).filter(Boolean);
@@ -4128,6 +4301,7 @@ async function executeRelTransfer() {
   // Invalidate entries cache since we added new records
   invalidateAllEntriesCache();
 
+  bumpTodayActivity('releases');
   writeLog('TRANSFER', `Released DB Transfer: ${transferred} items → ${dest}`, `Verifier: ${verifier}`);
   toast(`✓ ${transferred} items transferred from Released DB → ${dest}`, 'success');
   clearRelScanSession();
@@ -4155,12 +4329,22 @@ function renderPagination(containerId, current, total, onPage) {
 }
 
 // ==================== TOAST ====================
+function updateStatusBar(msg, type = 'info') {
+  const bar = document.getElementById('statusBar');
+  const text = document.getElementById('statusText');
+  if (!bar || !text) return;
+  bar.className = `status-bar status-${type}`;
+  text.textContent = msg;
+}
+
 function toast(msg, type = 'info') {
   const w = document.getElementById('toastWrap');
   const t = document.createElement('div');
   t.className = `toast toast-${type}`;
-  t.textContent = msg;
+  const icons = { success: '✓', error: '✕', warning: '⚠', info: '•' };
+  t.innerHTML = `<span class="toast-icon">${icons[type] || '•'}</span><span>${msg}</span>`;
   w.appendChild(t);
+  updateStatusBar(msg, type);
   setTimeout(() => t.remove(), 4000);
 }
 
@@ -4409,6 +4593,7 @@ function applyRoleUI() {
       loadPersistedHotCache();
       loadPersistedDBCache();
       loadLastDailySync();
+      loadTodayActivity();
       updateDailySyncBadge();
       applyRoleUI();
       if (navigator.onLine) syncOfflineDBCache().catch(() => {});
