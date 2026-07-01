@@ -404,6 +404,7 @@
     <!-- RIGHT PANEL: SCAN LIST -->
     <div class="panel">
       <div class="panel-title">Scan Session — <span id="currentDB">ASEANA</span> <span id="scanListCount" class="count-badge">0</span></div>
+      <input class="search-input" id="scanListSearch" placeholder="Search this scan list..." style="margin-bottom:10px;" oninput="filterScanList()" />
       <div class="scan-list" id="scanList"></div>
     </div>
   </div>
@@ -2018,6 +2019,17 @@ function addToScanList(item) {
   scheduleSave(); // â† persist after every scan
 }
 
+function filterScanList() {
+  const query = (document.getElementById('scanListSearch')?.value || '').trim().toLowerCase();
+  const list = document.getElementById('scanList');
+  if (!list) return;
+  const rows = list.querySelectorAll('.scan-row');
+  rows.forEach(row => {
+    const text = row.textContent.toLowerCase();
+    row.style.display = text.includes(query) ? '' : 'none';
+  });
+}
+
 function renderScanList() {
   const list = document.getElementById('scanList');
   list.innerHTML = '';
@@ -2064,6 +2076,7 @@ function renderScanList() {
     list.appendChild(div);
   });
   document.getElementById('scanListCount').textContent = scanSession.length;
+  filterScanList();
 }
 
 function updateScanStats() {
@@ -3817,11 +3830,11 @@ async function doGlobalSearch() {
   const origins = [...new Set(results.map(r => r._db || r.data_source || 'Unknown').filter(Boolean))];
   if (results.length === 0) {
     container.innerHTML = '<div style="color:var(--muted);padding:16px;">No results found.</div>';
-    toast('No results found in any database', 'warning');
+    toast(`⚠ No results found in any database for "${q}"`, 'warning');
     return;
   }
 
-  toast(`Search origin: ${origins.join(', ')}`, 'info');
+  toast(`⚠ Search origin: ${origins.join(', ')}`, 'warning');
 
   container.innerHTML = `
     <div style="margin-bottom:10px;color:var(--muted);font-size:12px;">${results.length} result(s) found</div>
