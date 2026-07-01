@@ -9,56 +9,50 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <style>
   :root {
-    --bg: #f7f3ff;
-    --surface: #ffffff;
-    --card: #fffafc;
-    --border: #e7dcf7;
-    --accent: #8b5cf6;
-    --accent2: #ec4899;
-    --text: #1f2937;
-    --muted: #6b7280;
-    --success: #0f9d7b;
-    --warning: #f59e0b;
-    --danger: #ef4444;
-    --info: #0ea5a0;
-    --released: #14b8a6;
-    --accent-light: rgba(139,92,246,0.10);
-    --accent-glow: rgba(236,72,153,0.16);
-    --shadow: 0 18px 45px rgba(139,92,246,0.12);
+    --bg: #f4f8f5;
+    --surface: #fcfdfb;
+    --card: #f7fbf8;
+    --border: #dfeee4;
+    --accent: #4f8f7f;
+    --accent2: #78b6a5;
+    --text: #23352f;
+    --muted: #687a74;
+    --success: #4c9b72;
+    --warning: #b98746;
+    --danger: #c96b6b;
+    --info: #4f89a8;
+    --released: #4d9e8f;
+    --accent-light: rgba(79,143,127,0.12);
+    --accent-glow: rgba(120,182,165,0.18);
+    --shadow: 0 18px 45px rgba(79,143,127,0.12);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { min-height: 100%; background: linear-gradient(135deg, #fcf8ff 0%, #f5f0ff 46%, #fef6fb 100%); }
+  html { min-height: 100%; background: linear-gradient(135deg, #f7fdf9 0%, #eef7f2 46%, #fdf8ef 100%); }
   body { background: transparent; color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
 
   /* HEADER */
-  .header { background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(248,244,255,0.98) 100%); border-bottom: 1px solid rgba(139,92,246,0.16); padding: 18px 28px; display: flex; align-items: center; gap: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 12px 30px rgba(139,92,246,0.10); backdrop-filter: blur(12px); }
-  .logo { font-size: 28px; font-weight: 900; color: #ffffff; letter-spacing: 1.4px; text-shadow: 0 0 16px rgba(236,72,153,0.16); background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
-  .logo span { color: var(--accent); filter: drop-shadow(0 0 10px rgba(139,92,246,0.18)); }
+  .header { background: linear-gradient(135deg, rgba(255,255,255,0.97) 0%, rgba(244,248,245,0.98) 100%); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; gap: 18px; position: sticky; top: 0; z-index: 100; box-shadow: 0 12px 30px rgba(79,143,127,0.10); backdrop-filter: blur(12px); }
+  .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
+  .brand-mark { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); box-shadow: 0 12px 26px rgba(79,143,127,0.18); flex-shrink: 0; }
+  .brand-mark svg { width: 28px; height: 28px; fill: white; }
+  .brand-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+  .logo { font-size: 26px; font-weight: 900; letter-spacing: 0.8px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .logo span { color: var(--accent); filter: drop-shadow(0 0 8px rgba(79,143,127,0.16)); }
+  .brand-subtitle { font-size: 12px; color: var(--muted); }
   .header-status { margin-left: auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
-  .conn-badge, #cacheBadge, #syncBadge, #totalBadge { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.9); color: var(--text); border: 1px solid rgba(139,92,246,0.16); backdrop-filter: blur(8px); box-shadow: 0 8px 20px rgba(139,92,246,0.08); transition: all 0.3s ease; }
-  .conn-badge:hover, #cacheBadge:hover, #syncBadge:hover, #totalBadge:hover { background: rgba(255,255,255,0.98); border-color: rgba(236,72,153,0.24); }
-  .conn-ok { background: linear-gradient(135deg, rgba(15,157,123,0.12) 0%, rgba(15,157,123,0.06) 100%); color: #0f766e; border-color: rgba(15,157,123,0.18); }
-  .conn-err { background: linear-gradient(135deg, rgba(239,68,68,0.12) 0%, rgba(239,68,68,0.06) 100%); color: #b91c1c; border-color: rgba(239,68,68,0.18); }
+  .conn-badge, #cacheBadge, #syncBadge, #totalBadge { display: inline-flex; align-items: center; gap: 7px; padding: 8px 14px; border-radius: 999px; font-size: 12px; font-weight: 700; background: rgba(255,255,255,0.9); color: var(--text); border: 1px solid rgba(79,143,127,0.16); backdrop-filter: blur(8px); box-shadow: 0 8px 20px rgba(79,143,127,0.07); transition: all 0.3s ease; }
+  .conn-badge:hover, #cacheBadge:hover, #syncBadge:hover, #totalBadge:hover { background: rgba(255,255,255,0.98); border-color: rgba(120,182,165,0.24); }
+  .conn-ok { background: linear-gradient(135deg, rgba(76,155,114,0.12) 0%, rgba(76,155,114,0.06) 100%); color: #2f6b4a; border-color: rgba(76,155,114,0.18); }
+  .conn-err { background: linear-gradient(135deg, rgba(201,107,107,0.12) 0%, rgba(201,107,107,0.06) 100%); color: #964848; border-color: rgba(201,107,107,0.18); }
 
-  /* NAV TABS */
-  .nav { position: sticky; top: 72px; display: flex; background: rgba(255,255,255,0.94); border-radius: 0 0 18px 18px; border: 1px solid rgba(139,92,246,0.12); border-top: none; padding: 14px 28px; gap: 12px; overflow-x: auto; box-shadow: 0 12px 30px rgba(139,92,246,0.08); margin: 0; backdrop-filter: blur(12px); z-index: 99; scrollbar-width: thin; scrollbar-color: rgba(139,92,246,0.2) transparent; }
-  .nav::-webkit-scrollbar { height: 4px; }
-  .nav::-webkit-scrollbar-track { background: transparent; }
-  .nav::-webkit-scrollbar-thumb { background: rgba(139,92,246,0.24); border-radius: 999px; }
-  .nav::-webkit-scrollbar-thumb:hover { background: rgba(236,72,153,0.28); }
-  .nav-btn { padding: 12px 22px; border: none; background: transparent; color: var(--muted); cursor: pointer; font-size: 14px; font-weight: 700; border-radius: 12px; border: 1.5px solid transparent; white-space: nowrap; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); letter-spacing: 0.5px; position: relative; display: inline-flex; align-items: center; gap: 6px; }
-  .nav-btn:hover { color: var(--accent); background: rgba(139,92,246,0.08); border-color: rgba(139,92,246,0.16); transform: translateY(-2px); box-shadow: 0 8px 20px rgba(139,92,246,0.10); }
-  .nav-btn.active { color: var(--accent); border-color: rgba(236,72,153,0.18); background: linear-gradient(135deg, rgba(139,92,246,0.10) 0%, rgba(236,72,153,0.08) 100%); box-shadow: 0 8px 22px rgba(139,92,246,0.12); font-weight: 800; }
-  .nav-btn.active::after { content: ''; position: absolute; bottom: -14px; left: 18px; right: 18px; height: 3px; background: linear-gradient(90deg, var(--accent), var(--accent2)); border-radius: 999px; box-shadow: 0 3px 12px rgba(236,72,153,0.24); }
-  .nav-btn.dashboard-tab { color: var(--released); }
-  .nav-btn.dashboard-tab:hover { background: rgba(20,184,166,0.08); border-color: rgba(20,184,166,0.2); }
-  .nav-btn.dashboard-tab.active { color: var(--released); border-color: rgba(20,184,166,0.4); background: linear-gradient(135deg, rgba(20,184,166,0.12) 0%, rgba(20,184,166,0.08) 100%); }
-  .nav-btn.dashboard-tab.active::after { background: linear-gradient(90deg, var(--released), #06d6d0); }
-  .nav-btn:active { transform: translateY(0); }
-  .nav-btn-delete { color: #ff6b6b; }
-  .nav-btn-delete:hover { color: #ff8787; background: rgba(255,107,107,0.08); border-color: rgba(255,107,107,0.2); }
-  .nav-btn-users { color: #ff84b7; }
-  .nav-btn-users:hover { color: #ff9ec9; background: rgba(255,132,183,0.08); border-color: rgba(255,132,183,0.2); }
+  /* NAV */
+  .nav { position: sticky; top: 72px; display: flex; align-items: center; justify-content: space-between; background: rgba(255,255,255,0.94); border-radius: 0 0 18px 18px; border: 1px solid rgba(79,143,127,0.12); border-top: none; padding: 14px 28px; gap: 12px; box-shadow: 0 12px 30px rgba(79,143,127,0.08); margin: 0; backdrop-filter: blur(12px); z-index: 99; }
+  .nav-select-wrap { display: flex; flex-direction: column; gap: 6px; min-width: min(360px, 70vw); }
+  .nav-label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.16em; color: var(--muted); }
+  .nav-dropdown { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid rgba(79,143,127,0.16); background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(242,250,246,0.96)); color: var(--text); font-weight: 700; box-shadow: inset 0 1px 2px rgba(79,143,127,0.04), 0 8px 18px rgba(79,143,127,0.06); appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--accent) 50%), linear-gradient(135deg, var(--accent) 50%, transparent 50%); background-position: calc(100% - 20px) calc(1em + 2px), calc(100% - 14px) calc(1em + 2px); background-size: 6px 6px, 6px 6px; background-repeat: no-repeat; }
+  .nav-dropdown:focus { outline: none; border-color: rgba(120,182,165,0.4); box-shadow: 0 0 0 3px rgba(120,182,165,0.18); }
+  .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; background: linear-gradient(135deg, rgba(79,143,127,0.10), rgba(120,182,165,0.08)); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 8px 18px rgba(79,143,127,0.06); }
+  .nav-btn { display: none; }
 
   /* PAGES */
   .page { display: none; padding: 22px 24px 28px; }
@@ -317,10 +311,17 @@
 
 <!-- HEADER -->
 <div class="header">
-  <div class="logo">DFAMPC<span>HUB</span></div>
-  <div style="margin-left:8px;display:flex;align-items:center;gap:8px;">
+  <div class="brand">
+    <div class="brand-mark" aria-hidden="true">
+      <svg viewBox="0 0 64 64" role="img" aria-label="Company logo">
+        <path d="M18 14h28a4 4 0 0 1 4 4v28a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V18a4 4 0 0 1 4-4Zm4 8v20h20V22H22Zm4 4h12v4H26Zm0 8h8v4h-8Z"/>
+      </svg>
+    </div>
+    <div class="brand-copy">
+      <div class="logo">DFAMPC<span>HUB</span></div>
+      <div class="brand-subtitle">Courier Management System</div>
+    </div>
   </div>
-  <div style="font-size:11px;color:var(--muted);">Courier Management System</div>
   <div class="header-status">
     <span id="connBadge" class="conn-badge conn-err">• Connecting...</span>
     <span id="cacheBadge" style="font-size:11px;color:var(--success);">✓ Ready</span>
@@ -333,15 +334,20 @@
 
 <!-- NAV -->
 <div class="nav">
-  <button class="nav-btn active" onclick="showPage('scanner')">Scanner</button>
-  <button class="nav-btn" onclick="showPage('db')">Database</button>
-  <button class="nav-btn" onclick="showPage('released-db')">✓ Released DB</button>
-
-  <button class="nav-btn" onclick="showPage('import')">Import</button>
-  <button class="nav-btn nav-btn-delete" onclick="showPage('bulk-delete')">Bulk Delete</button>
-  <button class="nav-btn" onclick="showPage('search')">Global Search</button>
-  <button class="nav-btn nav-btn-users" id="navUsers" style="display:none;" onclick="showPage('users')">Users</button>
-  <button class="nav-btn" id="navLogs" style="display:none;" onclick="showPage('logs')">Activity Log</button>
+  <div class="nav-select-wrap">
+    <label class="nav-label" for="pageDropdown">Main Menu</label>
+    <select id="pageDropdown" class="nav-dropdown" onchange="showPage(this.value)">
+      <option value="scanner">Scanner</option>
+      <option value="db">Database</option>
+      <option value="released-db">Released DB</option>
+      <option value="import">Import</option>
+      <option value="bulk-delete">Bulk Delete</option>
+      <option value="search">Global Search</option>
+      <option value="users">Users</option>
+      <option value="logs">Activity Log</option>
+    </select>
+  </div>
+  <div class="nav-pill">🌿 Calm workflow • Ready</div>
 </div>
 
 <!-- ========== SCANNER PAGE ========== -->
@@ -1686,13 +1692,44 @@ async function updateTotalCount() {
 }
 
 // ==================== NAVIGATION ====================
+function setActiveNavOption(name) {
+  const dropdown = document.getElementById('pageDropdown');
+  if (dropdown) dropdown.value = name;
+}
+
+function buildNavigationMenu(role = 'admin') {
+  const dropdown = document.getElementById('pageDropdown');
+  if (!dropdown) return;
+
+  const options = [
+    { value: 'scanner', label: 'Scanner' },
+    { value: 'db', label: 'Database' },
+    { value: 'released-db', label: 'Released DB' },
+    { value: 'import', label: 'Import' },
+    { value: 'bulk-delete', label: 'Bulk Delete' },
+    { value: 'search', label: 'Global Search' },
+    { value: 'users', label: 'Users' },
+    { value: 'logs', label: 'Activity Log' }
+  ];
+
+  const visible = options.filter(entry => {
+    if (role === 'viewer') return entry.value === 'search';
+    if (role === 'user') return !['users', 'logs'].includes(entry.value);
+    return true;
+  });
+
+  dropdown.innerHTML = visible.map(entry => `<option value="${entry.value}">${entry.label}</option>`).join('');
+  const activePage = document.querySelector('.page.active')?.id?.replace('page-', '') || 'scanner';
+  dropdown.value = visible.some(item => item.value === activePage) ? activePage : (visible[0]?.value || 'scanner');
+}
+
 function showPage(name) {
+  const page = document.getElementById(`page-${name}`);
+  if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById(`page-${name}`).classList.add('active');
-  event.target.classList.add('active');
+  page.classList.add('active');
+  setActiveNavOption(name);
   if (name === 'scanner') {
-    // Populate transfer destination dropdown for main scanner
     const allowed = getUserAllowedDatabases(currentUser) || [];
     const mainAndDefaults = allowed.slice();
     const destSelect = document.getElementById('transferDest');
@@ -4305,31 +4342,12 @@ function applyRoleUI() {
   document.getElementById('currentUserBadge').innerHTML =
     `<b>${currentUser.full_name}</b>${supervisorBadge} <span style="color:var(--accent);font-size:10px;">[${role.toUpperCase()}]</span>`;
 
-  // â”€â”€ NAV VISIBILITY PER ROLE â”€â”€
-  const allNavBtns = document.querySelectorAll('.nav-btn');
+  buildNavigationMenu(role);
 
   if (role === 'viewer') {
-    // Viewer sees ONLY: Global Search
-    allNavBtns.forEach(b => {
-      const txt = b.textContent.trim();
-      const isAllowed = txt.includes('Global Search');
-      b.style.display = isAllowed ? 'block' : 'none';
-    });
-    // Auto-navigate to Global Search page
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-search').classList.add('active');
-    allNavBtns.forEach(b => { b.classList.remove('active'); if (b.textContent.trim().includes('Global Search')) b.classList.add('active'); });
-
-  } else if (role === 'user') {
-    // User sees all tabs EXCEPT Users and Activity Log
-    allNavBtns.forEach(b => {
-      const txt = b.textContent.trim();
-      b.style.display = (txt.includes('Users') || txt.includes('Activity Log')) ? 'none' : 'block';
-    });
-
-  } else if (role === 'admin') {
-    // Admin sees everything
-    allNavBtns.forEach(b => { b.style.display = 'block'; });
+    setActiveNavOption('search');
   }
 
   const createUserBtn = document.getElementById('createUserBtn');
