@@ -3135,6 +3135,8 @@ async function exportReleasedCSV() {
 
 // ==================== EXPORT ENTRIES (ENTIRE DB) ====================
 async function exportEntriesCSV() {
+  const db = document.getElementById('dbFilter')?.value || currentDB || '';
+  const search = dbSearchTerm || '';
   let allRows = [];
   let offset = 0;
   const BATCH_SIZE = 1000;
@@ -3142,9 +3144,25 @@ async function exportEntriesCSV() {
 
   toast('Fetching entries for export...', 'info');
 
+  let path = 'entries?order=last_name.asc,id.desc';
+  if (db === ALL_DB_FILTER) {
+    const allowed = getUserAllowedDatabases(currentUser) || [];
+    if (allowed.length > 0) {
+      const sourceList = allowed.map(src => `"${src}"`).join(',');
+      const encodedSourceList = encodeURIComponent(sourceList);
+      path = `entries?data_source=in.(${encodedSourceList})&order=last_name.asc,id.desc`;
+    }
+  } else if (db) {
+    path = `entries?data_source=eq.${encodeURIComponent(db)}&order=last_name.asc,id.desc`;
+  }
+
+  if (search) {
+    path += `&or=(tracking_number.ilike.*${encodeURIComponent(search)}*,last_name.ilike.*${encodeURIComponent(search)}*,first_name.ilike.*${encodeURIComponent(search)}*,address.ilike.*${encodeURIComponent(search)}*)`;
+  }
+
   while (isFetching) {
     try {
-      const batch = await sbFetch(`entries?order=last_name.asc,id.desc&limit=${BATCH_SIZE}&offset=${offset}`);
+      const batch = await sbFetch(`${path}&limit=${BATCH_SIZE}&offset=${offset}`);
       if (!batch || batch.length === 0) {
         isFetching = false;
       } else {
@@ -3158,10 +3176,11 @@ async function exportEntriesCSV() {
     }
   }
 
-  if (allRows.length === 0) { toast('No entries to export', 'warning'); return; }
+  if (allRows.length === 0) { toast('No entries to export for the selected database', 'warning'); return; }
 
   const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
   const dateFile = new Date().toISOString().slice(0,10).replace(/-/g,'');
+  const exportName = db === ALL_DB_FILTER ? 'ALL-ACCESSIBLE' : (db || 'SELECTED-DB');
 
   const headers = ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Data Source','Status','Date Applied','DOR From','DOR To','Created At'];
   const dataRows = allRows.map(r => [
@@ -3171,14 +3190,14 @@ async function exportEntriesCSV() {
   ]);
 
   const wb = makeStyledWorkbook(
-    'DFAMPC - ENTRIES DATABASE EXPORT',
+    `DFAMPC - ENTRIES DATABASE EXPORT - ${exportName}`,
     `Date: ${dateStr}`,
     'Total Records',
     allRows.length,
     headers, dataRows, 'Entries'
   );
-  await downloadWorkbook(wb, `DFAMPC-ENTRIES-DB-${dateFile}.xlsx`);
-  toast(`✓ Entries DB exported — ${allRows.length} total records`, 'success');
+  await downloadWorkbook(wb, `DFAMPC-ENTRIES-DB-${exportName}-${dateFile}.xlsx`);
+  toast(`✓ Exported ${allRows.length} record(s) from ${db === ALL_DB_FILTER ? 'all accessible databases' : db || 'selected database'}`, 'success');
 }
 
 // Prompt + export then permanently delete entries from given data sources
