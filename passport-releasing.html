@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -360,6 +360,7 @@
           <option value="Hold For Pick Up">Hold For Pick Up</option>
           <option value="Return to Origin">Return to Origin</option>
           <option value="Cancelled Delivery">✖ Cancelled Delivery</option>
+          <option value="No Record and Rejected">⚠ No Record and Rejected</option>
         </select>
       </div>
 
@@ -418,7 +419,8 @@
       <option value="Suspended">Suspended</option>
       <option value="Hold For Pick Up">Hold For Pick Up</option>
       <option value="Return to Origin">Return to Origin</option>
-        <option value="Cancelled Delivery">Cancelled Delivery</option>
+      <option value="Cancelled Delivery">Cancelled Delivery</option>
+      <option value="No Record and Rejected">No Record and Rejected</option>
     </select>
     <input class="search-input" id="dbSearch" placeholder="Search tracking, name, address..." oninput="dbSearchDebounce()" />
     <button class="btn btn-primary" onclick="openAddModal()">+ Add Entry</button>
@@ -554,6 +556,7 @@
         <option value="Hold For Pick Up">Hold For Pick Up</option>
         <option value="Return to Origin">Return to Origin</option>
         <option value="Cancelled Delivery">Cancelled Delivery</option>
+        <option value="No Record and Rejected">No Record and Rejected</option>
       </select>
     </div>
     <div class="form-group">
@@ -641,6 +644,7 @@
           <option value="Hold For Pick Up">Hold For Pick Up</option>
           <option value="Return to Origin">Return to Origin</option>
           <option value="Cancelled Delivery">Cancelled Delivery</option>
+          <option value="No Record and Rejected">No Record and Rejected</option>
           <option value="__RELEASED__">Released DB (released_entries)</option>
         </select>
       </div>
@@ -1050,7 +1054,7 @@ async function sbFetch(path, opts = {}) {
 const PAGE_SIZE = 100;
 const BLOCKED_STATUSES = ['Change Address', 'Cancel Delivery']; // Hold For Pick Up handled separately with full-screen alert + hard stop
 const DATABASE_MAIN = ['ASEANA','POW'];
-const DATABASE_DEFAULT_STATUSES = ['Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery'];
+const DATABASE_DEFAULT_STATUSES = ['Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected'];
 const DATABASE_ALL = [...DATABASE_MAIN, ...DATABASE_DEFAULT_STATUSES];
 // Global helper for detecting Hold-for-pick-up text variants
 function normalizeText(v) {
@@ -2053,6 +2057,9 @@ function renderScanList() {
           ${statusText ? `<div><strong>${statusText}</strong></div>` : ''}
         </div>
       </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="btn btn-danger" style="padding:4px 10px;font-size:11px;" title="Remove this scanned item" onclick="confirmRemoveScanItem('${item.tracking}')">Remove</button>
+      </div>
     `;
     list.appendChild(div);
   });
@@ -2062,6 +2069,25 @@ function renderScanList() {
 function updateScanStats() {
   document.getElementById('scanCount').textContent = scanSession.filter(s => !s.blocked && s.status !== 'not-found').length;
   document.getElementById('scanBlocked').textContent = scanSession.filter(s => s.blocked).length;
+}
+
+function confirmRemoveScanItem(identifier) {
+  if (!confirm('Remove this scanned item from the session?')) return;
+  removeScanSessionItem(identifier);
+}
+
+function removeScanSessionItem(identifier) {
+  const index = typeof identifier === 'number'
+    ? identifier
+    : scanSession.findIndex(item => item.tracking === identifier);
+
+  if (index < 0 || index >= scanSession.length) return;
+  scanHistory.push([...scanSession]);
+  redoStack = [];
+  scanSession.splice(index, 1);
+  renderScanList(); updateScanStats();
+  scheduleSave();
+  toast('✓ Removed scanned item', 'success');
 }
 
 function undoScan() {
@@ -3737,7 +3763,7 @@ async function wipeDatabase() {
 
 // ==================== DB COUNTS ====================
 async function loadDBCounts() {
-  const DBS = ['ASEANA','POW','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery'];
+  const DBS = ['ASEANA','POW','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected'];
   const container = document.getElementById('dbCountCards');
   if (!container) return;
   container.innerHTML = DBS.map(db => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;"><div style="font-size:10px;color:var(--muted);font-weight:700;text-transform:uppercase;margin-bottom:6px;">${db}</div><div id="cnt_${db.replace(/\s/g,'_')}" style="font-size:22px;font-weight:800;color:var(--accent);">...</div></div>`).join('') +
@@ -3768,7 +3794,7 @@ async function doGlobalSearch() {
 
   let results = []; // â† was missing, causing ReferenceError
 
-  const DBS = ['ASEANA','POW','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery'];
+  const DBS = ['ASEANA','POW','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected'];
 
   // Search all DBs in parallel
   const dbResults = await Promise.all(DBS.map(db =>
@@ -3788,7 +3814,14 @@ async function doGlobalSearch() {
     });
   } catch(e) {}
 
-  if (results.length === 0) { container.innerHTML = '<div style="color:var(--muted);padding:16px;">No results found.</div>'; return; }
+  const origins = [...new Set(results.map(r => r._db || r.data_source || 'Unknown').filter(Boolean))];
+  if (results.length === 0) {
+    container.innerHTML = '<div style="color:var(--muted);padding:16px;">No results found.</div>';
+    toast('No results found in any database', 'warning');
+    return;
+  }
+
+  toast(`Search origin: ${origins.join(', ')}`, 'info');
 
   container.innerHTML = `
     <div style="margin-bottom:10px;color:var(--muted);font-size:12px;">${results.length} result(s) found</div>
@@ -3950,6 +3983,11 @@ function renderRelScanList() {
       <span style="font-size:11px;color:var(--muted);">${s.name}</span>
       <button onclick="removeRelScan('${s.tracking}')" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:12px;">âœ•</button>
     </div>`).join('');
+}
+
+function confirmRemoveRelScan(tn) {
+  if (!confirm('Remove this released-item scan from the transfer list?')) return;
+  removeRelScan(tn);
 }
 
 function removeRelScan(tn) {
