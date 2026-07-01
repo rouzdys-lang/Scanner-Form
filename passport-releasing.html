@@ -2265,6 +2265,18 @@ function showHoldAlert(tracking, name) {
   document.getElementById('holdPersonName').textContent = name;
   document.getElementById('holdAlert').classList.add('show');
 }
+
+function showGlobalSearchAlert(message) {
+  const alertEl = document.getElementById('milestoneAlert');
+  const textEl = document.getElementById('alertText');
+  const subEl = document.getElementById('alertSub');
+  if (!alertEl || !textEl || !subEl) return;
+  textEl.textContent = 'GLOBAL SEARCH';
+  subEl.textContent = message;
+  alertEl.classList.add('show');
+  setTimeout(() => alertEl.classList.remove('show'), 2200);
+}
+
 function dismissHoldAlert() {
   document.getElementById('holdAlert').classList.remove('show');
   document.getElementById('scanInput').focus();
@@ -3830,11 +3842,11 @@ async function doGlobalSearch() {
   const origins = [...new Set(results.map(r => r._db || r.data_source || 'Unknown').filter(Boolean))];
   if (results.length === 0) {
     container.innerHTML = '<div style="color:var(--muted);padding:16px;">No results found.</div>';
-    toast(`⚠ No results found in any database for "${q}"`, 'warning');
+    showGlobalSearchAlert(`No results found in any database for "${q}"`);
     return;
   }
 
-  toast(`⚠ Search origin: ${origins.join(', ')}`, 'warning');
+  showGlobalSearchAlert(`Search origin: ${origins.join(', ')}`);
 
   container.innerHTML = `
     <div style="margin-bottom:10px;color:var(--muted);font-size:12px;">${results.length} result(s) found</div>
