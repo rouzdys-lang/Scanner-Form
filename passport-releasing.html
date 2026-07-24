@@ -1361,6 +1361,26 @@ function normalizeDorRecord(r) {
     if (candidate) finalTracking = candidate;
   }
 
+  // Additional fallback: sometimes tracking gets stored in the `status` or other oddly-named top-level fields
+  if (!finalTracking) {
+    const st = String(status || '').trim();
+    const ms = st.match(/^(\d{6,14})$/);
+    if (ms) finalTracking = ms[1];
+  }
+
+  if (!finalTracking) {
+    const skipKeys = new Set(['dorTo','dor_to','dor_to_date','dor','status','lastName','last_name','firstName','first_name','released','id']);
+    for (const [k,v] of Object.entries(r)) {
+      if (skipKeys.has(k)) continue;
+      if (v == null) continue;
+      if (typeof v === 'string' || typeof v === 'number') {
+        const s = String(v).trim();
+        const m = s.match(/^(\d{6,14})$/);
+        if (m) { finalTracking = m[1]; break; }
+      }
+    }
+  }
+
   return { id, tracking: finalTracking || '', lastName, firstName, dorTo, status, released };
 }
 
