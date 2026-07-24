@@ -1291,13 +1291,14 @@ function loadDorEntries() {
 async function fetchDorEntriesFromSupabase() {
   // Attempt to read minimal fields. Adjust column names if your Supabase schema differs.
   try {
-    const path = `entries?select=id,last_name,first_name,dor_to,status&dor_to=not.is.null`;
+    // Request all columns so we can diagnose field names in different schemas.
+    const path = `entries?select=*&dor_to=not.is.null`;
     const data = await sbFetch(path);
     if (!Array.isArray(data)) return [];
     // Normalize fields to our expected shape
     return data.map((r, idx) => ({
       id: r.id || idx+1,
-      tracking: r.tracking || r.tracking_number || r.tracking_no || r.track || r.track_num || r.trackingNumber || '',
+      tracking: r.tracking || r.tracking_number || r.tracking_no || r.track || r.track_num || r.trackingNumber || r.tn || r.trackingNum || '',
       lastName: r.last_name || r.lastName || '',
       firstName: r.first_name || r.firstName || '',
       dorTo: r.dor_to || r.dorTo || r.dor_to_date || '',
@@ -1337,7 +1338,30 @@ function normalizeDorRecord(r) {
   const status = String(getField(r, ['status','current_status','state']) || '').trim();
   const released = !!(getField(r,['released']) || (status && String(status).toLowerCase() === 'released'));
 
-  return { id, tracking, lastName, firstName, dorTo, status, released };
+  let finalTracking = tracking;
+  // Fallback: scan any string fields for a numeric-looking token (common when columns are misnamed)
+  if (!finalTracking) {
+    const scanObj = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      for (const v of Object.values(obj)) {
+        if (v == null) continue;
+        if (typeof v === 'string' || typeof v === 'number') {
+          const s = String(v);
+          // look for sequences of 6-14 digits which often match tracking numbers
+          const m = s.match(/\b(\d{6,14})\b/);
+          if (m) return m[1];
+        } else if (typeof v === 'object') {
+          const nested = scanObj(v);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    };
+    const candidate = scanObj(r);
+    if (candidate) finalTracking = candidate;
+  }
+
+  return { id, tracking: finalTracking || '', lastName, firstName, dorTo, status, released };
 }
 
 function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
