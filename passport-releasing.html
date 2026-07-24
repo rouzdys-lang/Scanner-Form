@@ -1272,11 +1272,11 @@ function loadDorEntries() {
     }).catch(e => {
       console.warn('Supabase DOR fetch failed, falling back to sample data', e);
       const sample = [
-        { id:1, lastName:'Santos', firstName:'Juan', dorTo:'July 24, 2026', released:false },
-        { id:2, lastName:'Garcia', firstName:'Maria', dorTo:'24 July 2026', released:false },
-        { id:3, lastName:'Reyes', firstName:'Pedro', dorTo:'2026-07-24', released:false },
-        { id:4, lastName:'Lopez', firstName:'Ana', dorTo:'July 25 2026', released:false },
-        { id:5, lastName:'Dela Cruz', firstName:'Ramon', dorTo:'tomorrow', released:false }
+        { id:1, tracking:'174000000001', lastName:'Santos', firstName:'Juan', dorTo:'July 24, 2026', released:false },
+        { id:2, tracking:'174000000002', lastName:'Garcia', firstName:'Maria', dorTo:'24 July 2026', released:false },
+        { id:3, tracking:'174000000003', lastName:'Reyes', firstName:'Pedro', dorTo:'2026-07-24', released:false },
+        { id:4, tracking:'174000000004', lastName:'Lopez', firstName:'Ana', dorTo:'July 25 2026', released:false },
+        { id:5, tracking:'174000000005', lastName:'Dela Cruz', firstName:'Ramon', dorTo:'tomorrow', released:false }
       ];
       try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample)); } catch(e){}
       return sample;
@@ -1293,9 +1293,10 @@ async function fetchDorEntriesFromSupabase() {
     // Normalize fields to our expected shape
     return data.map((r, idx) => ({
       id: r.id || idx+1,
+      tracking: r.tracking || r.tracking_number || r.tracking_no || r.track || r.track_num || r.trackingNumber || '',
       lastName: r.last_name || r.lastName || '',
       firstName: r.first_name || r.firstName || '',
-      dorTo: r.dor_to || r.dorTo || '',
+      dorTo: r.dor_to || r.dorTo || r.dor_to_date || '',
       status: r.status || '' ,
       released: (r.status || '').toLowerCase() === 'released'
     }));
@@ -1318,7 +1319,7 @@ async function checkDorTriggers() {
   for (const e of entries) {
     const d = parseFlexibleDate(e.dorTo);
     console.debug('[DOR] parsed', e.dorTo, '->', d);
-    debugItems.push({ raw: e.dorTo, parsed: d, id: e.id, name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
+    debugItems.push({ raw: e.dorTo, parsed: d, id: e.id, tracking: e.tracking||'', name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
     if (!d) continue;
     const key = ymdKey(d);
     if (!byDate[key]) byDate[key] = [];
@@ -1326,10 +1327,10 @@ async function checkDorTriggers() {
   }
   // render debug panel
   const dbg = document.getElementById('dorDebug');
-  if (dbg) {
+    if (dbg) {
     dbg.innerHTML = debugItems.map(it => {
       const p = it.parsed ? ymdKey(it.parsed) : 'INVALID';
-      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
+      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">${it.tracking ? '['+it.tracking+'] ' : ''}${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
     }).join('');
   }
 
@@ -1373,10 +1374,13 @@ function renderDorNotification(dateObj, list, startDate, endDate) {
   } else {
     for (const it of list) {
       const row = document.createElement('div'); row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.padding='6px 4px';
-      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `${it.lastName}, ${it.firstName}`;
+      const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
+      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `${it.tracking ? '['+it.tracking+'] ' : ''}${it.lastName}, ${it.firstName}`;
+      const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='12px'; sub.textContent = `DOR: ${it.dorTo || '-' }  ·  Status: ${it.status || '-'}`;
+      left.appendChild(name); left.appendChild(sub);
       const btn = document.createElement('button'); btn.className = 'btn btn-success'; btn.style.padding='6px 10px'; btn.style.fontSize='12px'; btn.textContent = 'Mark Released';
       btn.onclick = () => { markReleased(it.id); };
-      row.appendChild(name); row.appendChild(btn); container.appendChild(row);
+      row.appendChild(left); row.appendChild(btn); container.appendChild(row);
     }
   }
   const panel = document.getElementById('dorScannerNote'); if (panel) panel.style.display = 'block';
