@@ -1299,11 +1299,11 @@ function loadDorEntries() {
     }).catch(e => {
       console.warn('Supabase DOR fetch failed, falling back to sample data', e);
       const sample = [
-        { id:1, tracking:'174000000001', lastName:'Santos', firstName:'Juan', dorTo:'July 24, 2026', released:false },
-        { id:2, tracking:'174000000002', lastName:'Garcia', firstName:'Maria', dorTo:'24 July 2026', released:false },
-        { id:3, tracking:'174000000003', lastName:'Reyes', firstName:'Pedro', dorTo:'2026-07-24', released:false },
-        { id:4, tracking:'174000000004', lastName:'Lopez', firstName:'Ana', dorTo:'July 25 2026', released:false },
-        { id:5, tracking:'174000000005', lastName:'Dela Cruz', firstName:'Ramon', dorTo:'tomorrow', released:false }
+        { id:1, tracking:'174000000001', lastName:'Santos', firstName:'Juan', dorFrom:'July 24, 2026', released:false },
+        { id:2, tracking:'174000000002', lastName:'Garcia', firstName:'Maria', dorFrom:'24 July 2026', released:false },
+        { id:3, tracking:'174000000003', lastName:'Reyes', firstName:'Pedro', dorFrom:'2026-07-24', released:false },
+        { id:4, tracking:'174000000004', lastName:'Lopez', firstName:'Ana', dorFrom:'July 25 2026', released:false },
+        { id:5, tracking:'174000000005', lastName:'Dela Cruz', firstName:'Ramon', dorFrom:'tomorrow', released:false }
       ];
       try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample)); } catch(e){}
       return sample;
@@ -1315,7 +1315,8 @@ async function fetchDorEntriesFromSupabase() {
   // Attempt to read minimal fields. Adjust column names if your Supabase schema differs.
   try {
     // Request all columns so we can diagnose field names in different schemas.
-    const path = `entries?select=*&dor_to=not.is.null`;
+    // Use dor_from as the trigger field (we want DOR From to control notifications)
+    const path = `entries?select=*&dor_from=not.is.null`;
     const data = await sbFetch(path);
     if (!Array.isArray(data)) return [];
     // Normalize fields to our expected shape
@@ -1324,7 +1325,7 @@ async function fetchDorEntriesFromSupabase() {
       tracking: r.tracking || r.tracking_number || r.tracking_no || r.track || r.track_num || r.trackingNumber || r.tn || r.trackingNum || '',
       lastName: r.last_name || r.lastName || '',
       firstName: r.first_name || r.firstName || '',
-      dorTo: r.dor_to || r.dorTo || r.dor_to_date || '',
+      dorFrom: r.dor_from || r.dorFrom || r.dor_from_date || r.dor_from_dt || '',
       status: r.status || '' ,
       released: (r.status || '').toLowerCase() === 'released'
     }));
@@ -1357,7 +1358,7 @@ function normalizeDorRecord(r) {
   const tracking = String(getField(r, ['tracking','tracking_number','tracking_no','track','track_num','trackingNumber','trackingNo','trackingnum','tracking_num']) || '').trim();
   const lastName = String(getField(r, ['lastName','last_name','lastname','last','surname']) || '').trim();
   const firstName = String(getField(r, ['firstName','first_name','firstname','first','given']) || '').trim();
-  const dorTo = String(getField(r, ['dorTo','dor_to','dor_to_date','dor','dor_to_dt','date_of_release_to']) || '').trim();
+  const dorFrom = String(getField(r, ['dorFrom','dor_from','dor_from_date','dor_from_dt','dor','date_of_release_from','date_of_release_from_dt']) || '').trim();
   const status = String(getField(r, ['status','current_status','state']) || '').trim();
   const released = !!(getField(r,['released']) || (status && String(status).toLowerCase() === 'released'));
 
@@ -1392,7 +1393,7 @@ function normalizeDorRecord(r) {
   }
 
   if (!finalTracking) {
-    const skipKeys = new Set(['dorTo','dor_to','dor_to_date','dor','status','lastName','last_name','firstName','first_name','released','id']);
+    const skipKeys = new Set(['dorFrom','dor_from','dor_from_date','dor_from_dt','dorFrom_dt','dorTo','dor_to','dor_to_date','dor','status','lastName','last_name','firstName','first_name','released','id']);
     for (const [k,v] of Object.entries(r)) {
       if (skipKeys.has(k)) continue;
       if (v == null) continue;
@@ -1404,7 +1405,7 @@ function normalizeDorRecord(r) {
     }
   }
 
-  return { id, tracking: finalTracking || '', lastName, firstName, dorTo, status, released };
+  return { id, tracking: finalTracking || '', lastName, firstName, dorFrom, status, released };
 }
 
 function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
@@ -1418,9 +1419,9 @@ async function checkDorTriggers() {
   const byDate = {};
   const debugItems = [];
   for (const e of entries) {
-    const d = parseFlexibleDate(e.dorTo);
-    console.debug('[DOR] parsed', e.dorTo, '->', d);
-    debugItems.push({ raw: e.dorTo, parsed: d, id: e.id, tracking: e.tracking||'', name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
+    const d = parseFlexibleDate(e.dorFrom);
+    console.debug('[DOR] parsed', e.dorFrom, '->', d);
+    debugItems.push({ raw: e.dorFrom, parsed: d, id: e.id, tracking: e.tracking||'', name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
     if (!d) continue;
     const key = ymdKey(d);
     if (!byDate[key]) byDate[key] = [];
@@ -1462,11 +1463,11 @@ async function checkDorTriggers() {
 }
 
 function renderDorNotification(dateObj, list, startDate, endDate) {
-  const label = dateObj.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+    const label = dateObj.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
   const cnt = list.length;
   const startLabel = startDate ? startDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
   const endLabel = endDate ? endDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
-  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR To ${label} — visible in scanner during ${startLabel} to ${endLabel}.`;
+  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR From ${label} — visible in scanner during ${startLabel} to ${endLabel}.`;
   document.getElementById('dorCount').textContent = `${cnt} not released`;
   document.getElementById('dorDateLabel').textContent = label;
   const badge = document.getElementById('dorBadge'); if (badge) { badge.textContent = `DOR: ${cnt}`; badge.style.color = cnt>0? 'var(--danger)' : 'var(--success)'; }
@@ -1479,7 +1480,7 @@ function renderDorNotification(dateObj, list, startDate, endDate) {
       const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
       const t = it.tracking && String(it.tracking).trim() ? it.tracking : '(no tracking)';
       const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `[${t}] ${it.lastName || ''}${it.lastName && it.firstName ? ', ' : ''}${it.firstName || ''}`;
-      const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='12px'; sub.textContent = `DOR: ${it.dorTo || '-' }  ·  Status: ${it.status || '-'}`;
+      const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='12px'; sub.textContent = `DOR: ${it.dorFrom || '-' }  ·  Status: ${it.status || '-'}`;
       left.appendChild(name); left.appendChild(sub);
       const btn = document.createElement('button'); btn.className = 'btn btn-success'; btn.style.padding='6px 10px'; btn.style.fontSize='12px'; btn.textContent = 'Mark Released';
       btn.onclick = () => { markReleased(it.id); };
@@ -1535,7 +1536,7 @@ function toggleTheme() {
 
 document.addEventListener('DOMContentLoaded', function() {
   try {
-    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
     applyTheme(saved);
     const btn = document.getElementById('themeToggle');
     if (btn) btn.addEventListener('click', toggleTheme);
