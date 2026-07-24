@@ -1264,7 +1264,11 @@ function ymdKey(d) { if (!d) return null; const yyyy = d.getFullYear(); const mm
 function loadDorEntries() {
   try {
     const raw = localStorage.getItem(LOCAL_DOR_KEY);
-    if (raw) return JSON.parse(raw || '[]');
+    if (raw) {
+      const parsed = JSON.parse(raw || '[]');
+      // normalize any legacy shapes so we always have `tracking`, `lastName`, `firstName`, `dorTo`, `status`, `released`
+      return (Array.isArray(parsed) ? parsed : []).map(normalizeDorRecord);
+    }
     // no local cache found; try to fetch from Supabase
     return fetchDorEntriesFromSupabase().then(arr => {
       try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){}
@@ -1306,6 +1310,36 @@ async function fetchDorEntriesFromSupabase() {
   }
 }
 
+function normalizeDorRecord(r) {
+  if (!r || typeof r !== 'object') return { id: null, tracking: '', lastName: '', firstName: '', dorTo: '', status: '', released: false };
+  function getField(obj, keys) {
+    if (!obj) return undefined;
+    for (const k of keys) {
+      if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return obj[k];
+    }
+    // check nested common containers
+    const nests = ['row','data','entry','payload','record'];
+    for (const n of nests) {
+      if (obj[n] && typeof obj[n] === 'object') {
+        for (const k of keys) {
+          if (Object.prototype.hasOwnProperty.call(obj[n], k) && obj[n][k] != null) return obj[n][k];
+        }
+      }
+    }
+    return undefined;
+  }
+
+  const id = getField(r, ['id','pk','ID','Id']) || null;
+  const tracking = String(getField(r, ['tracking','tracking_number','tracking_no','track','track_num','trackingNumber','trackingNo','trackingnum','tracking_num']) || '').trim();
+  const lastName = String(getField(r, ['lastName','last_name','lastname','last','surname']) || '').trim();
+  const firstName = String(getField(r, ['firstName','first_name','firstname','first','given']) || '').trim();
+  const dorTo = String(getField(r, ['dorTo','dor_to','dor_to_date','dor','dor_to_dt','date_of_release_to']) || '').trim();
+  const status = String(getField(r, ['status','current_status','state']) || '').trim();
+  const released = !!(getField(r,['released']) || (status && String(status).toLowerCase() === 'released'));
+
+  return { id, tracking, lastName, firstName, dorTo, status, released };
+}
+
 function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
 
 async function checkDorTriggers() {
@@ -1330,7 +1364,8 @@ async function checkDorTriggers() {
     if (dbg) {
     dbg.innerHTML = debugItems.map(it => {
       const p = it.parsed ? ymdKey(it.parsed) : 'INVALID';
-      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">${it.tracking ? '['+it.tracking+'] ' : ''}${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
+      const t = it.tracking && String(it.tracking).trim() ? it.tracking : '(no tracking)';
+      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">[${t}] ${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
     }).join('');
   }
 
@@ -1375,7 +1410,8 @@ function renderDorNotification(dateObj, list, startDate, endDate) {
     for (const it of list) {
       const row = document.createElement('div'); row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.padding='6px 4px';
       const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
-      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `${it.tracking ? '['+it.tracking+'] ' : ''}${it.lastName}, ${it.firstName}`;
+      const t = it.tracking && String(it.tracking).trim() ? it.tracking : '(no tracking)';
+      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `[${t}] ${it.lastName || ''}${it.lastName && it.firstName ? ', ' : ''}${it.firstName || ''}`;
       const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='12px'; sub.textContent = `DOR: ${it.dorTo || '-' }  ·  Status: ${it.status || '-'}`;
       left.appendChild(name); left.appendChild(sub);
       const btn = document.createElement('button'); btn.className = 'btn btn-success'; btn.style.padding='6px 10px'; btn.style.fontSize='12px'; btn.textContent = 'Mark Released';
