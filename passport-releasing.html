@@ -378,6 +378,7 @@
     <span id="cacheBadge" style="font-size:11px;color:var(--success);">✓ Ready</span>
     <span id="syncBadge" style="font-size:11px;color:var(--muted);">Sync: never</span>
     <span id="totalBadge" style="font-size:11px;color:var(--muted);">Total: <b id="totalCount">0</b></span>
+    <span id="dorBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;">DOR: 0</span>
     <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
     <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
   </div>
@@ -1353,6 +1354,7 @@ async function checkDorTriggers() {
     const panelEl = document.getElementById('dorScannerNote');
     if (noteEl) noteEl.textContent = 'No active DOR notifications.'; else console.warn('[DOR] dorNotification element not found');
     if (panelEl) panelEl.style.display = 'none'; else console.warn('[DOR] dorScannerNote element not found');
+    const badge = document.getElementById('dorBadge'); if (badge) { badge.textContent = 'DOR: 0'; badge.style.color = 'var(--muted)'; }
   }
 }
 
@@ -1364,6 +1366,7 @@ function renderDorNotification(dateObj, list, startDate, endDate) {
   document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR To ${label} — visible in scanner during ${startLabel} to ${endLabel}.`;
   document.getElementById('dorCount').textContent = `${cnt} not released`;
   document.getElementById('dorDateLabel').textContent = label;
+  const badge = document.getElementById('dorBadge'); if (badge) { badge.textContent = `DOR: ${cnt}`; badge.style.color = cnt>0? 'var(--danger)' : 'var(--success)'; }
   const container = document.getElementById('dorList'); container.innerHTML = '';
   if (cnt === 0) {
     container.innerHTML = '<div style="color:var(--muted);font-size:13px;">All items released for this DOR.</div>';
