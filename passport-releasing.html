@@ -477,6 +477,16 @@
         <textarea class="bulk-textarea" id="bulkArea" placeholder="Paste multiple tracking numbers, one per line..."></textarea>
         <button class="btn btn-primary" onclick="processBulk()" style="width:100%;">Process Bulk</button>
       </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <div class="panel-title">Release Notifications</div>
+        <div id="dorNotification" style="font-size:13px;color:var(--muted);margin-bottom:8px;">No active DOR notifications.</div>
+        <div id="dorScannerNote" style="display:none;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-weight:800;color:var(--accent);" id="dorCount">0 items</div>
+          <div style="font-size:12px;color:var(--muted);" id="dorDateLabel">Date</div>
+          <div id="dorList" style="margin-top:8px;max-height:160px;overflow:auto;"></div>
+        </div>
+      </div>
     </div>
 
     <!-- RIGHT PANEL: SCAN LIST -->
@@ -1197,6 +1207,152 @@ function parseAllowedDatabases(value) {
   if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
   return String(value).split(',').map(v => v.trim()).filter(Boolean);
 }
+
+// ---------------- DOR NOTIFICATION MODULE ----------------
+const LOCAL_DOR_KEY = 'dfampc_dor_entries_v1';
+
+function parseFlexibleDate(input) {
+  if (!input) return null;
+  let s = String(input).trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  if (lower === 'today') return new Date(today);
+  if (lower === 'tomorrow') { const d = new Date(today); d.setDate(d.getDate()+1); return d; }
+  if (lower === 'yesterday') { const d = new Date(today); d.setDate(d.getDate()-1); return d; }
+
+  // Try native parse (handles 'July 24, 2026', '2026-07-24', '24 Jul 2026' in many browsers)
+  const native = new Date(s);
+  if (!isNaN(native.getTime())) { native.setHours(0,0,0,0); return native; }
+
+  // Try dd/mm/yyyy or dd-mm-yyyy
+  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m1) {
+    let d = parseInt(m1[1],10), m = parseInt(m1[2],10)-1, y = parseInt(m1[3],10);
+    if (y < 100) y += 2000;
+    const dd = new Date(y,m,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd;
+  }
+
+  // Try month name patterns like '24 July 2026' or 'July 24 2026'
+  const monthNames = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+  const m2 = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})$/);
+  if (m2) {
+    const d = parseInt(m2[1],10); const mn = m2[2].substr(0,3).toLowerCase(); const y = parseInt(m2[3],10);
+    const mm = monthNames[mn]; if (mm !== undefined) { const dd = new Date(y,mm,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd; }
+  }
+  const m3 = s.match(/^([A-Za-z]+)\s+(\d{1,2})(?:,?\s*)(\d{2,4})?$/);
+  if (m3) {
+    const mn = m3[1].substr(0,3).toLowerCase(); const d = parseInt(m3[2],10); let y = m3[3] ? parseInt(m3[3],10) : (new Date()).getFullYear();
+    const mm = monthNames[mn]; if (mm !== undefined) { const dd = new Date(y,mm,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd; }
+  }
+
+  return null;
+}
+
+function ymdKey(d) { if (!d) return null; const yyyy = d.getFullYear(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0'); return `${yyyy}-${mm}-${dd}`; }
+
+function loadDorEntries() {
+  try {
+    const raw = localStorage.getItem(LOCAL_DOR_KEY);
+    if (!raw) {
+      // sample data for demonstration (various formats)
+      const sample = [
+        { id:1, lastName:'Santos', firstName:'Juan', dorTo:'July 24, 2026', released:false },
+        { id:2, lastName:'Garcia', firstName:'Maria', dorTo:'24 July 2026', released:false },
+        { id:3, lastName:'Reyes', firstName:'Pedro', dorTo:'2026-07-24', released:false },
+        { id:4, lastName:'Lopez', firstName:'Ana', dorTo:'July 25 2026', released:false },
+        { id:5, lastName:'Dela Cruz', firstName:'Ramon', dorTo:'tomorrow', released:false }
+      ];
+      localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample));
+      return sample;
+    }
+    return JSON.parse(raw || '[]');
+  } catch (e) { console.warn('loadDorEntries error', e); return []; }
+}
+
+function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
+
+function checkDorTriggers() {
+  const entries = loadDorEntries();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let found = false;
+  // Group by dor date key
+  const byDate = {}
+  for (const e of entries) {
+    const d = parseFlexibleDate(e.dorTo);
+    if (!d) continue;
+    const key = ymdKey(d);
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(e);
+  }
+
+  // Look for any dor date where today === dor or today === dor + 1
+  for (const key of Object.keys(byDate)) {
+    const parts = key.split('-').map(Number);
+    const dd = new Date(parts[0], parts[1]-1, parts[2]); dd.setHours(0,0,0,0);
+    const next = new Date(dd); next.setDate(dd.getDate()+1);
+    if (today.getTime() === dd.getTime() || today.getTime() === next.getTime()) {
+      const list = byDate[key].filter(x => !x.released);
+      renderDorNotification(dd, list);
+      found = true;
+      break; // show first matching date only
+    }
+  }
+  if (!found) {
+    document.getElementById('dorNotification').textContent = 'No active DOR notifications.';
+    document.getElementById('dorScannerNote').style.display = 'none';
+  }
+}
+
+function renderDorNotification(dateObj, list) {
+  const label = dateObj.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const cnt = list.length;
+  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR To ${label} — visible in scanner for today and next day only.`;
+  document.getElementById('dorCount').textContent = `${cnt} not released`;
+  document.getElementById('dorDateLabel').textContent = label;
+  const container = document.getElementById('dorList'); container.innerHTML = '';
+  if (cnt === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;">All items released for this DOR.</div>';
+  } else {
+    for (const it of list) {
+      const row = document.createElement('div'); row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.padding='6px 4px';
+      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `${it.lastName}, ${it.firstName}`;
+      const btn = document.createElement('button'); btn.className = 'btn btn-success'; btn.style.padding='6px 10px'; btn.style.fontSize='12px'; btn.textContent = 'Mark Released';
+      btn.onclick = () => { markReleased(it.id); };
+      row.appendChild(name); row.appendChild(btn); container.appendChild(row);
+    }
+  }
+  document.getElementById('dorScannerNote').style.display = 'block';
+}
+
+function markReleased(id) {
+  const arr = loadDorEntries();
+  let changed = false;
+  for (const e of arr) {
+    if (e.id === id) { e.released = true; changed = true; }
+  }
+  if (changed) { saveDorEntries(arr); toast('Marked released', 'success'); checkDorTriggers(); }
+}
+
+// initialize module
+setTimeout(() => { checkDorTriggers(); }, 300);
+// re-check every 60 seconds so UI updates if day rolls over while page open
+setInterval(checkDorTriggers, 60 * 1000);
+
+// Small helper toast (local) - reuse existing toastWrap if present
+function toast(msg, type='info', ttl=3000) {
+  try {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return console.log(msg);
+    const t = document.createElement('div'); t.className = 'toast toast-'+(type||'info');
+    const icon = document.createElement('div'); icon.className='toast-icon'; icon.textContent = (type==='success'? '✓': (type==='error'?'⚠':'i'));
+    const txt = document.createElement('div'); txt.style.flex='1'; txt.textContent = msg;
+    t.appendChild(icon); t.appendChild(txt); wrap.appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; try{ t.remove(); }catch(e){} }, ttl);
+  } catch(e){ console.log(msg); }
+}
+
 
 function loadStoredUserDBAssignments() {
   try {
