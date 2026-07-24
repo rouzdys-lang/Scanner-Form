@@ -248,6 +248,28 @@
 
   .count-badge { background: linear-gradient(135deg, rgba(0,217,255,0.15) 0%, rgba(0,168,216,0.1) 100%); color: var(--accent); border: 1.5px solid rgba(0,217,255,0.25); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; margin-left: 8px; text-shadow: 0 1px 3px rgba(0,217,255,0.2); }
 
+  /* Light theme overrides: apply by adding class 'light-theme' to <body> */
+  body.light-theme {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: rgba(15, 23, 42, 0.06);
+    --accent: #0f6fff;
+    --accent2: #0099ff;
+    --text: #0f172a;
+    --muted: #475569;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0891b2;
+    --released: #059669;
+    --accent-light: rgba(15,111,255,0.06);
+    --accent-glow: rgba(6,123,255,0.08);
+    --shadow: 0 12px 30px rgba(15,23,42,0.06);
+  }
+  /* Smooth transition when toggling themes */
+  body, .panel, .header, .nav, .modal, .table-wrap { transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease; }
+
   @media (max-width: 900px) {
     .scanner-grid { grid-template-columns: 1fr; }
     .dash-grid { grid-template-columns: 1fr 1fr; }
@@ -380,6 +402,7 @@
     <span id="totalBadge" style="font-size:11px;color:var(--muted);">Total: <b id="totalCount">0</b></span>
     <span id="dorBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;">DOR: 0</span>
     <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
+    <button id="themeToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;">Theme</button>
     <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
   </div>
 </div>
@@ -1492,6 +1515,32 @@ function markReleased(id) {
 setTimeout(() => { checkDorTriggers(); }, 300);
 // re-check every 60 seconds so UI updates if day rolls over while page open
 setInterval(checkDorTriggers, 60 * 1000);
+
+// ==================== THEME TOGGLE (dark / light) ====================
+const THEME_KEY = 'dfampc_theme_preference';
+function applyTheme(theme) {
+  try {
+    if (theme === 'light') document.body.classList.add('light-theme');
+    else document.body.classList.remove('light-theme');
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = theme === 'light' ? 'Light' : 'Dark';
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (e) { console.warn('applyTheme error', e); }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light-theme');
+  applyTheme(isLight ? 'dark' : 'light');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY) || 'dark';
+    applyTheme(saved);
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  } catch (e) { console.warn('theme init failed', e); }
+});
 
 // Small helper toast (local) - reuse existing toastWrap if present
 function toast(msg, type='info', ttl=3000) {
