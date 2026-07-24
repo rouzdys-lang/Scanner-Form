@@ -487,6 +487,11 @@
           <div id="dorList" style="margin-top:8px;max-height:160px;overflow:auto;"></div>
         </div>
       </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <div class="panel-title">DOR Debug Panel (always visible)</div>
+        <div id="dorDebug" style="font-size:12px;color:var(--muted);max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);"></div>
+      </div>
     </div>
 
     <!-- RIGHT PANEL: SCAN LIST -->
@@ -1210,6 +1215,9 @@ function parseAllowedDatabases(value) {
 
 // ---------------- DOR NOTIFICATION MODULE ----------------
 const LOCAL_DOR_KEY = 'dfampc_dor_entries_v1';
+// DOR window config: show when today is within [dor - BEFORE_DAYS, dor + AFTER_DAYS]
+const DOR_BEFORE_DAYS = 2; // show starting 2 days before DOR
+const DOR_AFTER_DAYS = 4;  // show up to 4 days after DOR
 
 function parseFlexibleDate(input) {
   if (!input) return null;
@@ -1255,8 +1263,13 @@ function ymdKey(d) { if (!d) return null; const yyyy = d.getFullYear(); const mm
 function loadDorEntries() {
   try {
     const raw = localStorage.getItem(LOCAL_DOR_KEY);
-    if (!raw) {
-      // sample data for demonstration (various formats)
+    if (raw) return JSON.parse(raw || '[]');
+    // no local cache found; try to fetch from Supabase
+    return fetchDorEntriesFromSupabase().then(arr => {
+      try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){}
+      return arr;
+    }).catch(e => {
+      console.warn('Supabase DOR fetch failed, falling back to sample data', e);
       const sample = [
         { id:1, lastName:'Santos', firstName:'Juan', dorTo:'July 24, 2026', released:false },
         { id:2, lastName:'Garcia', firstName:'Maria', dorTo:'24 July 2026', released:false },
@@ -1264,51 +1277,91 @@ function loadDorEntries() {
         { id:4, lastName:'Lopez', firstName:'Ana', dorTo:'July 25 2026', released:false },
         { id:5, lastName:'Dela Cruz', firstName:'Ramon', dorTo:'tomorrow', released:false }
       ];
-      localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample));
+      try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample)); } catch(e){}
       return sample;
-    }
-    return JSON.parse(raw || '[]');
+    });
   } catch (e) { console.warn('loadDorEntries error', e); return []; }
+}
+
+async function fetchDorEntriesFromSupabase() {
+  // Attempt to read minimal fields. Adjust column names if your Supabase schema differs.
+  try {
+    const path = `entries?select=id,last_name,first_name,dor_to,status&dor_to=not.is.null`;
+    const data = await sbFetch(path);
+    if (!Array.isArray(data)) return [];
+    // Normalize fields to our expected shape
+    return data.map((r, idx) => ({
+      id: r.id || idx+1,
+      lastName: r.last_name || r.lastName || '',
+      firstName: r.first_name || r.firstName || '',
+      dorTo: r.dor_to || r.dorTo || '',
+      status: r.status || '' ,
+      released: (r.status || '').toLowerCase() === 'released'
+    }));
+  } catch (e) {
+    console.warn('fetchDorEntriesFromSupabase error', e);
+    throw e;
+  }
 }
 
 function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
 
-function checkDorTriggers() {
-  const entries = loadDorEntries();
+async function checkDorTriggers() {
+  const entriesOrPromise = loadDorEntries();
+  const entries = (entriesOrPromise && typeof entriesOrPromise.then === 'function') ? await entriesOrPromise : entriesOrPromise;
+  console.debug('[DOR] loaded entries', entries);
   const today = new Date(); today.setHours(0,0,0,0);
   let found = false;
-  // Group by dor date key
-  const byDate = {}
+  const byDate = {};
+  const debugItems = [];
   for (const e of entries) {
     const d = parseFlexibleDate(e.dorTo);
+    console.debug('[DOR] parsed', e.dorTo, '->', d);
+    debugItems.push({ raw: e.dorTo, parsed: d, id: e.id, name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
     if (!d) continue;
     const key = ymdKey(d);
     if (!byDate[key]) byDate[key] = [];
     byDate[key].push(e);
   }
+  // render debug panel
+  const dbg = document.getElementById('dorDebug');
+  if (dbg) {
+    dbg.innerHTML = debugItems.map(it => {
+      const p = it.parsed ? ymdKey(it.parsed) : 'INVALID';
+      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
+    }).join('');
+  }
 
-  // Look for any dor date where today === dor or today === dor + 1
+  console.debug('[DOR] grouped by date', Object.keys(byDate));
+
+  // For each DOR date group, compute window [dor - BEFORE_DAYS, dor + AFTER_DAYS] and show if today in window
   for (const key of Object.keys(byDate)) {
     const parts = key.split('-').map(Number);
-    const dd = new Date(parts[0], parts[1]-1, parts[2]); dd.setHours(0,0,0,0);
-    const next = new Date(dd); next.setDate(dd.getDate()+1);
-    if (today.getTime() === dd.getTime() || today.getTime() === next.getTime()) {
+    const dorDate = new Date(parts[0], parts[1]-1, parts[2]); dorDate.setHours(0,0,0,0);
+    const start = new Date(dorDate); start.setDate(dorDate.getDate() - DOR_BEFORE_DAYS);
+    const end = new Date(dorDate); end.setDate(dorDate.getDate() + DOR_AFTER_DAYS);
+    if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
       const list = byDate[key].filter(x => !x.released);
-      renderDorNotification(dd, list);
+      renderDorNotification(dorDate, list, start, end);
       found = true;
-      break; // show first matching date only
+      // continue checking other groups, but show the earliest matching dor date (closest)
+      break;
     }
   }
   if (!found) {
-    document.getElementById('dorNotification').textContent = 'No active DOR notifications.';
-    document.getElementById('dorScannerNote').style.display = 'none';
+    const noteEl = document.getElementById('dorNotification');
+    const panelEl = document.getElementById('dorScannerNote');
+    if (noteEl) noteEl.textContent = 'No active DOR notifications.'; else console.warn('[DOR] dorNotification element not found');
+    if (panelEl) panelEl.style.display = 'none'; else console.warn('[DOR] dorScannerNote element not found');
   }
 }
 
-function renderDorNotification(dateObj, list) {
+function renderDorNotification(dateObj, list, startDate, endDate) {
   const label = dateObj.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
   const cnt = list.length;
-  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR To ${label} — visible in scanner for today and next day only.`;
+  const startLabel = startDate ? startDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
+  const endLabel = endDate ? endDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
+  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR To ${label} — visible in scanner during ${startLabel} to ${endLabel}.`;
   document.getElementById('dorCount').textContent = `${cnt} not released`;
   document.getElementById('dorDateLabel').textContent = label;
   const container = document.getElementById('dorList'); container.innerHTML = '';
@@ -1323,16 +1376,29 @@ function renderDorNotification(dateObj, list) {
       row.appendChild(name); row.appendChild(btn); container.appendChild(row);
     }
   }
-  document.getElementById('dorScannerNote').style.display = 'block';
+  const panel = document.getElementById('dorScannerNote'); if (panel) panel.style.display = 'block';
 }
 
 function markReleased(id) {
-  const arr = loadDorEntries();
-  let changed = false;
-  for (const e of arr) {
-    if (e.id === id) { e.released = true; changed = true; }
-  }
-  if (changed) { saveDorEntries(arr); toast('Marked released', 'success'); checkDorTriggers(); }
+  // Try to update Supabase record; fall back to local cache if offline/error
+  (async () => {
+    try {
+      await sbFetch(`entries?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'Released' }) });
+      toast('Marked released (server)', 'success');
+    } catch (e) {
+      console.warn('Failed to mark released on server, updating local cache', e);
+      const arr = await loadDorEntries();
+      let changed = false;
+      for (const e of arr) {
+        if (e.id === id) { e.released = true; changed = true; }
+      }
+      if (changed) saveDorEntries(arr);
+      toast('Marked released (local)', 'warning');
+    } finally {
+      // refresh UI
+      try { await checkDorTriggers(); } catch(e) { console.warn(e); }
+    }
+  })();
 }
 
 // initialize module
