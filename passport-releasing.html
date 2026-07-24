@@ -288,6 +288,9 @@
   body.light-theme .login-box,
   body.light-theme .count-badge,
   body.light-theme .conn-badge,
+  body.light-theme #cacheBadge,
+  body.light-theme #syncBadge,
+  body.light-theme #totalBadge,
   body.light-theme .nav-btn,
   body.light-theme .db-btn,
   body.light-theme .scan-input,
@@ -2561,8 +2564,8 @@ async function processScan(trackingNum) {
   toast(`Scanned: ${trackingNum}`, 'success');
 
   const count = scanSession.filter(s => !s.blocked).length;
-  if (count % 100 === 0 && count > 0) showMilestone('WAKARANAI UKININAM', `${count} scans! UNBELIEVABLE!`);
-  else if (count % 10 === 0 && count > 0) showMilestone('YAMETE KUDASAI', `${count} scans! Keep going!`);
+  if (count % 100 === 0 && count > 0) showMilestone('Aray kOh!!!', `${count} scans! UNBELIEVABLE!`);
+  else if (count % 10 === 0 && count > 0) showMilestone('OOOOHH YeAHhh!', `${count} scans! Keep going!`);
   updateScanStats();
 }
 
