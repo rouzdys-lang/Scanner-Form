@@ -9,12 +9,12 @@
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
 <style>
   :root {
-    --bg: #02040a;
-    --surface: #08111d;
-    --card: #0d1627;
+    --bg: #02050b;
+    --surface: #07111d;
+    --card: #0f1a2b;
     --border: rgba(148, 163, 184, 0.24);
-    --accent: #67f5e2;
-    --accent2: #4cc9ff;
+    --accent: #66f3e1;
+    --accent2: #45b8ff;
     --text: #f8fbff;
     --muted: #c7d3e3;
     --success: #3ee09a;
@@ -24,14 +24,42 @@
     --released: #34d6c7;
     --accent-light: rgba(103,245,226,0.18);
     --accent-glow: rgba(76,201,255,0.24);
-    --shadow: 0 18px 45px rgba(1, 6, 15, 0.45);
+    --shadow: 0 18px 45px rgba(1, 6, 15, 0.48);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { min-height: 100%; background: radial-gradient(circle at top left, #0f2035 0%, #050811 45%, #02040a 100%); }
-  body { background: transparent; color: var(--text); font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif; font-size: 14px; line-height: 1.6; min-height: 100vh; }
+  html { min-height: 100%; background: radial-gradient(circle at top left, #13253d 0%, #060b14 42%, #02050b 100%); }
+  body {
+    background: transparent;
+    color: var(--text);
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 14px;
+    line-height: 1.6;
+    min-height: 100vh;
+    position: relative;
+  }
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(circle at top left, rgba(102,243,225,0.09), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(69,184,255,0.12), transparent 24%);
+    pointer-events: none;
+    z-index: -1;
+  }
+  body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: linear-gradient(rgba(255,255,255,0.028) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(255,255,255,0.028) 1px, transparent 1px);
+    background-size: 48px 48px;
+    opacity: 0.22;
+    pointer-events: none;
+    z-index: -1;
+  }
 
   /* HEADER */
-  .header { background: linear-gradient(135deg, rgba(5, 10, 19, 0.98) 0%, rgba(9, 16, 29, 0.98) 100%); border-bottom: 1px solid var(--border); padding: 18px 28px; display: flex; align-items: center; gap: 18px; position: sticky; top: 0; z-index: 100; box-shadow: 0 12px 30px rgba(1, 6, 15, 0.4); backdrop-filter: blur(16px); }
+  .header { background: linear-gradient(135deg, rgba(4, 8, 16, 0.98) 0%, rgba(9, 16, 28, 0.98) 100%); border-bottom: 1px solid rgba(103,243,225,0.18); padding: 18px 28px; display: flex; align-items: center; gap: 18px; position: sticky; top: 0; z-index: 100; box-shadow: 0 16px 36px rgba(1, 6, 15, 0.42); backdrop-filter: blur(18px); }
   .brand { display: flex; align-items: center; gap: 14px; min-width: 0; }
   .brand-mark { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); box-shadow: 0 12px 26px rgba(79,143,127,0.18); flex-shrink: 0; }
   .brand-mark svg { width: 28px; height: 28px; fill: white; }
@@ -46,7 +74,7 @@
   .conn-err { background: linear-gradient(135deg, rgba(255,107,125,0.2) 0%, rgba(255,107,125,0.1) 100%); color: #ffe7eb; border-color: rgba(255,107,125,0.24); }
 
   /* NAV */
-  .nav { position: sticky; top: 72px; display: flex; align-items: center; justify-content: space-between; background: rgba(6, 12, 22, 0.94); border-radius: 0 0 18px 18px; border: 1px solid var(--border); border-top: none; padding: 14px 28px; gap: 12px; box-shadow: 0 12px 30px rgba(1, 6, 15, 0.32); margin: 0; backdrop-filter: blur(14px); z-index: 99; }
+  .nav { position: sticky; top: 72px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 0 0 18px 18px; border: 1px solid rgba(103,243,225,0.16); border-top: none; padding: 14px 28px; gap: 12px; box-shadow: 0 16px 36px rgba(1, 6, 15, 0.32); margin: 0; backdrop-filter: blur(16px); z-index: 99; }
   .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; background: rgba(103,245,226,0.14); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 8px 18px rgba(2, 8, 23, 0.18); }
   .nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); background: rgba(8,14,24,0.9); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
@@ -59,7 +87,7 @@
 
   /* SCANNER PAGE */
   .scanner-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
-  .panel { background: linear-gradient(135deg, rgba(8, 14, 24, 0.96) 0%, rgba(12, 19, 33, 0.96) 100%); border: 1px solid var(--border); border-radius: 18px; padding: 20px; box-shadow: 0 18px 40px rgba(1, 6, 15, 0.34); backdrop-filter: blur(10px); }
+  .panel { background: linear-gradient(135deg, rgba(8, 14, 24, 0.96) 0%, rgba(12, 19, 33, 0.96) 100%); border: 1px solid rgba(103,243,225,0.16); border-radius: 18px; padding: 20px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36), inset 0 1px 0 rgba(255,255,255,0.04); backdrop-filter: blur(12px); }
   .panel-title { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; text-shadow: 0 2px 6px rgba(236,72,153,0.08); }
 
   .db-selector { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
@@ -114,7 +142,7 @@
   .search-input { padding: 10px 14px; background: linear-gradient(135deg, rgba(8,14,24,0.95) 0%, rgba(12,19,33,0.95) 100%); border: 1.5px solid rgba(103,245,226,0.2); border-radius: 10px; color: var(--text); font-size: 12px; outline: none; flex: 1; min-width: 200px; }
   .search-input:focus { border-color: rgba(0,217,255,0.4); box-shadow: 0 0 0 3px var(--accent-glow); }
 
-  .table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid var(--border); box-shadow: 0 16px 36px rgba(1, 6, 15, 0.28); background: linear-gradient(135deg, rgba(8, 14, 24, 0.96) 0%, rgba(12, 19, 33, 0.96) 100%); }
+  .table-wrap { overflow-x: auto; border-radius: 16px; border: 1px solid rgba(103,243,225,0.16); box-shadow: 0 16px 36px rgba(1, 6, 15, 0.28), inset 0 1px 0 rgba(255,255,255,0.03); background: linear-gradient(135deg, rgba(8, 14, 24, 0.96) 0%, rgba(12, 19, 33, 0.96) 100%); }
   table { width: 100%; border-collapse: collapse; min-width: 720px; }
   th { background: linear-gradient(135deg, rgba(94,234,212,0.12) 0%, rgba(56,189,248,0.08) 100%); padding: 14px 16px; text-align: left; font-size: 11px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 0.6px; border-bottom: 1px solid rgba(148, 163, 184, 0.16); position: sticky; top: 0; z-index: 1; }
   td { padding: 14px 16px; border-bottom: 1px solid rgba(148, 163, 184, 0.1); font-size: 13px; background: transparent; color: var(--text); }
@@ -137,11 +165,11 @@
   /* MODAL */
   .modal-overlay { display: none; position: fixed; inset: 0; background: rgba(15,30,60,0.75); z-index: 200; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
   .modal-overlay.show { display: flex; }
-  .modal { background: linear-gradient(135deg, rgba(8, 14, 24, 0.97) 0%, rgba(12, 19, 33, 0.97) 100%); border: 1px solid var(--border); border-radius: 16px; padding: 28px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(1, 6, 15, 0.36); backdrop-filter: blur(12px); }
+  .modal { background: linear-gradient(135deg, rgba(8, 14, 24, 0.97) 0%, rgba(12, 19, 33, 0.97) 100%); border: 1px solid rgba(103,243,225,0.16); border-radius: 16px; padding: 28px; width: 520px; max-width: 95vw; max-height: 90vh; overflow-y: auto; box-shadow: 0 24px 60px rgba(1, 6, 15, 0.36), inset 0 1px 0 rgba(255,255,255,0.04); backdrop-filter: blur(12px); }
   .modal-title { font-size: 18px; font-weight: 800; margin-bottom: 18px; color: var(--accent); text-shadow: 0 2px 6px rgba(236,72,153,0.08); }
   .form-group { margin-bottom: 16px; }
   .form-group label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 7px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
-  .form-control { width: 100%; padding: 12px 14px; background: linear-gradient(135deg, rgba(8,14,24,0.95) 0%, rgba(12,19,33,0.95) 100%); border: 1.5px solid rgba(103,245,226,0.2); border-radius: 10px; color: var(--text); font-size: 13px; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
+  .form-control { width: 100%; padding: 12px 14px; background: linear-gradient(135deg, rgba(8,14,24,0.95) 0%, rgba(12,19,33,0.95) 100%); border: 1.5px solid rgba(103,245,226,0.2); border-radius: 10px; color: #f8fbff !important; font-size: 13px; outline: none; transition: border-color 0.2s ease, box-shadow 0.2s ease; }
   .form-control:focus { border-color: rgba(103,245,226,0.36); box-shadow: 0 0 0 4px var(--accent-glow); }
   select.form-control { color: var(--text); background-color: rgba(8,14,24,0.95); }
   select.form-control option { color: var(--text); background-color: rgba(8,14,24,0.95); }
@@ -220,6 +248,133 @@
 
   .count-badge { background: linear-gradient(135deg, rgba(0,217,255,0.15) 0%, rgba(0,168,216,0.1) 100%); color: var(--accent); border: 1.5px solid rgba(0,217,255,0.25); padding: 3px 10px; border-radius: 999px; font-size: 11px; font-weight: 800; margin-left: 8px; text-shadow: 0 1px 3px rgba(0,217,255,0.2); }
 
+  /* Light theme overrides: apply by adding class 'light-theme' to <body> */
+  body.light-theme {
+    --bg: #f8f9fb; /* softer white page background */
+    --surface: #ffffff;
+    --card: #ffffff;
+    --border: rgba(15, 23, 42, 0.06);
+    --accent: #0f6fff;
+    --accent2: #0099ff;
+    --text: #0b0b0b; /* near-black for maximum contrast */
+    --muted: #475569;
+    --success: #059669;
+    --warning: #d97706;
+    --danger: #dc2626;
+    --info: #0891b2;
+    --released: #059669;
+    --accent-light: rgba(15,111,255,0.06);
+    --accent-glow: rgba(6,123,255,0.08);
+    --shadow: 0 8px 22px rgba(2,6,23,0.06);
+    background: var(--bg);
+    color: var(--text);
+  }
+
+  /* Soften decorative overlays for light theme */
+  body.light-theme::before {
+    background: radial-gradient(circle at top left, rgba(15,111,255,0.02), transparent 28%),
+                radial-gradient(circle at bottom right, rgba(0,168,216,0.02), transparent 24%);
+  }
+  body.light-theme::after {
+    background-image: linear-gradient(rgba(0,0,0,0.02) 1px, transparent 1px),
+                      linear-gradient(90deg, rgba(0,0,0,0.02) 1px, transparent 1px);
+    opacity: 0.06;
+  }
+
+  /* Ensure major UI surfaces use light backgrounds and high-contrast text */
+  body.light-theme .header,
+  body.light-theme .nav,
+  body.light-theme .panel,
+  body.light-theme .login-box,
+  body.light-theme .count-badge,
+  body.light-theme .conn-badge,
+  body.light-theme #cacheBadge,
+  body.light-theme #syncBadge,
+  body.light-theme #totalBadge,
+  body.light-theme .nav-btn,
+  body.light-theme .db-btn,
+  body.light-theme .scan-input,
+  body.light-theme .verifier-input,
+  body.light-theme .bulk-textarea,
+  body.light-theme .search-input,
+  body.light-theme .form-control,
+  body.light-theme .login-input,
+  body.light-theme .page-btn,
+  body.light-theme .page-btn.current,
+  body.light-theme .modal,
+  body.light-theme .modal-overlay,
+  body.light-theme .modal-title,
+  body.light-theme .modal-footer,
+  body.light-theme .table-wrap,
+  body.light-theme .summary-card,
+  body.light-theme .dash-card,
+  body.light-theme .chart-card,
+  body.light-theme .scan-row,
+  body.light-theme .scan-row.from-resolved,
+  body.light-theme .scan-row.from-suspended,
+  body.light-theme .scan-row.blocked,
+  body.light-theme .status-bar,
+  body.light-theme .toast,
+  body.light-theme .activity-item,
+  body.light-theme .user-card,
+  body.light-theme .login-strip span,
+  body.light-theme .save-badge,
+  body.light-theme .nav-pill,
+  body.light-theme .pill-warehouse,
+  body.light-theme .pill-released,
+  body.light-theme .pill-hold,
+  body.light-theme .pill-cancel,
+  body.light-theme .pill-change,
+  body.light-theme .pill-claimed,
+  body.light-theme #dbFilter,
+  body.light-theme #dbFilter option {
+    background: #ffffff !important;
+    color: var(--text) !important;
+    border: 1px solid rgba(15,23,42,0.08) !important;
+    box-shadow: 0 12px 30px rgba(15,23,42,0.08) !important;
+  }
+
+  body.light-theme .nav-btn:hover,
+  body.light-theme .db-btn:hover,
+  body.light-theme .conn-badge:hover {
+    border-color: rgba(15,23,42,0.09) !important;
+    background: linear-gradient(135deg, rgba(255,255,255,0.98), rgba(250,250,250,0.98)) !important;
+  }
+
+  body.light-theme .scan-row:hover {
+    background: #f6f8fb !important;
+  }
+
+  body.light-theme .nav-pill,
+  body.light-theme .pill-warehouse,
+  body.light-theme .pill-released,
+  body.light-theme .pill-hold,
+  body.light-theme .pill-cancel,
+  body.light-theme .pill-change,
+  body.light-theme .pill-claimed {
+    background: rgba(15,23,42,0.08) !important;
+    color: var(--text) !important;
+    border-color: rgba(15,23,42,0.08) !important;
+  }
+
+  body.light-theme .count-badge,
+  body.light-theme .conn-badge,
+  body.light-theme .toast,
+  body.light-theme .status-bar,
+  body.light-theme .activity-item,
+  body.light-theme .user-card,
+  body.light-theme .save-badge {
+    background: #ffffff !important;
+    color: var(--text) !important;
+  }
+
+  body.light-theme .btn-muted { background: #f7f8fa; color: var(--text); border: 1.5px solid var(--border); }
+  body.light-theme .panel-title,
+  body.light-theme .modal-title { color: var(--accent); }
+
+  /* Smooth transition when toggling themes */
+  body, .panel, .header, .nav, .modal, .table-wrap { transition: background-color 240ms ease, color 240ms ease, border-color 240ms ease; }
+
   @media (max-width: 900px) {
     .scanner-grid { grid-template-columns: 1fr; }
     .dash-grid { grid-template-columns: 1fr 1fr; }
@@ -229,9 +384,9 @@
   /* ===== LOGIN SCREEN ===== */
   #loginScreen {
     display: flex; position: fixed; inset: 0; z-index: 9999;
-    background: radial-gradient(circle at top left, rgba(236,72,153,0.16), transparent 24%),
-                radial-gradient(circle at bottom right, rgba(139,92,246,0.16), transparent 22%),
-                linear-gradient(135deg, #fcf8ff 0%, #f4efff 35%, #fef6fb 75%, #f7f3ff 100%);
+    background: radial-gradient(circle at top left, rgba(102,243,225,0.12), transparent 24%),
+                radial-gradient(circle at bottom right, rgba(69,184,255,0.16), transparent 22%),
+                linear-gradient(135deg, #03070d 0%, #07111d 42%, #050911 100%);
     align-items: center; justify-content: center;
     overflow: hidden;
   }
@@ -246,10 +401,10 @@
   }
   .login-box {
     position: relative;
-    background: rgba(255,255,255,0.94);
-    border: 1px solid rgba(139,92,246,0.16);
+    background: linear-gradient(135deg, rgba(8, 14, 24, 0.95) 0%, rgba(12, 19, 33, 0.95) 100%);
+    border: 1px solid rgba(103,243,225,0.18);
     border-radius: 28px; padding: 42px 38px; width: 420px;
-    box-shadow: 0 28px 80px rgba(139,92,246,0.14);
+    box-shadow: 0 28px 80px rgba(2, 6, 23, 0.42), inset 0 1px 0 rgba(255,255,255,0.05);
     backdrop-filter: blur(18px);
     color: #e2e8f0;
     overflow: hidden;
@@ -350,7 +505,9 @@
     <span id="cacheBadge" style="font-size:11px;color:var(--success);">✓ Ready</span>
     <span id="syncBadge" style="font-size:11px;color:var(--muted);">Sync: never</span>
     <span id="totalBadge" style="font-size:11px;color:var(--muted);">Total: <b id="totalCount">0</b></span>
+    <span id="dorBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;">DOR: 0</span>
     <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
+    <button id="themeToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;">Theme</button>
     <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
   </div>
 </div>
@@ -400,20 +557,8 @@
       </div>
 
       <div class="panel" style="margin-bottom:12px;">
-        <div class="panel-title">Quick Actions</div>
-        <div class="quick-actions">
-          <button class="btn btn-primary" onclick="showPage('db')">Open DB</button>
-          <button class="btn btn-info" onclick="showPage('search')">Global Search</button>
-          <button class="btn btn-released" onclick="showPage('released-db')">Released DB</button>
-          <button class="btn btn-success" onclick="exportManifest()">Export Manifest</button>
-          <button class="btn btn-muted" onclick="showPage('import')">Import</button>
-          <button class="btn btn-warning" onclick="showPage('bulk-delete')">Bulk Delete</button>
-        </div>
-      </div>
-
-      <div class="panel" style="margin-bottom:12px;">
         <div class="panel-title">Target Database</div>
-        <select id="dbDropdown" class="form-control" onchange="selectDB(this.value)" style="font-weight:700;font-size:13px;padding:10px 12px;border:2px solid var(--accent);border-radius:8px;color:#1f2937;background:#f0f5ff;">
+        <select id="dbDropdown" class="form-control" onchange="selectDB(this.value)" style="font-weight:700;font-size:13px;padding:10px 12px;border:2px solid var(--accent);border-radius:8px;color:var(--text);background:rgba(8,14,24,0.96);">
           <option value="ASEANA">ASEANA</option>
           <option value="POW">POW</option>
           <!-- Megamall removed per request -->
@@ -421,7 +566,7 @@
           <option value="Suspended">🚫 Suspended</option>
           <option value="Hold For Pick Up">Hold For Pick Up</option>
           <option value="Return to Origin">Return to Origin</option>
-          <option value="Cancelled Delivery">✖ Cancelled Delivery</option>
+          <option value="Cancelled Delivery">✔ Active/Claimed</option>
           <option value="No Record and Rejected">⚠ No Record and Rejected</option>
         </select>
       </div>
@@ -461,6 +606,21 @@
         <textarea class="bulk-textarea" id="bulkArea" placeholder="Paste multiple tracking numbers, one per line..."></textarea>
         <button class="btn btn-primary" onclick="processBulk()" style="width:100%;">Process Bulk</button>
       </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <div class="panel-title">Release Notifications</div>
+        <div id="dorNotification" style="font-size:13px;color:var(--muted);margin-bottom:8px;">No active DOR notifications.</div>
+        <div id="dorScannerNote" style="display:none;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
+          <div style="font-weight:800;color:var(--accent);" id="dorCount">0 items</div>
+          <div style="font-size:12px;color:var(--muted);" id="dorDateLabel">Date</div>
+          <div id="dorList" style="margin-top:8px;max-height:160px;overflow:auto;"></div>
+        </div>
+      </div>
+
+      <div class="panel" style="margin-top:12px;">
+        <div class="panel-title">DOR Debug Panel (always visible)</div>
+        <div id="dorDebug" style="font-size:12px;color:var(--muted);max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);"></div>
+      </div>
     </div>
 
     <!-- RIGHT PANEL: SCAN LIST -->
@@ -482,7 +642,7 @@
       <option value="Suspended">Suspended</option>
       <option value="Hold For Pick Up">Hold For Pick Up</option>
       <option value="Return to Origin">Return to Origin</option>
-      <option value="Cancelled Delivery">Cancelled Delivery</option>
+      <option value="Cancelled Delivery">Active/Claimed</option>
       <option value="No Record and Rejected">No Record and Rejected</option>
     </select>
     <input class="search-input" id="dbSearch" placeholder="Search tracking, name, address..." oninput="dbSearchDebounce()" />
@@ -618,7 +778,7 @@
         <option value="Suspended">Suspended</option>
         <option value="Hold For Pick Up">Hold For Pick Up</option>
         <option value="Return to Origin">Return to Origin</option>
-        <option value="Cancelled Delivery">Cancelled Delivery</option>
+        <option value="Cancelled Delivery">Active/Claimed</option>
         <option value="No Record and Rejected">No Record and Rejected</option>
       </select>
     </div>
@@ -706,7 +866,7 @@
           <option value="Suspended">Suspended</option>
           <option value="Hold For Pick Up">Hold For Pick Up</option>
           <option value="Return to Origin">Return to Origin</option>
-          <option value="Cancelled Delivery">Cancelled Delivery</option>
+          <option value="Cancelled Delivery">Active/Claimed</option>
           <option value="No Record and Rejected">No Record and Rejected</option>
           <option value="__RELEASED__">Released DB (released_entries)</option>
         </select>
@@ -733,7 +893,7 @@
           <option value="Suspended">Suspended</option>
           <option value="Hold For Pick Up">Hold For Pick Up</option>
           <option value="Return to Origin">Return to Origin</option>
-          <option value="Cancelled Delivery">Cancelled Delivery</option>
+          <option value="Cancelled Delivery">Active/Claimed</option>
         </select>
       </div>
       <div class="form-group">
@@ -807,7 +967,7 @@
       <strong>Main databases</strong> are assigned per user. Users only see their allowed primary database(s) plus the shared status databases below.
       <ul style="margin:10px 0 0 16px;padding:0;color:#cbd5e1;font-size:11px;line-height:1.7;">
         <li><strong>Primary databases</strong>: ASEANA, POW</li>
-        <li><strong>Shared status databases</strong>: Resolved, Suspended, Hold For Pick Up, Return to Origin, Cancelled Delivery</li>
+        <li><strong>Shared status databases</strong>: Resolved, Suspended, Hold For Pick Up, Return to Origin, Active/Claimed</li>
         <li><strong>Example</strong>: alan is assigned to POW only and cannot access ASEANA.
         </li>
       </ul>
@@ -923,7 +1083,7 @@
           <option>Cancel Delivery</option>
           <option>Released</option>
           <option>Return to Origin</option>
-          <option>Cancelled Delivery</option>
+          <option>Active/Claimed</option>
         </select>
       </div>
     </div>
@@ -1043,34 +1203,28 @@ const SUPABASE_URL = 'https://fahwzzdrmrptskisxeci.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhaHd6emRybXJwdHNraXN4ZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDY2MjcsImV4cCI6MjA5NDkyMjYyN30.TIV1d-iav7pnM-VA9_zZnMf9M9gbVTgEGagfrPBFY9s';
 const HEADERS = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
 const LOCAL_SB_CACHE_KEY = 'dfampc_sb_cache';
+const MEMORY_SB_CACHE = new Map();
 
 function buildSbCacheKey(path, method = 'GET') {
   return `${LOCAL_SB_CACHE_KEY}:${method}:${path}`;
 }
 
 function loadSbCache(path, method = 'GET') {
-  try {
-    const raw = localStorage.getItem(buildSbCacheKey(path, method));
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
+  const key = buildSbCacheKey(path, method);
+  return MEMORY_SB_CACHE.has(key) ? MEMORY_SB_CACHE.get(key) : null;
 }
 
 function saveSbCache(path, method, data) {
-  try {
-    localStorage.setItem(buildSbCacheKey(path, method), JSON.stringify(data));
-  } catch (e) {
-    console.warn('Failed to save cache for', path, e);
-  }
+  const key = buildSbCacheKey(path, method);
+  MEMORY_SB_CACHE.set(key, data);
 }
 
 function invalidateSbCacheForPath(path) {
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(`${LOCAL_SB_CACHE_KEY}:GET:${path}`)) {
-        localStorage.removeItem(key);
+    const prefix = `${LOCAL_SB_CACHE_KEY}:GET:${path}`;
+    for (const key of Array.from(MEMORY_SB_CACHE.keys())) {
+      if (key.startsWith(prefix)) {
+        MEMORY_SB_CACHE.delete(key);
       }
     }
   } catch (e) {
@@ -1181,6 +1335,318 @@ function parseAllowedDatabases(value) {
   if (Array.isArray(value)) return value.map(v => String(v).trim()).filter(Boolean);
   return String(value).split(',').map(v => v.trim()).filter(Boolean);
 }
+
+// ---------------- DOR NOTIFICATION MODULE ----------------
+const LOCAL_DOR_KEY = 'dfampc_dor_entries_v1';
+// DOR window config: show when today is within [dor - BEFORE_DAYS, dor + AFTER_DAYS]
+const DOR_BEFORE_DAYS = 2; // show starting 2 days before DOR
+const DOR_AFTER_DAYS = 4;  // show up to 4 days after DOR
+
+function parseFlexibleDate(input) {
+  if (!input) return null;
+  let s = String(input).trim();
+  if (!s) return null;
+  const lower = s.toLowerCase();
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  if (lower === 'today') return new Date(today);
+  if (lower === 'tomorrow') { const d = new Date(today); d.setDate(d.getDate()+1); return d; }
+  if (lower === 'yesterday') { const d = new Date(today); d.setDate(d.getDate()-1); return d; }
+
+  // Try native parse (handles 'July 24, 2026', '2026-07-24', '24 Jul 2026' in many browsers)
+  const native = new Date(s);
+  if (!isNaN(native.getTime())) { native.setHours(0,0,0,0); return native; }
+
+  // Try dd/mm/yyyy or dd-mm-yyyy
+  const m1 = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+  if (m1) {
+    let d = parseInt(m1[1],10), m = parseInt(m1[2],10)-1, y = parseInt(m1[3],10);
+    if (y < 100) y += 2000;
+    const dd = new Date(y,m,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd;
+  }
+
+  // Try month name patterns like '24 July 2026' or 'July 24 2026'
+  const monthNames = { jan:0,feb:1,mar:2,apr:3,may:4,jun:5,jul:6,aug:7,sep:8,oct:9,nov:10,dec:11 };
+  const m2 = s.match(/^(\d{1,2})\s+([A-Za-z]+)\s+(\d{2,4})$/);
+  if (m2) {
+    const d = parseInt(m2[1],10); const mn = m2[2].substr(0,3).toLowerCase(); const y = parseInt(m2[3],10);
+    const mm = monthNames[mn]; if (mm !== undefined) { const dd = new Date(y,mm,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd; }
+  }
+  const m3 = s.match(/^([A-Za-z]+)\s+(\d{1,2})(?:,?\s*)(\d{2,4})?$/);
+  if (m3) {
+    const mn = m3[1].substr(0,3).toLowerCase(); const d = parseInt(m3[2],10); let y = m3[3] ? parseInt(m3[3],10) : (new Date()).getFullYear();
+    const mm = monthNames[mn]; if (mm !== undefined) { const dd = new Date(y,mm,d); dd.setHours(0,0,0,0); if (!isNaN(dd.getTime())) return dd; }
+  }
+
+  return null;
+}
+
+function ymdKey(d) { if (!d) return null; const yyyy = d.getFullYear(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0'); return `${yyyy}-${mm}-${dd}`; }
+
+let dorEntriesCache = null;
+
+function loadDorEntries() {
+  if (dorEntriesCache) {
+    return Promise.resolve(dorEntriesCache);
+  }
+
+  return fetchDorEntriesFromSupabase().then(arr => {
+    dorEntriesCache = (Array.isArray(arr) ? arr : []).map(normalizeDorRecord);
+    return dorEntriesCache;
+  }).catch(e => {
+    console.warn('Supabase DOR fetch failed', e);
+    dorEntriesCache = [];
+    return dorEntriesCache;
+  });
+}
+
+async function fetchDorEntriesFromSupabase() {
+  // Attempt to read minimal fields. Adjust column names if your Supabase schema differs.
+  try {
+    // Request all columns so we can diagnose field names in different schemas.
+    // Use dor_from as the trigger field (we want DOR From to control notifications)
+    const path = `entries?select=*&dor_from=not.is.null`;
+    const data = await sbFetch(path);
+    if (!Array.isArray(data)) return [];
+    // Normalize fields to our expected shape
+    return data.map((r, idx) => ({
+      id: r.id || idx+1,
+      tracking: r.tracking || r.tracking_number || r.tracking_no || r.track || r.track_num || r.trackingNumber || r.tn || r.trackingNum || '',
+      lastName: r.last_name || r.lastName || '',
+      firstName: r.first_name || r.firstName || '',
+      dorFrom: r.dor_from || r.dorFrom || r.dor_from_date || r.dor_from_dt || '',
+      status: r.status || '' ,
+      released: (r.status || '').toLowerCase() === 'released'
+    }));
+  } catch (e) {
+    console.warn('fetchDorEntriesFromSupabase error', e);
+    throw e;
+  }
+}
+
+function normalizeDorRecord(r) {
+  if (!r || typeof r !== 'object') return { id: null, tracking: '', lastName: '', firstName: '', dorTo: '', status: '', released: false };
+  function getField(obj, keys) {
+    if (!obj) return undefined;
+    for (const k of keys) {
+      if (Object.prototype.hasOwnProperty.call(obj, k) && obj[k] != null) return obj[k];
+    }
+    // check nested common containers
+    const nests = ['row','data','entry','payload','record'];
+    for (const n of nests) {
+      if (obj[n] && typeof obj[n] === 'object') {
+        for (const k of keys) {
+          if (Object.prototype.hasOwnProperty.call(obj[n], k) && obj[n][k] != null) return obj[n][k];
+        }
+      }
+    }
+    return undefined;
+  }
+
+  const id = getField(r, ['id','pk','ID','Id']) || null;
+  const tracking = String(getField(r, ['tracking','tracking_number','tracking_no','track','track_num','trackingNumber','trackingNo','trackingnum','tracking_num']) || '').trim();
+  const lastName = String(getField(r, ['lastName','last_name','lastname','last','surname']) || '').trim();
+  const firstName = String(getField(r, ['firstName','first_name','firstname','first','given']) || '').trim();
+  const dorFrom = String(getField(r, ['dorFrom','dor_from','dor_from_date','dor_from_dt','dor','date_of_release_from','date_of_release_from_dt']) || '').trim();
+  const status = String(getField(r, ['status','current_status','state']) || '').trim();
+  const released = !!(getField(r,['released']) || (status && String(status).toLowerCase() === 'released'));
+
+  let finalTracking = tracking;
+  // Fallback: scan any string fields for a numeric-looking token (common when columns are misnamed)
+  if (!finalTracking) {
+    const scanObj = (obj) => {
+      if (!obj || typeof obj !== 'object') return null;
+      for (const v of Object.values(obj)) {
+        if (v == null) continue;
+        if (typeof v === 'string' || typeof v === 'number') {
+          const s = String(v);
+          // look for sequences of 6-14 digits which often match tracking numbers
+          const m = s.match(/\b(\d{6,14})\b/);
+          if (m) return m[1];
+        } else if (typeof v === 'object') {
+          const nested = scanObj(v);
+          if (nested) return nested;
+        }
+      }
+      return null;
+    };
+    const candidate = scanObj(r);
+    if (candidate) finalTracking = candidate;
+  }
+
+  // Additional fallback: sometimes tracking gets stored in the `status` or other oddly-named top-level fields
+  if (!finalTracking) {
+    const st = String(status || '').trim();
+    const ms = st.match(/^(\d{6,14})$/);
+    if (ms) finalTracking = ms[1];
+  }
+
+  if (!finalTracking) {
+    const skipKeys = new Set(['dorFrom','dor_from','dor_from_date','dor_from_dt','dorFrom_dt','dorTo','dor_to','dor_to_date','dor','status','lastName','last_name','firstName','first_name','released','id']);
+    for (const [k,v] of Object.entries(r)) {
+      if (skipKeys.has(k)) continue;
+      if (v == null) continue;
+      if (typeof v === 'string' || typeof v === 'number') {
+        const s = String(v).trim();
+        const m = s.match(/^(\d{6,14})$/);
+        if (m) { finalTracking = m[1]; break; }
+      }
+    }
+  }
+
+  return { id, tracking: finalTracking || '', lastName, firstName, dorFrom, status, released };
+}
+
+function saveDorEntries(arr) {
+  dorEntriesCache = (Array.isArray(arr) ? arr : []).map(normalizeDorRecord);
+}
+
+async function checkDorTriggers() {
+  const entriesOrPromise = loadDorEntries();
+  const entries = (entriesOrPromise && typeof entriesOrPromise.then === 'function') ? await entriesOrPromise : entriesOrPromise;
+  console.debug('[DOR] loaded entries', entries);
+  const today = new Date(); today.setHours(0,0,0,0);
+  let found = false;
+  const byDate = {};
+  const debugItems = [];
+  for (const e of entries) {
+    const d = parseFlexibleDate(e.dorFrom);
+    console.debug('[DOR] parsed', e.dorFrom, '->', d);
+    debugItems.push({ raw: e.dorFrom, parsed: d, id: e.id, tracking: e.tracking||'', name: `${e.lastName}, ${e.firstName}`, released: !!e.released, status: e.status });
+    if (!d) continue;
+    const key = ymdKey(d);
+    if (!byDate[key]) byDate[key] = [];
+    byDate[key].push(e);
+  }
+  // render debug panel
+  const dbg = document.getElementById('dorDebug');
+    if (dbg) {
+    dbg.innerHTML = debugItems.map(it => {
+      const p = it.parsed ? ymdKey(it.parsed) : 'INVALID';
+      const t = it.tracking && String(it.tracking).trim() ? it.tracking : '(no tracking)';
+      return `<div style="padding:6px 4px;border-bottom:1px dashed rgba(255,255,255,0.03);"><strong style=\"color:var(--text)\">[${t}] ${it.name}</strong> — raw: <span style=\"color:var(--muted)\">${it.raw}</span> parsed: <span style=\"color:var(--accent)\">${p}</span> released: ${it.released} status: <span style=\"color:var(--muted)\">${it.status||'-'}</span></div>`;
+    }).join('');
+  }
+
+  console.debug('[DOR] grouped by date', Object.keys(byDate));
+
+  // For each DOR date group, compute window [dor - BEFORE_DAYS, dor + AFTER_DAYS] and show if today in window
+  for (const key of Object.keys(byDate)) {
+    const parts = key.split('-').map(Number);
+    const dorDate = new Date(parts[0], parts[1]-1, parts[2]); dorDate.setHours(0,0,0,0);
+    const start = new Date(dorDate); start.setDate(dorDate.getDate() - DOR_BEFORE_DAYS);
+    const end = new Date(dorDate); end.setDate(dorDate.getDate() + DOR_AFTER_DAYS);
+    if (today.getTime() >= start.getTime() && today.getTime() <= end.getTime()) {
+      const list = byDate[key].filter(x => !x.released);
+      renderDorNotification(dorDate, list, start, end);
+      found = true;
+      // continue checking other groups, but show the earliest matching dor date (closest)
+      break;
+    }
+  }
+  if (!found) {
+    const noteEl = document.getElementById('dorNotification');
+    const panelEl = document.getElementById('dorScannerNote');
+    if (noteEl) noteEl.textContent = 'No active DOR notifications.'; else console.warn('[DOR] dorNotification element not found');
+    if (panelEl) panelEl.style.display = 'none'; else console.warn('[DOR] dorScannerNote element not found');
+    const badge = document.getElementById('dorBadge'); if (badge) { badge.textContent = 'DOR: 0'; badge.style.color = 'var(--muted)'; }
+  }
+}
+
+function renderDorNotification(dateObj, list, startDate, endDate) {
+    const label = dateObj.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+  const cnt = list.length;
+  const startLabel = startDate ? startDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
+  const endLabel = endDate ? endDate.toLocaleDateString(undefined, { month:'short', day:'numeric' }) : '';
+  document.getElementById('dorNotification').textContent = `${cnt} item(s) not released for DOR From ${label} — visible in scanner during ${startLabel} to ${endLabel}.`;
+  document.getElementById('dorCount').textContent = `${cnt} not released`;
+  document.getElementById('dorDateLabel').textContent = label;
+  const badge = document.getElementById('dorBadge'); if (badge) { badge.textContent = `DOR: ${cnt}`; badge.style.color = cnt>0? 'var(--danger)' : 'var(--success)'; }
+  const container = document.getElementById('dorList'); container.innerHTML = '';
+  if (cnt === 0) {
+    container.innerHTML = '<div style="color:var(--muted);font-size:13px;">All items released for this DOR.</div>';
+  } else {
+    for (const it of list) {
+      const row = document.createElement('div'); row.style.display = 'flex'; row.style.justifyContent = 'space-between'; row.style.alignItems='center'; row.style.gap='8px'; row.style.padding='6px 4px';
+      const left = document.createElement('div'); left.style.display='flex'; left.style.flexDirection='column';
+      const t = it.tracking && String(it.tracking).trim() ? it.tracking : '(no tracking)';
+      const name = document.createElement('div'); name.style.color = 'var(--text)'; name.style.fontWeight='700'; name.textContent = `[${t}] ${it.lastName || ''}${it.lastName && it.firstName ? ', ' : ''}${it.firstName || ''}`;
+      const sub = document.createElement('div'); sub.style.color='var(--muted)'; sub.style.fontSize='12px'; sub.textContent = `DOR: ${it.dorFrom || '-' }  ·  Status: ${it.status || '-'}`;
+      left.appendChild(name); left.appendChild(sub);
+      const btn = document.createElement('button'); btn.className = 'btn btn-success'; btn.style.padding='6px 10px'; btn.style.fontSize='12px'; btn.textContent = 'Mark Released';
+      btn.onclick = () => { markReleased(it.id); };
+      row.appendChild(left); row.appendChild(btn); container.appendChild(row);
+    }
+  }
+  const panel = document.getElementById('dorScannerNote'); if (panel) panel.style.display = 'block';
+}
+
+function markReleased(id) {
+  // Try to update Supabase record; fall back to local cache if offline/error
+  (async () => {
+    try {
+      await sbFetch(`entries?id=eq.${id}`, { method: 'PATCH', body: JSON.stringify({ status: 'Released' }) });
+      toast('Marked released (server)', 'success');
+    } catch (e) {
+      console.warn('Failed to mark released on server, updating local cache', e);
+      const arr = await loadDorEntries();
+      let changed = false;
+      for (const e of arr) {
+        if (e.id === id) { e.released = true; changed = true; }
+      }
+      if (changed) saveDorEntries(arr);
+      toast('Marked released (local)', 'warning');
+    } finally {
+      // refresh UI
+      try { await checkDorTriggers(); } catch(e) { console.warn(e); }
+    }
+  })();
+}
+
+// initialize module
+setTimeout(() => { checkDorTriggers(); }, 300);
+// re-check every 60 seconds so UI updates if day rolls over while page open
+setInterval(checkDorTriggers, 60 * 1000);
+
+// ==================== THEME TOGGLE (dark / light) ====================
+const THEME_KEY = 'dfampc_theme_preference';
+function applyTheme(theme) {
+  try {
+    if (theme === 'light') document.body.classList.add('light-theme');
+    else document.body.classList.remove('light-theme');
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.textContent = theme === 'light' ? 'Light' : 'Dark';
+    localStorage.setItem(THEME_KEY, theme);
+  } catch (e) { console.warn('applyTheme error', e); }
+}
+
+function toggleTheme() {
+  const isLight = document.body.classList.contains('light-theme');
+  applyTheme(isLight ? 'dark' : 'light');
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  try {
+    const saved = localStorage.getItem(THEME_KEY) || 'light';
+    applyTheme(saved);
+    const btn = document.getElementById('themeToggle');
+    if (btn) btn.addEventListener('click', toggleTheme);
+  } catch (e) { console.warn('theme init failed', e); }
+});
+
+// Small helper toast (local) - reuse existing toastWrap if present
+function toast(msg, type='info', ttl=3000) {
+  try {
+    const wrap = document.getElementById('toastWrap');
+    if (!wrap) return console.log(msg);
+    const t = document.createElement('div'); t.className = 'toast toast-'+(type||'info');
+    const icon = document.createElement('div'); icon.className='toast-icon'; icon.textContent = (type==='success'? '✓': (type==='error'?'⚠':'i'));
+    const txt = document.createElement('div'); txt.style.flex='1'; txt.textContent = msg;
+    t.appendChild(icon); t.appendChild(txt); wrap.appendChild(t);
+    setTimeout(()=>{ t.style.opacity='0'; try{ t.remove(); }catch(e){} }, ttl);
+  } catch(e){ console.log(msg); }
+}
+
 
 function loadStoredUserDBAssignments() {
   try {
@@ -2084,8 +2550,8 @@ async function processScan(trackingNum) {
   toast(`Scanned: ${trackingNum}`, 'success');
 
   const count = scanSession.filter(s => !s.blocked).length;
-  if (count % 100 === 0 && count > 0) showMilestone('WAKARANAI UKININAM', `${count} scans! UNBELIEVABLE!`);
-  else if (count % 10 === 0 && count > 0) showMilestone('YAMETE KUDASAI', `${count} scans! Keep going!`);
+  if (count % 100 === 0 && count > 0) showMilestone('Aray kOh!!!', `${count} scans! UNBELIEVABLE!`);
+  else if (count % 10 === 0 && count > 0) showMilestone('OOOOHH YeAHhh!', `${count} scans! Keep going!`);
   updateScanStats();
 }
 
@@ -4469,7 +4935,7 @@ async function doLogin() {
     currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: user.role, allowed_databases: user.allowed_databases || '' };
     const userJson = JSON.stringify(currentUser);
     sessionStorage.setItem('dfampc_user', userJson);
-    localStorage.setItem('dfampc_user', userJson);
+    try { localStorage.removeItem('dfampc_user'); } catch (e) {}
 
     // Log the login
     await writeLog('LOGIN', `Logged in`, '');
@@ -4498,7 +4964,7 @@ async function doLogout() {
   await writeLog('LOGOUT', 'Logged out', '');
   currentUser = null;
   sessionStorage.removeItem('dfampc_user');
-  localStorage.removeItem('dfampc_user');
+  try { localStorage.removeItem('dfampc_user'); } catch (e) {}
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -4571,7 +5037,9 @@ function applyRoleUI() {
 // Try restore session
 (function tryRestoreSession() {
   let saved = sessionStorage.getItem('dfampc_user');
-  if (!saved) saved = localStorage.getItem('dfampc_user');
+  if (!saved) {
+    try { saved = localStorage.getItem('dfampc_user'); } catch (e) { saved = null; }
+  }
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
@@ -4588,7 +5056,7 @@ function applyRoleUI() {
       setTimeout(() => { loadScanSession(); }, 500);
     } catch(e) {
       sessionStorage.removeItem('dfampc_user');
-      localStorage.removeItem('dfampc_user');
+      try { localStorage.removeItem('dfampc_user'); } catch (e) {}
     }
   }
 })();
