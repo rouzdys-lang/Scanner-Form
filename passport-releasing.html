@@ -1203,34 +1203,28 @@ const SUPABASE_URL = 'https://fahwzzdrmrptskisxeci.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZhaHd6emRybXJwdHNraXN4ZWNpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkzNDY2MjcsImV4cCI6MjA5NDkyMjYyN30.TIV1d-iav7pnM-VA9_zZnMf9M9gbVTgEGagfrPBFY9s';
 const HEADERS = { 'Content-Type': 'application/json', 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` };
 const LOCAL_SB_CACHE_KEY = 'dfampc_sb_cache';
+const MEMORY_SB_CACHE = new Map();
 
 function buildSbCacheKey(path, method = 'GET') {
   return `${LOCAL_SB_CACHE_KEY}:${method}:${path}`;
 }
 
 function loadSbCache(path, method = 'GET') {
-  try {
-    const raw = localStorage.getItem(buildSbCacheKey(path, method));
-    return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    return null;
-  }
+  const key = buildSbCacheKey(path, method);
+  return MEMORY_SB_CACHE.has(key) ? MEMORY_SB_CACHE.get(key) : null;
 }
 
 function saveSbCache(path, method, data) {
-  try {
-    localStorage.setItem(buildSbCacheKey(path, method), JSON.stringify(data));
-  } catch (e) {
-    console.warn('Failed to save cache for', path, e);
-  }
+  const key = buildSbCacheKey(path, method);
+  MEMORY_SB_CACHE.set(key, data);
 }
 
 function invalidateSbCacheForPath(path) {
   try {
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(`${LOCAL_SB_CACHE_KEY}:GET:${path}`)) {
-        localStorage.removeItem(key);
+    const prefix = `${LOCAL_SB_CACHE_KEY}:GET:${path}`;
+    for (const key of Array.from(MEMORY_SB_CACHE.keys())) {
+      if (key.startsWith(prefix)) {
+        MEMORY_SB_CACHE.delete(key);
       }
     }
   } catch (e) {
@@ -1389,31 +1383,21 @@ function parseFlexibleDate(input) {
 
 function ymdKey(d) { if (!d) return null; const yyyy = d.getFullYear(); const mm = String(d.getMonth()+1).padStart(2,'0'); const dd = String(d.getDate()).padStart(2,'0'); return `${yyyy}-${mm}-${dd}`; }
 
+let dorEntriesCache = null;
+
 function loadDorEntries() {
-  try {
-    const raw = localStorage.getItem(LOCAL_DOR_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw || '[]');
-      // normalize any legacy shapes so we always have `tracking`, `lastName`, `firstName`, `dorTo`, `status`, `released`
-      return (Array.isArray(parsed) ? parsed : []).map(normalizeDorRecord);
-    }
-    // no local cache found; try to fetch from Supabase
-    return fetchDorEntriesFromSupabase().then(arr => {
-      try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){}
-      return arr;
-    }).catch(e => {
-      console.warn('Supabase DOR fetch failed, falling back to sample data', e);
-      const sample = [
-        { id:1, tracking:'174000000001', lastName:'Santos', firstName:'Juan', dorFrom:'July 24, 2026', released:false },
-        { id:2, tracking:'174000000002', lastName:'Garcia', firstName:'Maria', dorFrom:'24 July 2026', released:false },
-        { id:3, tracking:'174000000003', lastName:'Reyes', firstName:'Pedro', dorFrom:'2026-07-24', released:false },
-        { id:4, tracking:'174000000004', lastName:'Lopez', firstName:'Ana', dorFrom:'July 25 2026', released:false },
-        { id:5, tracking:'174000000005', lastName:'Dela Cruz', firstName:'Ramon', dorFrom:'tomorrow', released:false }
-      ];
-      try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(sample)); } catch(e){}
-      return sample;
-    });
-  } catch (e) { console.warn('loadDorEntries error', e); return []; }
+  if (dorEntriesCache) {
+    return Promise.resolve(dorEntriesCache);
+  }
+
+  return fetchDorEntriesFromSupabase().then(arr => {
+    dorEntriesCache = (Array.isArray(arr) ? arr : []).map(normalizeDorRecord);
+    return dorEntriesCache;
+  }).catch(e => {
+    console.warn('Supabase DOR fetch failed', e);
+    dorEntriesCache = [];
+    return dorEntriesCache;
+  });
 }
 
 async function fetchDorEntriesFromSupabase() {
@@ -1513,7 +1497,9 @@ function normalizeDorRecord(r) {
   return { id, tracking: finalTracking || '', lastName, firstName, dorFrom, status, released };
 }
 
-function saveDorEntries(arr) { try { localStorage.setItem(LOCAL_DOR_KEY, JSON.stringify(arr)); } catch(e){console.warn(e);} }
+function saveDorEntries(arr) {
+  dorEntriesCache = (Array.isArray(arr) ? arr : []).map(normalizeDorRecord);
+}
 
 async function checkDorTriggers() {
   const entriesOrPromise = loadDorEntries();
@@ -4949,7 +4935,7 @@ async function doLogin() {
     currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: user.role, allowed_databases: user.allowed_databases || '' };
     const userJson = JSON.stringify(currentUser);
     sessionStorage.setItem('dfampc_user', userJson);
-    localStorage.setItem('dfampc_user', userJson);
+    try { localStorage.removeItem('dfampc_user'); } catch (e) {}
 
     // Log the login
     await writeLog('LOGIN', `Logged in`, '');
@@ -4978,7 +4964,7 @@ async function doLogout() {
   await writeLog('LOGOUT', 'Logged out', '');
   currentUser = null;
   sessionStorage.removeItem('dfampc_user');
-  localStorage.removeItem('dfampc_user');
+  try { localStorage.removeItem('dfampc_user'); } catch (e) {}
   document.getElementById('mainApp').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginUser').value = '';
@@ -5051,7 +5037,9 @@ function applyRoleUI() {
 // Try restore session
 (function tryRestoreSession() {
   let saved = sessionStorage.getItem('dfampc_user');
-  if (!saved) saved = localStorage.getItem('dfampc_user');
+  if (!saved) {
+    try { saved = localStorage.getItem('dfampc_user'); } catch (e) { saved = null; }
+  }
   if (saved) {
     try {
       currentUser = JSON.parse(saved);
@@ -5068,7 +5056,7 @@ function applyRoleUI() {
       setTimeout(() => { loadScanSession(); }, 500);
     } catch(e) {
       sessionStorage.removeItem('dfampc_user');
-      localStorage.removeItem('dfampc_user');
+      try { localStorage.removeItem('dfampc_user'); } catch (e) {}
     }
   }
 })();
