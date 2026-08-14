@@ -73,10 +73,10 @@
   .conn-ok { background: linear-gradient(135deg, rgba(62,224,154,0.18) 0%, rgba(62,224,154,0.09) 100%); color: #dffdf1; border-color: rgba(62,224,154,0.24); }
   .conn-err { background: linear-gradient(135deg, rgba(255,107,125,0.2) 0%, rgba(255,107,125,0.1) 100%); color: #ffe7eb; border-color: rgba(255,107,125,0.24); }
 
-  /* NAV (floating toolbar) */
-  /* place nav in normal document flow so it appears above the page content */
-  .nav { position: relative; top: auto; left: auto; transform: none; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 12px 28px rgba(1, 6, 15, 0.18); margin: 8px auto 18px; backdrop-filter: blur(12px); z-index: 10; max-width: 980px; }
-  .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: hidden; }
+  /* NAV (inline bar above Today's Activity) */
+  /* make nav full-width edge-to-edge within the page padding */
+  .nav { position: relative; top: auto; left: auto; transform: none; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 0; border: 0; padding: 12px 28px; gap: 10px; box-shadow: 0 8px 28px rgba(1, 6, 15, 0.06); margin: 0 -24px 18px; backdrop-filter: blur(8px); z-index: 10; max-width: none; width: calc(100% + 48px); }
+  .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: visible; }
   .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
   .nav.collapsed { transform: translateY(-8px) scaleY(0.98); opacity: 0; pointer-events: none; }
   /* nav handle removed — nav is a straight bar above content */
@@ -544,12 +544,7 @@
   </div>
 </div>
 
-<!-- NAV -->
-<div class="nav">
-  <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
-  <div class="nav-pill">🌿 Calm workflow • Ready</div>
-</div>
-  <!-- nav handle removed -->
+<!-- NAV placeholder moved below (above Today's Activity) -->
 
 <!-- ========== SCANNER PAGE ========== -->
 <div id="page-scanner" class="page active">
@@ -575,6 +570,11 @@
     <span class="status-dot"></span>
     <span id="statusText">Ready for scanning</span>
     <span id="autoSaveBadge" class="save-badge saved">Auto-save: saved</span>
+  </div>
+  <!-- NAV: placed here so it appears physically above Today's Activity -->
+  <div class="nav" role="navigation" aria-label="Main navigation">
+    <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
+    <div class="nav-pill">🌿 Calm workflow • Ready</div>
   </div>
   <div class="scanner-grid" style="margin-top:12px;">
     <!-- LEFT PANEL -->
