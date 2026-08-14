@@ -3456,18 +3456,15 @@ async function exportManifest() {
   (async () => {
     const url = await uploadFileToSupabaseStorage(manifestBlob, manifestFilename).catch(() => null);
     try { showExportReminder(manifestFilename, url); } catch(e){}
-    // Attempt to notify server to send email automatically (best-effort).
-    try {
-      const recipients = localStorage.getItem('dfampc_export_recipients') || '';
-      if (url && recipients) {
-        const resp = await fetch(window.EMAIL_SENDER_ENDPOINT || '/send-export', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shareUrl: url, filename: manifestFilename, recipients })
-        });
-        if (resp && resp.ok) toast('Email queued/sent via server', 'success');
-        else toast('Server email failed (check server)', 'warning');
-      }
-    } catch (e) { console.warn('auto-email manifest failed', e); }
+    // Automatic server-side emailing disabled by user request.
+    // To re-enable, uncomment and ensure `window.EMAIL_SENDER_ENDPOINT` is set to your deployed function URL.
+    // Example (disabled):
+    // try {
+    //   const recipients = localStorage.getItem('dfampc_export_recipients') || '';
+    //   if (url && recipients) {
+    //     await fetch(window.EMAIL_SENDER_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shareUrl: url, filename: manifestFilename, recipients }) });
+    //   }
+    // } catch (e) { console.warn('auto-email manifest failed', e); }
   })();
   valid.forEach(s => unprinted.delete(s.tracking));
   bumpTodayActivity('exports');
@@ -3580,17 +3577,15 @@ async function exportReleased() {
   (async () => {
     const url = await uploadFileToSupabaseStorage(releasedBlob, releasedFilename).catch(() => null);
     try { showExportReminder(releasedFilename, url); } catch(e){}
-    try {
-      const recipients = localStorage.getItem('dfampc_export_recipients') || '';
-      if (url && recipients) {
-        const resp = await fetch(window.EMAIL_SENDER_ENDPOINT || '/send-export', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ shareUrl: url, filename: releasedFilename, recipients })
-        });
-        if (resp && resp.ok) toast('Email queued/sent via server', 'success');
-        else toast('Server email failed (check server)', 'warning');
-      }
-    } catch (e) { console.warn('auto-email released failed', e); }
+    // Automatic server-side emailing disabled by user request.
+    // To re-enable, uncomment and ensure `window.EMAIL_SENDER_ENDPOINT` is set to your deployed function URL.
+    // Example (disabled):
+    // try {
+    //   const recipients = localStorage.getItem('dfampc_export_recipients') || '';
+    //   if (url && recipients) {
+    //     await fetch(window.EMAIL_SENDER_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ shareUrl: url, filename: releasedFilename, recipients }) });
+    //   }
+    // } catch (e) { console.warn('auto-email released failed', e); }
   })();
 
   // 5. Clear scanner
