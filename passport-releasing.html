@@ -242,6 +242,19 @@
   .alert-sub { font-size: 18px; color: #7dd3fc; }
   @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
 
+  /* EXPORT REMINDER OVERLAY (full-screen) */
+  .export-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
+  .export-overlay.show { display: flex; }
+  .export-card { width: min(980px, 92vw); background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); border-radius: 18px; padding: 36px; text-align: center; border: 1px solid rgba(255,210,80,0.12); box-shadow: 0 40px 120px rgba(0,0,0,0.6); }
+  .export-title { font-size: 20px; font-weight: 900; color: var(--released); margin-bottom: 8px; }
+  .export-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .export-warning { font-size: 22px; font-weight: 900; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; margin: 12px 0; }
+  .export-instruction { font-size: 16px; color: #ffd54f; margin-bottom: 22px; }
+  .export-filename { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
+  .export-actions { display:flex; gap:12px; justify-content:center; align-items:center; }
+  .btn-noted { background: linear-gradient(135deg, #34d399, #10b981); color: #042017; border: none; padding: 12px 22px; border-radius: 12px; font-weight: 800; font-size: 14px; cursor: pointer; }
+  .btn-email { background: transparent; color: var(--muted); border: 1px solid rgba(255,255,255,0.06); padding: 10px 18px; border-radius: 10px; cursor: pointer; }
+
   /* LOADER */
   .loader { display: inline-block; width: 16px; height: 16px; border: 2.5px solid rgba(0,217,255,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; vertical-align: middle; margin-right: 6px; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -456,6 +469,13 @@
 </style>
 </head>
 <body>
+
+<script>
+  // Placeholder for deployed Supabase Edge Function URL.
+  // Replace with your deployed function URL after deployment, e.g.:
+  // window.EMAIL_SENDER_ENDPOINT = 'https://<project-ref>.functions.supabase.co/sendExport';
+  window.EMAIL_SENDER_ENDPOINT = window.EMAIL_SENDER_ENDPOINT || 'https://<project-ref>.functions.supabase.co/sendExport';
+</script>
 
 <!-- ===== LOGIN SCREEN ===== -->
 <div id="loginScreen">
@@ -1186,6 +1206,27 @@
     <div style="margin-top:16px;font-size:11px;color:#f87171;">(tap anywhere to dismiss)</div>
   </div>
 </div>
+
+  <!-- EXPORT REMINDER OVERLAY -->
+  <div class="export-overlay" id="exportReminder">
+    <div class="export-card" role="dialog" aria-modal="true" aria-labelledby="exportReminderTitle">
+      <div class="export-title" id="exportReminderTitle">Released — DATABASE exported successfully</div>
+      <div class="export-sub">Released — DATABASE exported successfully</div>
+      <div class="export-warning">KINDLY SEND THE EXPORTED FILES TO THE DESIGNATED RECIPIENTS VIA EMAIL</div>
+      <div class="export-instruction">Send the file you just downloaded to the concerned recipient before closing or moving on.</div>
+      <div class="export-filename" id="exportFilename"></div>
+      <div style="margin:12px 0 6px;">
+        <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700;">Recipients (comma-separated)</label>
+        <input id="exportRecipients" class="form-control" placeholder="recipient1@example.com, recipient2@example.com" style="padding:10px 12px;border-radius:8px;" />
+        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Saved recipients will prefill the To: field when opening your mail client.</div>
+        <div style="margin-top:8px;"><button class="btn btn-muted" onclick="saveExportRecipients()">Save recipients</button></div>
+      </div>
+      <div class="export-actions">
+        <button class="btn-noted" id="btnNoted" onclick="closeExportReminder()">Noted — I will email it</button>
+        <button class="btn-email" id="btnOpenMail" onclick="openMailDraft()">Open mail draft</button>
+      </div>
+    </div>
+  </div>
 
 <!-- TOAST CONTAINER -->
 <div class="toast-wrap" id="toastWrap"></div>
@@ -2943,6 +2984,77 @@ function dismissHoldAlert() {
   document.getElementById('scanInput').focus();
 }
 
+// ==================== EXPORT REMINDER ====================
+function showExportReminder(filename, shareUrl) {
+  try {
+    const el = document.getElementById('exportReminder');
+    if (!el) return;
+    const fn = document.getElementById('exportFilename');
+    if (fn) {
+      if (shareUrl) fn.innerHTML = `Downloaded file: <a href="${shareUrl}" target="_blank" style="color:inherit;text-decoration:underline;">${filename}</a>`;
+      else fn.textContent = filename ? `Downloaded file: ${filename}` : '';
+    }
+    // populate recipients input with saved value
+    loadExportRecipientsToInput();
+    el.classList.add('show');
+    // focus the noted button for quick keyboard dismissal
+    setTimeout(() => { document.getElementById('btnNoted')?.focus(); }, 80);
+  } catch (e) { console.warn('showExportReminder error', e); }
+}
+
+function closeExportReminder() {
+  try {
+    const el = document.getElementById('exportReminder');
+    if (!el) return;
+    el.classList.remove('show');
+    document.getElementById('scanInput')?.focus();
+  } catch (e) { console.warn('closeExportReminder error', e); }
+}
+
+function openMailDraft() {
+  try {
+    // Compose a basic mailto: — attachments cannot be added via mailto, so only prefill subject/body
+    const fnEl = document.getElementById('exportFilename');
+    let fnText = '';
+    let shareUrl = null;
+    if (fnEl) {
+      const a = fnEl.querySelector('a');
+      if (a) { shareUrl = a.href; fnText = a.textContent; }
+      else fnText = fnEl.textContent || '';
+    }
+    // Get saved/typed recipients from overlay (fall back to saved list in localStorage)
+    const recInput = document.getElementById('exportRecipients');
+    let recs = '';
+    if (recInput && recInput.value.trim()) recs = recInput.value.trim();
+    else recs = localStorage.getItem('dfampc_export_recipients') || '';
+    const recipientsForMailto = recs.split(',').map(s => s.trim()).filter(Boolean).join(',');
+
+    const subject = encodeURIComponent('DFAMPC Exported File');
+    const bodyText = shareUrl
+      ? `I've exported the file and uploaded it here: ${shareUrl}\n\nPlease download or open the link to retrieve the file.\n\nRegards,\n`
+      : `Please find the exported file attached / downloaded: ${fnText}\n\nRegards,\n`;
+    const body = encodeURIComponent(bodyText);
+    const mailto = recipientsForMailto ? `mailto:${recipientsForMailto}?subject=${subject}&body=${body}` : `mailto:?subject=${subject}&body=${body}`;
+    window.location.href = mailto;
+  } catch (e) { console.warn('openMailDraft error', e); }
+}
+
+function saveExportRecipients() {
+  try {
+    const v = document.getElementById('exportRecipients')?.value || '';
+    localStorage.setItem('dfampc_export_recipients', v);
+    toast('Saved recipients', 'success');
+  } catch (e) { console.warn('saveExportRecipients', e); toast('Failed to save recipients', 'error'); }
+}
+
+function loadExportRecipientsToInput() {
+  try {
+    const v = localStorage.getItem('dfampc_export_recipients') || '';
+    const el = document.getElementById('exportRecipients');
+    if (el) el.value = v;
+  } catch (e) { console.warn('loadExportRecipientsToInput', e); }
+}
+
 // ==================== TRANSFER SCANNED ====================
 function openTransferModal() {
   const valid = scanSession.filter(s => !s.blocked && s.status !== 'not-found');
@@ -3245,7 +3357,7 @@ async function downloadWorkbook(wb, filename) {
 
   if (window.navigator && window.navigator.msSaveOrOpenBlob) {
     window.navigator.msSaveOrOpenBlob(blob, filename);
-    return;
+    return blob;
   }
 
   const a = document.createElement('a');
@@ -3258,6 +3370,51 @@ async function downloadWorkbook(wb, filename) {
     URL.revokeObjectURL(a.href);
     document.body.removeChild(a);
   }, 100);
+  return blob;
+}
+
+// Attempt to upload a Blob to Supabase Storage (best-effort).
+// Returns a public URL when successful, otherwise null.
+async function uploadFileToSupabaseStorage(blob, filename) {
+  try {
+    if (!blob) return null;
+    const safeName = `${Date.now()}_${filename}`;
+    const uploadUrl = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/exports/${encodeURIComponent(safeName)}`;
+    const r = await fetch(uploadUrl, {
+      method: 'PUT',
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+      },
+      body: blob
+    });
+    if (!r.ok) {
+      console.warn('Supabase storage upload failed', r.status, await r.text());
+      return null;
+    }
+    // Attempt to request a signed URL (more secure) — requires SUPABASE_KEY with permissions
+    try {
+      const signResp = await fetch(`${SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/sign/exports/${encodeURIComponent(safeName)}?expiresIn=3600`, {
+        method: 'GET',
+        headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` }
+      });
+      if (signResp.ok) {
+        const json = await signResp.json();
+        if (json && json.signedURL) return json.signedURL;
+        // older endpoint returns a plain URL
+        if (typeof json === 'string') return json;
+      }
+    } catch (e) {
+      console.warn('Signed URL request failed', e);
+    }
+    // Fallback: public URL (requires bucket 'exports' to be public)
+    const publicUrl = `${SUPABASE_URL.replace(/\/$/, '')}/storage/v1/object/public/exports/${encodeURIComponent(safeName)}`;
+    return publicUrl;
+  } catch (e) {
+    console.warn('uploadFileToSupabaseStorage error', e);
+    return null;
+  }
 }
 
 // ==================== EXPORT MANIFEST ====================
@@ -3293,7 +3450,25 @@ async function exportManifest() {
     items.length,
     headers, rows, 'Manifest'
   );
-  await downloadWorkbook(wb, `DFAMPC-${dbName}-MANIFEST-${dateFile}.xlsx`);
+  const manifestFilename = `DFAMPC-${dbName}-MANIFEST-${dateFile}.xlsx`;
+  const manifestBlob = await downloadWorkbook(wb, manifestFilename);
+  // Try to upload and produce a share link, then show reminder with link if available
+  (async () => {
+    const url = await uploadFileToSupabaseStorage(manifestBlob, manifestFilename).catch(() => null);
+    try { showExportReminder(manifestFilename, url); } catch(e){}
+    // Attempt to notify server to send email automatically (best-effort).
+    try {
+      const recipients = localStorage.getItem('dfampc_export_recipients') || '';
+      if (url && recipients) {
+        const resp = await fetch(window.EMAIL_SENDER_ENDPOINT || '/send-export', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shareUrl: url, filename: manifestFilename, recipients })
+        });
+        if (resp && resp.ok) toast('Email queued/sent via server', 'success');
+        else toast('Server email failed (check server)', 'warning');
+      }
+    } catch (e) { console.warn('auto-email manifest failed', e); }
+  })();
   valid.forEach(s => unprinted.delete(s.tracking));
   bumpTodayActivity('exports');
   writeLog('EXPORT', `Exported Manifest â€” ${valid.length} items`, `DB: ${dbName}`);
@@ -3400,7 +3575,23 @@ async function exportReleased() {
     items.length,
     headers, rows, 'Released'
   );
-  await downloadWorkbook(wb2, `DFAMPC-${dbName}-RELEASED-${dateFile}.xlsx`);
+  const releasedFilename = `DFAMPC-${dbName}-RELEASED-${dateFile}.xlsx`;
+  const releasedBlob = await downloadWorkbook(wb2, releasedFilename);
+  (async () => {
+    const url = await uploadFileToSupabaseStorage(releasedBlob, releasedFilename).catch(() => null);
+    try { showExportReminder(releasedFilename, url); } catch(e){}
+    try {
+      const recipients = localStorage.getItem('dfampc_export_recipients') || '';
+      if (url && recipients) {
+        const resp = await fetch(window.EMAIL_SENDER_ENDPOINT || '/send-export', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ shareUrl: url, filename: releasedFilename, recipients })
+        });
+        if (resp && resp.ok) toast('Email queued/sent via server', 'success');
+        else toast('Server email failed (check server)', 'warning');
+      }
+    } catch (e) { console.warn('auto-email released failed', e); }
+  })();
 
   // 5. Clear scanner
   scanSession = [];
