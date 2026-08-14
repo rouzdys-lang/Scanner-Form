@@ -4,6 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>DFAMPCHUB Courier System</title>
+  <!-- Load professional fonts: Inter and Roboto -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/exceljs@4.3.0/dist/exceljs.min.js"></script>
@@ -31,11 +35,13 @@
   body {
     background: transparent;
     color: var(--text);
-    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    font-size: 14px;
+    font-family: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 15px;
     line-height: 1.6;
     min-height: 100vh;
     position: relative;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
   body::before {
     content: '';
@@ -64,7 +70,7 @@
   .brand-mark { width: 50px; height: 50px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); box-shadow: 0 12px 26px rgba(79,143,127,0.18); flex-shrink: 0; }
   .brand-mark svg { width: 28px; height: 28px; fill: white; }
   .brand-copy { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
-  .logo { font-size: 26px; font-weight: 900; letter-spacing: 0.8px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .logo { font-size: 28px; font-weight: 900; letter-spacing: 0.6px; background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
   .logo span { color: var(--accent); filter: drop-shadow(0 0 8px rgba(79,143,127,0.16)); }
   .brand-subtitle { font-size: 12px; color: var(--muted); }
   .header-status { margin-left: auto; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; }
@@ -75,7 +81,8 @@
 
   /* NAV (inline bar above Today's Activity) */
   /* make nav full-width edge-to-edge within the page padding */
-  .nav { position: relative; top: auto; left: auto; transform: none; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 0; border: 0; padding: 12px 28px; gap: 10px; box-shadow: 0 8px 28px rgba(1, 6, 15, 0.06); margin: 0 -24px 18px; backdrop-filter: blur(8px); z-index: 10; max-width: none; width: calc(100% + 48px); }
+  .nav { position: relative; top: auto; left: auto; transform: none; display: block; background: linear-gradient(180deg, rgba(6,8,12,0.96) 0%, rgba(10,12,18,0.95) 100%); border-radius: 0; border: 0; padding: 10px 0; gap: 10px; box-shadow: 0 6px 20px rgba(1, 6, 15, 0.06); margin: 0 -24px 18px; backdrop-filter: blur(6px); z-index: 10; max-width: none; width: calc(100% + 48px); }
+  .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 28px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: visible; }
   .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
   .nav.collapsed { transform: translateY(-8px) scaleY(0.98); opacity: 0; pointer-events: none; }
@@ -86,11 +93,11 @@
   /* full-screen release notifications */
   #releaseNotificationsPanel.full-screen { position: fixed !important; left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 36px !important; background: rgba(2,6,12,0.92) !important; z-index: 2000 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
   #releaseNotificationsPanel.full-screen .panel { width: 100%; max-width: 900px; height: auto; max-height: 86%; overflow:auto; padding: 28px; border-radius:14px; }
-  .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
-  .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; background: rgba(103,245,226,0.14); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 8px 18px rgba(2, 8, 23, 0.18); }
-  .nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); background: rgba(8,14,24,0.9); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
-  .nav-btn:hover { border-color: rgba(103,245,226,0.28); background: rgba(12,19,33,0.98); transform: translateY(-1px); }
-  .nav-btn.active { background: linear-gradient(135deg, var(--accent) 0%, var(--accent2) 100%); color: #041018; border-color: transparent; box-shadow: 0 10px 22px rgba(76,201,255,0.18); }
+  .nav-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+  .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 8px; background: transparent; color: var(--muted); font-size: 13px; font-weight: 700; white-space: nowrap; border-left: 1px solid rgba(255,255,255,0.03); padding-left:16px; }
+  .nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 8px 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.04); background: rgba(255,255,255,0.02); color: var(--text); font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.18s cubic-bezier(.2,.9,.3,1); }
+  .nav-btn:hover { border-color: rgba(255,255,255,0.08); background: rgba(255,255,255,0.03); transform: translateY(-2px); }
+  .nav-btn.active { background: linear-gradient(135deg, rgba(102,243,225,0.14) 0%, rgba(69,184,255,0.12) 100%); color: #041018; border-color: transparent; box-shadow: 0 8px 18px rgba(76,201,255,0.06); }
 
   /* PAGES */
   .page { display: none; padding: 22px 24px 28px; }
@@ -99,7 +106,7 @@
   /* SCANNER PAGE */
   .scanner-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
   .panel { background: linear-gradient(135deg, rgba(8, 14, 24, 0.96) 0%, rgba(12, 19, 33, 0.96) 100%); border: 1px solid rgba(103,243,225,0.16); border-radius: 18px; padding: 20px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36), inset 0 1px 0 rgba(255,255,255,0.04); backdrop-filter: blur(12px); }
-  .panel-title { font-size: 12px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 14px; text-shadow: 0 2px 6px rgba(236,72,153,0.08); }
+  .panel-title { font-size: 13px; font-weight: 800; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; text-shadow: 0 2px 6px rgba(236,72,153,0.06); }
 
   .db-selector { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
   .db-btn { padding: 10px 14px; border-radius: 10px; border: 1.5px solid rgba(103,245,226,0.22); background: rgba(8,14,24,0.9); color: var(--text); cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; transition: all 0.25s; }
@@ -573,8 +580,10 @@
   </div>
   <!-- NAV: placed here so it appears physically above Today's Activity -->
   <div class="nav" role="navigation" aria-label="Main navigation">
-    <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
-    <div class="nav-pill">🌿 Calm workflow • Ready</div>
+    <div class="nav-inner">
+      <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
+      <div class="nav-pill">🌿 Calm workflow • Ready</div>
+    </div>
   </div>
   <div class="scanner-grid" style="margin-top:12px;">
     <!-- LEFT PANEL -->
