@@ -1238,10 +1238,15 @@
   <div style="color:var(--muted);font-size:12px;margin-top:16px;">(tap to dismiss)</div>
 </div>
 
-<!-- FLOATING TOGGLE CONTROLS -->
-<div id="floatingControls" style="position:fixed;right:20px;bottom:20px;z-index:10001;display:flex;flex-direction:column;gap:8px;">
+<!-- FLOATING TOGGLE CONTROLS (hidden) -->
+<div id="floatingControls" style="display:none;position:fixed;right:20px;bottom:20px;z-index:10001;display:flex;flex-direction:column;gap:8px;">
   <button id="btnToggleRelease" class="btn btn-muted" onclick="toggleReleaseNotifications()" style="padding:8px 10px;border-radius:6px;">Show Releases</button>
   <button id="btnToggleDebug" class="btn btn-muted" onclick="toggleDorDebug()" style="padding:8px 10px;border-radius:6px;">Show Debug</button>
+</div>
+
+<!-- LEFT-SIDE SLIM TOGGLE FOR RELEASES -->
+<div id="leftToggle" title="Show Releases" onclick="toggleReleaseNotifications()" style="position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:10002;width:36px;height:120px;background:rgba(8,14,24,0.9);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-weight:800;font-size:12px;border:1px solid var(--border);writing-mode:vertical-rl;writing-mode:sideways-rl;">
+  Releases
 </div>
 
 <script>
