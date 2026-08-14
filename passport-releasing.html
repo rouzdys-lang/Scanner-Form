@@ -549,7 +549,7 @@
     <span id="totalBadge" style="font-size:11px;color:var(--muted);">Total: <b id="totalCount">0</b></span>
     <span id="dorBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;">DOR: 0</span>
     <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
-    <button id="btnNavToggle" class="btn btn-muted" onclick="toggleNavVisibility()" style="padding:4px 12px;font-size:11px;">Hide Nav</button>
+    <button id="btnNavToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;display:none;">Hide Nav</button>
     <button id="themeToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;">Theme</button>
     <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
   </div>
@@ -560,7 +560,7 @@
   <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
   <div class="nav-pill">🌿 Calm workflow • Ready</div>
 </div>
-  <div id="navHandle" onclick="toggleNavCollapse()" aria-label="Toggle navigation">
+  <div id="navHandle" aria-label="Navigation handle">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
   </div>
 
@@ -1332,16 +1332,8 @@ function toggleReleaseNotifications() {
 }
 
 function toggleNavVisibility() {
-  const nav = document.querySelector('.nav');
-  const btn = document.getElementById('btnNavToggle');
-  if (!nav) return;
-  if (nav.classList.contains('hidden')) {
-    nav.classList.remove('hidden');
-    if (btn) btn.textContent = 'Hide Nav';
-  } else {
-    nav.classList.add('hidden');
-    if (btn) btn.textContent = 'Show Nav';
-  }
+  // Nav hide/unhide removed — keep nav always visible.
+  return;
 }
 
 function toggleNavCollapse() {
