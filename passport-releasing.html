@@ -269,6 +269,8 @@
   /* EXPORT REMINDER OVERLAY (full-screen) */
   .export-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.78); z-index: 1200; align-items: center; justify-content: center; backdrop-filter: blur(6px); }
   .export-overlay.show { display: flex; }
+  /* Force-hide any lingering recipient input or save button (safety for older cached pages) */
+  #exportRecipients, [onclick="saveExportRecipients()"] { display: none !important; }
   .export-card { width: min(980px, 92vw); background: linear-gradient(135deg, rgba(255,255,255,0.03), rgba(255,255,255,0.02)); border-radius: 18px; padding: 36px; text-align: center; border: 1px solid rgba(255,210,80,0.12); box-shadow: 0 40px 120px rgba(0,0,0,0.6); }
   .export-title { font-size: 20px; font-weight: 900; color: var(--released); margin-bottom: 8px; }
   .export-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; }
@@ -519,6 +521,25 @@
 <body>
 
 <script>
+// Runtime cleanup: remove any leftover recipient input or explanatory text in export overlay
+try {
+  window.addEventListener('DOMContentLoaded', () => {
+    const er = document.getElementById('exportReminder');
+    if (!er) return;
+    // remove inputs or buttons related to old recipient UI
+    const input = er.querySelector('#exportRecipients'); if (input) input.remove();
+    const btn = er.querySelector('[onclick="saveExportRecipients()"]'); if (btn) btn.remove();
+    // strip any nodes containing the old helper text
+    const nodes = Array.from(er.querySelectorAll('*'));
+    nodes.forEach(n => {
+      try {
+        const t = (n.innerText || '').trim();
+        if (!t) return;
+        if (/Saved recipients|Recipients \(comma-separated\)/i.test(t)) n.remove();
+      } catch (e) {}
+    });
+  });
+} catch(e){}
   // Placeholder for deployed Supabase Edge Function URL.
   // Replace with your deployed function URL after deployment, e.g.:
   // window.EMAIL_SENDER_ENDPOINT = 'https://<project-ref>.functions.supabase.co/sendExport';
