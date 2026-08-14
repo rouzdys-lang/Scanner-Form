@@ -79,15 +79,7 @@
   .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: hidden; }
   .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
   .nav.collapsed { transform: translateY(-8px) scaleY(0.98); opacity: 0; pointer-events: none; }
-  /* inline handle placed next to the nav when in-flow */
-  #navHandle { position: relative; top: auto; left: auto; transform: none; z-index: 12; width:36px; height:36px; background: rgba(255,255,255,0.02); color: var(--text); border: 1px solid var(--border); padding: 0; border-radius: 999px; box-shadow: 0 8px 20px rgba(1,6,15,0.12); cursor: default; display:flex;align-items:center;justify-content:center;opacity:0.72; pointer-events:auto; transition:opacity 140ms ease, transform 140ms ease; margin-left:8px; }
-  #navHandle:hover { opacity:1; transform:translateY(-2px); background: rgba(255,255,255,0.035); }
-  #navHandle svg { width:18px;height:18px; color:var(--muted); }
-
-  /* Tooltip for the handle (uses data-tooltip attribute) */
-  #navHandle { position: fixed; }
-  #navHandle::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(4px); background: rgba(10,12,16,0.96); color: #e6eef8; padding:6px 8px; border-radius:8px; font-size:12px; white-space:nowrap; box-shadow: 0 8px 20px rgba(2,6,23,0.28); opacity:0; pointer-events:none; transition:opacity 140ms ease, transform 140ms ease; }
-  #navHandle:hover::after { opacity:1; transform: translateX(-50%) translateY(0); }
+  /* nav handle removed — nav is a straight bar above content */
   /* hide/unhide helpers */
   .nav-hidden .nav { display: none !important; }
   .nav.hidden { display: none !important; }
@@ -557,9 +549,7 @@
   <div class="nav-actions" id="navButtons" role="tablist" aria-label="Main menu"></div>
   <div class="nav-pill">🌿 Calm workflow • Ready</div>
 </div>
-  <div id="navHandle" aria-label="Navigation handle">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>
-  </div>
+  <!-- nav handle removed -->
 
 <!-- ========== SCANNER PAGE ========== -->
 <div id="page-scanner" class="page active">
@@ -1329,29 +1319,13 @@ function toggleReleaseNotifications() {
 }
 
 function toggleNavVisibility() {
-  // Nav hide/unhide removed — keep nav always visible.
+  // Nav collapse removed — keep nav always visible.
   return;
 }
 
 function toggleNavCollapse() {
-  const nav = document.querySelector('.nav');
-  const handle = document.getElementById('navHandle');
-  if (!nav) return;
-  if (nav.classList.contains('collapsed')) {
-    nav.classList.remove('collapsed');
-    if (handle) {
-      handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
-      handle.setAttribute('data-tooltip', 'Collapse Nav');
-      handle.setAttribute('aria-label', 'Collapse navigation');
-    }
-  } else {
-    nav.classList.add('collapsed');
-    if (handle) {
-      handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
-      handle.setAttribute('data-tooltip', 'Expand Nav');
-      handle.setAttribute('aria-label', 'Expand navigation');
-    }
-  }
+  // Collapse/expand removed — leave nav as-is.
+  return;
 }
 
 // Toggle Bulk Scan panel visibility
@@ -1449,15 +1423,7 @@ function canAcceptScan(item) {
   return !isHoldRecord(item) || !!document.getElementById('allowHoldScan')?.checked;
 }
 
-// initialize nav handle tooltip based on current state
-(function(){
-  const handle = document.getElementById('navHandle');
-  const nav = document.querySelector('.nav');
-  if (!handle || !nav) return;
-  const isCollapsed = nav.classList.contains('collapsed');
-  handle.setAttribute('data-tooltip', isCollapsed ? 'Expand Nav' : 'Collapse Nav');
-  handle.setAttribute('aria-label', isCollapsed ? 'Expand navigation' : 'Collapse navigation');
-})();
+// nav handle removed — no initialization required
 
 function filterSessionForHolds(arr) {
   if (!Array.isArray(arr)) return [];
