@@ -1270,12 +1270,7 @@
       <div class="export-warning">KINDLY SEND THE EXPORTED FILES TO THE DESIGNATED RECIPIENTS VIA EMAIL</div>
       <div class="export-instruction">Send the file you just downloaded to the concerned recipient before closing or moving on.</div>
       <div class="export-filename" id="exportFilename"></div>
-      <div style="margin:12px 0 6px;">
-        <label style="display:block;font-size:13px;color:var(--muted);margin-bottom:6px;font-weight:700;">Recipients (comma-separated)</label>
-        <input id="exportRecipients" class="form-control" placeholder="recipient1@example.com, recipient2@example.com" style="padding:10px 12px;border-radius:8px;" />
-        <div style="font-size:12px;color:var(--muted);margin-top:8px;">Saved recipients will prefill the To: field when opening your mail client.</div>
-        <div style="margin-top:8px;"><button class="btn btn-muted" onclick="saveExportRecipients()">Save recipients</button></div>
-      </div>
+      <!-- Recipient input removed per user request: keep reminder and actions only -->
       <div class="export-actions">
         <button class="btn-noted" id="btnNoted" onclick="closeExportReminder()">Noted — I will email it</button>
         <button class="btn-email" id="btnOpenMail" onclick="openMailDraft()">Open mail draft</button>
@@ -3117,8 +3112,7 @@ function showExportReminder(filename, shareUrl) {
       if (shareUrl) fn.innerHTML = `Downloaded file: <a href="${shareUrl}" target="_blank" style="color:inherit;text-decoration:underline;">${filename}</a>`;
       else fn.textContent = filename ? `Downloaded file: ${filename}` : '';
     }
-    // populate recipients input with saved value
-    loadExportRecipientsToInput();
+    // No recipient input — overlay is a reminder only
     el.classList.add('show');
     // focus the noted button for quick keyboard dismissal
     setTimeout(() => { document.getElementById('btnNoted')?.focus(); }, 80);
@@ -3145,38 +3139,18 @@ function openMailDraft() {
       if (a) { shareUrl = a.href; fnText = a.textContent; }
       else fnText = fnEl.textContent || '';
     }
-    // Get saved/typed recipients from overlay (fall back to saved list in localStorage)
-    const recInput = document.getElementById('exportRecipients');
-    let recs = '';
-    if (recInput && recInput.value.trim()) recs = recInput.value.trim();
-    else recs = localStorage.getItem('dfampc_export_recipients') || '';
-    const recipientsForMailto = recs.split(',').map(s => s.trim()).filter(Boolean).join(',');
-
+    // Compose mailto without prefilled recipients
     const subject = encodeURIComponent('DFAMPC Exported File');
     const bodyText = shareUrl
       ? `I've exported the file and uploaded it here: ${shareUrl}\n\nPlease download or open the link to retrieve the file.\n\nRegards,\n`
       : `Please find the exported file attached / downloaded: ${fnText}\n\nRegards,\n`;
     const body = encodeURIComponent(bodyText);
-    const mailto = recipientsForMailto ? `mailto:${recipientsForMailto}?subject=${subject}&body=${body}` : `mailto:?subject=${subject}&body=${body}`;
+    const mailto = `mailto:?subject=${subject}&body=${body}`;
     window.location.href = mailto;
   } catch (e) { console.warn('openMailDraft error', e); }
 }
 
-function saveExportRecipients() {
-  try {
-    const v = document.getElementById('exportRecipients')?.value || '';
-    localStorage.setItem('dfampc_export_recipients', v);
-    toast('Saved recipients', 'success');
-  } catch (e) { console.warn('saveExportRecipients', e); toast('Failed to save recipients', 'error'); }
-}
-
-function loadExportRecipientsToInput() {
-  try {
-    const v = localStorage.getItem('dfampc_export_recipients') || '';
-    const el = document.getElementById('exportRecipients');
-    if (el) el.value = v;
-  } catch (e) { console.warn('loadExportRecipientsToInput', e); }
-}
+// Recipient save/load removed per user request — no client-side persistence of recipients.
 
 // ==================== TRANSFER SCANNED ====================
 function openTransferModal() {
