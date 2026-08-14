@@ -74,12 +74,23 @@
   .conn-err { background: linear-gradient(135deg, rgba(255,107,125,0.2) 0%, rgba(255,107,125,0.1) 100%); color: #ffe7eb; border-color: rgba(255,107,125,0.24); }
 
   /* NAV (floating toolbar) */
-  .nav { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
-  .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 220ms ease; }
+  .nav { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
+  .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: hidden; }
+  .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
   .nav.collapsed { transform: translateY(-8px) scaleY(0.98); opacity: 0; pointer-events: none; }
-  #navHandle { position: fixed; top: 74px; left: 50%; transform: translateX(-50%); z-index: 1005; width:40px; height:40px; background: rgba(255,255,255,0.02); color: var(--text); border: 1px solid var(--border); padding: 0; border-radius: 999px; box-shadow: 0 10px 30px rgba(1,6,15,0.14); cursor: pointer; display:flex;align-items:center;justify-content:center;opacity:0.48; transition:opacity 140ms ease, transform 140ms ease; }
+  #navHandle { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 1005; width:40px; height:40px; background: rgba(255,255,255,0.02); color: var(--text); border: 1px solid var(--border); padding: 0; border-radius: 999px; box-shadow: 0 10px 30px rgba(1,6,15,0.14); cursor: pointer; display:flex;align-items:center;justify-content:center;opacity:0; pointer-events:none; transition:opacity 140ms ease, transform 140ms ease; position:fixed; }
+  /* Reveal handle when hovering the header or nav */
+  .header:hover ~ #navHandle,
+  .nav:hover ~ #navHandle {
+    opacity:0.48; pointer-events:auto; transform:translateY(-2px); background: rgba(255,255,255,0.035);
+  }
   #navHandle:hover { opacity:1; transform:translateY(-2px); background: rgba(255,255,255,0.035); }
   #navHandle svg { width:18px;height:18px; color:var(--muted); }
+
+  /* Tooltip for the handle (uses data-tooltip attribute) */
+  #navHandle { position: fixed; }
+  #navHandle::after { content: attr(data-tooltip); position: absolute; bottom: calc(100% + 10px); left: 50%; transform: translateX(-50%) translateY(4px); background: rgba(10,12,16,0.96); color: #e6eef8; padding:6px 8px; border-radius:8px; font-size:12px; white-space:nowrap; box-shadow: 0 8px 20px rgba(2,6,23,0.28); opacity:0; pointer-events:none; transition:opacity 140ms ease, transform 140ms ease; }
+  #navHandle:hover::after { opacity:1; transform: translateX(-50%) translateY(0); }
   /* hide/unhide helpers */
   .nav-hidden .nav { display: none !important; }
   .nav.hidden { display: none !important; }
@@ -516,7 +527,7 @@
 </div>
 
 <!-- ===== MAIN APP (hidden until logged in) ===== -->
-<div id="mainApp" style="display:none;padding-top:120px;">
+<div id="mainApp" style="display:none;padding-top:80px;">
 
 <!-- HEADER -->
 <div class="header">
@@ -1339,10 +1350,18 @@ function toggleNavCollapse() {
   if (!nav) return;
   if (nav.classList.contains('collapsed')) {
     nav.classList.remove('collapsed');
-    if (handle) handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+    if (handle) {
+      handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"></polyline></svg>';
+      handle.setAttribute('data-tooltip', 'Collapse Nav');
+      handle.setAttribute('aria-label', 'Collapse navigation');
+    }
   } else {
     nav.classList.add('collapsed');
-    if (handle) handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+    if (handle) {
+      handle.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"></polyline></svg>';
+      handle.setAttribute('data-tooltip', 'Expand Nav');
+      handle.setAttribute('aria-label', 'Expand navigation');
+    }
   }
 }
 
@@ -1440,6 +1459,16 @@ function canAcceptScan(item) {
   if (!item) return true;
   return !isHoldRecord(item) || !!document.getElementById('allowHoldScan')?.checked;
 }
+
+// initialize nav handle tooltip based on current state
+(function(){
+  const handle = document.getElementById('navHandle');
+  const nav = document.querySelector('.nav');
+  if (!handle || !nav) return;
+  const isCollapsed = nav.classList.contains('collapsed');
+  handle.setAttribute('data-tooltip', isCollapsed ? 'Expand Nav' : 'Collapse Nav');
+  handle.setAttribute('aria-label', isCollapsed ? 'Expand navigation' : 'Collapse navigation');
+})();
 
 function filterSessionForHolds(arr) {
   if (!Array.isArray(arr)) return [];
