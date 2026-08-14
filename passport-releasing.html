@@ -382,6 +382,30 @@
     background: #f6f8fb !important;
   }
 
+  /* Ensure select controls and dropdown menus are readable in light theme */
+  body.light-theme select.form-control,
+  body.light-theme select.form-control option,
+  body.light-theme #dbDropdown,
+  body.light-theme #dbDropdown option {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border-color: var(--border) !important;
+    box-shadow: 0 8px 24px rgba(2,6,23,0.06) !important;
+  }
+
+  /* Custom dropdown/popup components should render above the fixed nav */
+  body.light-theme .dropdown,
+  body.light-theme .dropdown-menu,
+  body.light-theme .select-menu,
+  body.light-theme .menu,
+  body.light-theme .popup {
+    background: var(--surface) !important;
+    color: var(--text) !important;
+    border: 1px solid var(--border) !important;
+    z-index: 1300 !important;
+    box-shadow: 0 12px 36px rgba(2,6,23,0.06) !important;
+  }
+
   body.light-theme .nav-pill,
   body.light-theme .pill-warehouse,
   body.light-theme .pill-released,
