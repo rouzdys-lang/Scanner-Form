@@ -81,7 +81,8 @@
 
   /* NAV (inline bar above Today's Activity) */
   /* make nav full-width edge-to-edge within the page padding */
-  .nav { position: relative; top: auto; left: auto; transform: none; display: block; background: linear-gradient(180deg, rgba(6,8,12,0.96) 0%, rgba(10,12,18,0.95) 100%); border-radius: 0; border: 0; padding: 10px 0; gap: 10px; box-shadow: 0 6px 20px rgba(1, 6, 15, 0.06); margin: 0 -24px 18px; backdrop-filter: blur(6px); z-index: 10; max-width: none; width: calc(100% + 48px); }
+  /* sticky nav: stays below the header while scrolling */
+  .nav { position: sticky; top: 72px; left: 0; transform: none; display: block; background: linear-gradient(180deg, rgba(6,8,12,0.96) 0%, rgba(10,12,18,0.95) 100%); border-radius: 0; border: 0; padding: 10px 0; gap: 10px; box-shadow: 0 6px 20px rgba(1, 6, 15, 0.06); margin: 0 0 18px 0; backdrop-filter: blur(6px); z-index: 90; max-width: none; width: 100%; }
   .nav-inner { max-width: 1200px; margin: 0 auto; padding: 0 28px; display:flex; align-items:center; justify-content:space-between; gap:12px; }
   .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: visible; }
   .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
