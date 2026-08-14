@@ -75,6 +75,9 @@
 
   /* NAV (floating toolbar) */
   .nav { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
+  /* hide/unhide helpers */
+  .nav-hidden .nav { display: none !important; }
+  .nav.hidden { display: none !important; }
   /* full-screen release notifications */
   #releaseNotificationsPanel.full-screen { position: fixed !important; left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 36px !important; background: rgba(2,6,12,0.92) !important; z-index: 2000 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
   #releaseNotificationsPanel.full-screen .panel { width: 100%; max-width: 900px; height: auto; max-height: 86%; overflow:auto; padding: 28px; border-radius:14px; }
@@ -625,7 +628,10 @@
         </div>
       </div>
 
-      <div class="panel">
+      <div style="margin-top:8px;">
+        <button id="btnOpenBulk" class="btn btn-muted" onclick="toggleBulkPanel()" style="width:100%;">Open Bulk Scan</button>
+      </div>
+      <div id="bulkPanel" class="panel" style="display:none;margin-top:12px;">
         <div class="panel-title">Bulk Scan (paste multiple)</div>
         <textarea class="bulk-textarea" id="bulkArea" placeholder="Paste multiple tracking numbers, one per line..."></textarea>
         <button class="btn btn-primary" onclick="processBulk()" style="width:100%;">Process Bulk</button>
@@ -1310,12 +1316,26 @@ function toggleNavVisibility() {
   const nav = document.querySelector('.nav');
   const btn = document.getElementById('btnNavToggle');
   if (!nav) return;
-  if (nav.style.display === 'none' || getComputedStyle(nav).display === 'none') {
-    nav.style.display = '';
+  if (nav.classList.contains('hidden')) {
+    nav.classList.remove('hidden');
     if (btn) btn.textContent = 'Hide Nav';
   } else {
-    nav.style.display = 'none';
+    nav.classList.add('hidden');
     if (btn) btn.textContent = 'Show Nav';
+  }
+}
+
+// Toggle Bulk Scan panel visibility
+function toggleBulkPanel() {
+  const panel = document.getElementById('bulkPanel');
+  const btn = document.getElementById('btnOpenBulk');
+  if (!panel) return;
+  if (panel.style.display === 'none' || getComputedStyle(panel).display === 'none') {
+    panel.style.display = 'block';
+    if (btn) btn.textContent = 'Close Bulk Scan';
+  } else {
+    panel.style.display = 'none';
+    if (btn) btn.textContent = 'Open Bulk Scan';
   }
 }
 
