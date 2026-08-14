@@ -73,8 +73,8 @@
   .conn-ok { background: linear-gradient(135deg, rgba(62,224,154,0.18) 0%, rgba(62,224,154,0.09) 100%); color: #dffdf1; border-color: rgba(62,224,154,0.24); }
   .conn-err { background: linear-gradient(135deg, rgba(255,107,125,0.2) 0%, rgba(255,107,125,0.1) 100%); color: #ffe7eb; border-color: rgba(255,107,125,0.24); }
 
-  /* NAV */
-  .nav { position: sticky; top: 72px; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 0 0 18px 18px; border: 1px solid rgba(103,243,225,0.16); border-top: none; padding: 14px 28px; gap: 12px; box-shadow: 0 16px 36px rgba(1, 6, 15, 0.32); margin: 0; backdrop-filter: blur(16px); z-index: 99; }
+  /* NAV (floating toolbar) */
+  .nav { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
   .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; background: rgba(103,245,226,0.14); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 8px 18px rgba(2, 8, 23, 0.18); }
   .nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); background: rgba(8,14,24,0.9); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
@@ -505,7 +505,7 @@
 </div>
 
 <!-- ===== MAIN APP (hidden until logged in) ===== -->
-<div id="mainApp" style="display:none;">
+<div id="mainApp" style="display:none;padding-top:140px;">
 
 <!-- HEADER -->
 <div class="header">
@@ -627,7 +627,7 @@
         <button class="btn btn-primary" onclick="processBulk()" style="width:100%;">Process Bulk</button>
       </div>
 
-      <div class="panel" style="margin-top:12px;">
+      <div id="releaseNotificationsPanel" class="panel" style="display:none;position:fixed;right:20px;top:80px;width:340px;z-index:9999;margin-top:0;">
         <div class="panel-title">Release Notifications</div>
         <div id="dorNotification" style="font-size:13px;color:var(--muted);margin-bottom:8px;">No active DOR notifications.</div>
         <div id="dorScannerNote" style="display:none;background:var(--surface);padding:10px;border-radius:8px;border:1px solid var(--border);">
@@ -638,8 +638,8 @@
       </div>
 
       <div class="panel" style="margin-top:12px;">
-        <div class="panel-title">DOR Debug Panel (always visible)</div>
-        <div id="dorDebug" style="font-size:12px;color:var(--muted);max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);"></div>
+        <div class="panel-title">DOR Debug Panel (hidden)</div>
+        <div id="dorDebug" style="display:none;font-size:12px;color:var(--muted);max-height:220px;overflow:auto;padding:8px;border-radius:8px;background:rgba(255,255,255,0.02);border:1px solid var(--border);"></div>
       </div>
     </div>
 
@@ -1238,6 +1238,12 @@
   <div style="color:var(--muted);font-size:12px;margin-top:16px;">(tap to dismiss)</div>
 </div>
 
+<!-- FLOATING TOGGLE CONTROLS -->
+<div id="floatingControls" style="position:fixed;right:20px;bottom:20px;z-index:10001;display:flex;flex-direction:column;gap:8px;">
+  <button id="btnToggleRelease" class="btn btn-muted" onclick="toggleReleaseNotifications()" style="padding:8px 10px;border-radius:6px;">Show Releases</button>
+  <button id="btnToggleDebug" class="btn btn-muted" onclick="toggleDorDebug()" style="padding:8px 10px;border-radius:6px;">Show Debug</button>
+</div>
+
 <script>
 // ==================== CONFIG ====================
 const SUPABASE_URL = 'https://fahwzzdrmrptskisxeci.supabase.co';
@@ -1258,6 +1264,33 @@ function loadSbCache(path, method = 'GET') {
 function saveSbCache(path, method, data) {
   const key = buildSbCacheKey(path, method);
   MEMORY_SB_CACHE.set(key, data);
+}
+
+// Toggle controls for debug and release notifications
+function toggleDorDebug() {
+  const el = document.getElementById('dorDebug');
+  const btn = document.getElementById('btnToggleDebug');
+  if (!el) return;
+  if (el.style.display === 'none' || getComputedStyle(el).display === 'none') {
+    el.style.display = '';
+    if (btn) btn.textContent = 'Hide Debug';
+  } else {
+    el.style.display = 'none';
+    if (btn) btn.textContent = 'Show Debug';
+  }
+}
+
+function toggleReleaseNotifications() {
+  const panel = document.getElementById('releaseNotificationsPanel');
+  const btn = document.getElementById('btnToggleRelease');
+  if (!panel) return;
+  if (panel.style.display === 'none' || getComputedStyle(panel).display === 'none') {
+    panel.style.display = 'block';
+    if (btn) btn.textContent = 'Hide Releases';
+  } else {
+    panel.style.display = 'none';
+    if (btn) btn.textContent = 'Show Releases';
+  }
 }
 
 function invalidateSbCacheForPath(path) {
