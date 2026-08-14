@@ -74,16 +74,13 @@
   .conn-err { background: linear-gradient(135deg, rgba(255,107,125,0.2) 0%, rgba(255,107,125,0.1) 100%); color: #ffe7eb; border-color: rgba(255,107,125,0.24); }
 
   /* NAV (floating toolbar) */
-  .nav { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
+  /* place nav in normal document flow so it appears above the page content */
+  .nav { position: relative; top: auto; left: auto; transform: none; display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 12px 28px rgba(1, 6, 15, 0.18); margin: 8px auto 18px; backdrop-filter: blur(12px); z-index: 10; max-width: 980px; }
   .nav { transition: transform 220ms ease, opacity 220ms ease, max-height 260ms ease, padding 200ms ease; overflow: hidden; }
   .nav.collapsed { opacity: 0; transform: translateY(-8px) scale(0.995); max-height: 0; padding-top: 6px; padding-bottom: 6px; pointer-events: none; }
   .nav.collapsed { transform: translateY(-8px) scaleY(0.98); opacity: 0; pointer-events: none; }
-  #navHandle { position: fixed; top: 54px; left: 50%; transform: translateX(-50%); z-index: 1005; width:40px; height:40px; background: rgba(255,255,255,0.02); color: var(--text); border: 1px solid var(--border); padding: 0; border-radius: 999px; box-shadow: 0 10px 30px rgba(1,6,15,0.14); cursor: pointer; display:flex;align-items:center;justify-content:center;opacity:0; pointer-events:none; transition:opacity 140ms ease, transform 140ms ease; position:fixed; }
-  /* Reveal handle when hovering the header or nav */
-  .header:hover ~ #navHandle,
-  .nav:hover ~ #navHandle {
-    opacity:0.48; pointer-events:auto; transform:translateY(-2px); background: rgba(255,255,255,0.035);
-  }
+  /* inline handle placed next to the nav when in-flow */
+  #navHandle { position: relative; top: auto; left: auto; transform: none; z-index: 12; width:36px; height:36px; background: rgba(255,255,255,0.02); color: var(--text); border: 1px solid var(--border); padding: 0; border-radius: 999px; box-shadow: 0 8px 20px rgba(1,6,15,0.12); cursor: default; display:flex;align-items:center;justify-content:center;opacity:0.72; pointer-events:auto; transition:opacity 140ms ease, transform 140ms ease; margin-left:8px; }
   #navHandle:hover { opacity:1; transform:translateY(-2px); background: rgba(255,255,255,0.035); }
   #navHandle svg { width:18px;height:18px; color:var(--muted); }
 
@@ -291,8 +288,8 @@
     --border: rgba(15, 23, 42, 0.06);
     --accent: #0f6fff;
     --accent2: #0099ff;
-    --text: #0b0b0b; /* near-black for maximum contrast */
-    --muted: #475569;
+    --text: #1f2937; /* softer dark for improved readability */
+    --muted: #6b7280; /* slightly lighter muted text */
     --success: #059669;
     --warning: #d97706;
     --danger: #dc2626;
