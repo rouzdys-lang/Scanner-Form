@@ -75,6 +75,9 @@
 
   /* NAV (floating toolbar) */
   .nav { position: fixed; top: 84px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; justify-content: space-between; background: linear-gradient(135deg, rgba(6, 12, 22, 0.96) 0%, rgba(10, 18, 32, 0.95) 100%); border-radius: 12px; border: 1px solid rgba(103,243,225,0.14); padding: 10px 18px; gap: 10px; box-shadow: 0 18px 42px rgba(1, 6, 15, 0.36); margin: 0 12px; backdrop-filter: blur(18px); z-index: 1002; max-width: calc(100% - 160px); }
+  /* full-screen release notifications */
+  #releaseNotificationsPanel.full-screen { position: fixed !important; left: 0 !important; top: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; margin: 0 !important; padding: 36px !important; background: rgba(2,6,12,0.92) !important; z-index: 2000 !important; display: flex !important; align-items: center !important; justify-content: center !important; }
+  #releaseNotificationsPanel.full-screen .panel { width: 100%; max-width: 900px; height: auto; max-height: 86%; overflow:auto; padding: 28px; border-radius:14px; }
   .nav-actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
   .nav-pill { display: inline-flex; align-items: center; gap: 8px; padding: 9px 13px; border-radius: 999px; background: rgba(103,245,226,0.14); color: var(--accent); font-size: 12px; font-weight: 700; white-space: nowrap; box-shadow: 0 8px 18px rgba(2, 8, 23, 0.18); }
   .nav-btn { display: inline-flex; align-items: center; justify-content: center; padding: 10px 14px; border-radius: 999px; border: 1px solid var(--border); background: rgba(8,14,24,0.9); color: var(--text); font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; }
@@ -527,6 +530,7 @@
     <span id="totalBadge" style="font-size:11px;color:var(--muted);">Total: <b id="totalCount">0</b></span>
     <span id="dorBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;">DOR: 0</span>
     <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
+    <button id="btnNavToggle" class="btn btn-muted" onclick="toggleNavVisibility()" style="padding:4px 12px;font-size:11px;">Hide Nav</button>
     <button id="themeToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;">Theme</button>
     <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
   </div>
@@ -1244,10 +1248,7 @@
   <button id="btnToggleDebug" class="btn btn-muted" onclick="toggleDorDebug()" style="padding:8px 10px;border-radius:6px;">Show Debug</button>
 </div>
 
-<!-- LEFT-SIDE SLIM TOGGLE FOR RELEASES -->
-<div id="leftToggle" title="Show Releases" onclick="toggleReleaseNotifications()" style="position:fixed;left:8px;top:50%;transform:translateY(-50%);z-index:10002;width:36px;height:120px;background:rgba(8,14,24,0.9);border-radius:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-weight:800;font-size:12px;border:1px solid var(--border);writing-mode:vertical-rl;writing-mode:sideways-rl;">
-  Releases
-</div>
+<!-- LEFT-SIDE SLIM TOGGLE FOR RELEASES removed per user request -->
 
 <script>
 // ==================== CONFIG ====================
@@ -1289,12 +1290,32 @@ function toggleReleaseNotifications() {
   const panel = document.getElementById('releaseNotificationsPanel');
   const btn = document.getElementById('btnToggleRelease');
   if (!panel) return;
+  // show full-screen overlay when opening
   if (panel.style.display === 'none' || getComputedStyle(panel).display === 'none') {
+    // store original inline style so we can restore
+    if (!panel.dataset.origStyle) panel.dataset.origStyle = panel.getAttribute('style') || '';
     panel.style.display = 'block';
+    panel.classList.add('full-screen');
     if (btn) btn.textContent = 'Hide Releases';
   } else {
     panel.style.display = 'none';
+    panel.classList.remove('full-screen');
+    // restore original inline style
+    if (panel.dataset.origStyle) panel.setAttribute('style', panel.dataset.origStyle);
     if (btn) btn.textContent = 'Show Releases';
+  }
+}
+
+function toggleNavVisibility() {
+  const nav = document.querySelector('.nav');
+  const btn = document.getElementById('btnNavToggle');
+  if (!nav) return;
+  if (nav.style.display === 'none' || getComputedStyle(nav).display === 'none') {
+    nav.style.display = '';
+    if (btn) btn.textContent = 'Hide Nav';
+  } else {
+    nav.style.display = 'none';
+    if (btn) btn.textContent = 'Show Nav';
   }
 }
 
