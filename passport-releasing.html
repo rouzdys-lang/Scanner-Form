@@ -2441,10 +2441,10 @@ function buildNavigationMenu(role = 'admin') {
   ];
 
   const visible = options.filter(entry => {
-    if (entry.value === 'overtime') return role === 'overtime' || role === 'overtime_manager' || currentUser?.username === 'supervisor';
-    if (entry.value === 'overtime-records') return role === 'overtime_manager' || currentUser?.username === 'supervisor';
+    if (entry.value === 'overtime') return role === 'overtime' || ['overtime_manager', 'hr', 'human_resources'].includes(role) || currentUser?.username === 'supervisor';
+    if (entry.value === 'overtime-records') return ['overtime_manager', 'hr', 'human_resources'].includes(role) || currentUser?.username === 'supervisor';
     if (role === 'overtime') return entry.value === 'overtime';
-    if (role === 'overtime_manager') return ['overtime', 'overtime-records'].includes(entry.value);
+    if (['overtime_manager', 'hr', 'human_resources'].includes(role)) return ['overtime', 'overtime-records'].includes(entry.value);
     if (role === 'viewer') return ['search', 'overtime'].includes(entry.value);
     if (role === 'user') return !['users', 'logs'].includes(entry.value);
     return true;
@@ -2520,10 +2520,14 @@ window.addEventListener('message', async function(event){
   }
 });
 
+function canManageOvertimeRecords(user = currentUser) {
+  return !!user && (['overtime_manager', 'hr', 'human_resources'].includes(user.role) || user.username === 'supervisor');
+}
+
 function showPage(name) {
   if (name === 'overtime' && currentUser?.role !== 'overtime' && currentUser?.role !== 'overtime_manager' && currentUser?.username !== 'supervisor') return;
   if (currentUser?.role === 'overtime' && name !== 'overtime') return;
-  if (name === 'overtime-records' && currentUser?.role !== 'overtime_manager' && currentUser?.username !== 'supervisor') return;
+  if (name === 'overtime-records' && !canManageOvertimeRecords()) return;
   const page = document.getElementById(`page-${name}`);
   if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5384,7 +5388,7 @@ function applyRoleUI() {
 
   buildNavigationMenu(role);
 
-  if (role === 'overtime' || role === 'overtime_manager') {
+  if (role === 'overtime' || ['overtime_manager', 'hr', 'human_resources'].includes(role)) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-overtime').classList.add('active');
     setActiveNavOption('overtime');
@@ -5491,10 +5495,21 @@ function printOvertimeDocument(record) {
 }
 
 async function deleteOvertimeRecord(id) {
-  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
+  if (!canManageOvertimeRecords() || !String(id || '').trim()) {
+    toast('Only HR or supervisor can delete overtime records.', 'error');
+    return;
+  }
   if (!id || !confirm('Delete this overtime record permanently?')) return;
   try {
-    await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(id))}`, {
+      method: 'DELETE',
+      headers: { ...HEADERS, 'Prefer': 'return=representation' }
+    });
+    if (!response.ok) throw new Error(await response.text());
+    const deleted = response.status === 204 ? [id] : await response.json();
+    if (!Array.isArray(deleted) || deleted.length === 0) {
+      throw new Error('No record was deleted. Check the overtime_submissions delete policy.');
+    }
     toast('Overtime record deleted.', 'success');
     await loadOvertimeRecords();
   } catch (error) {
@@ -5503,7 +5518,7 @@ async function deleteOvertimeRecord(id) {
 }
 
 async function exportOvertimeRecords() {
-  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
+  if (!canManageOvertimeRecords()) return;
   try {
     const records = await sbFetch('overtime_submissions?select=*&order=created_at.asc&limit=5000');
     if (!records || records.length === 0) {
@@ -5544,8 +5559,13 @@ async function exportOvertimeRecords() {
     let deleted = 0;
     for (const record of records) {
       try {
-        await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(record.id)}`, { method: 'DELETE' });
-        deleted++;
+        const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}`, {
+          method: 'DELETE',
+          headers: { ...HEADERS, 'Prefer': 'return=representation' }
+        });
+        if (!response.ok) throw new Error(await response.text());
+        const removed = response.status === 204 ? [record.id] : await response.json();
+        if (Array.isArray(removed) && removed.length > 0) deleted++;
       } catch (error) {
         console.warn('Failed to delete exported overtime record', record.id, error);
       }
@@ -5558,7 +5578,7 @@ async function exportOvertimeRecords() {
 }
 
 async function loadOvertimeRecords() {
-  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
+  if (!canManageOvertimeRecords()) return;
   const body = document.getElementById('overtimeRecordsBody');
   if (!body) return;
   body.innerHTML = '<tr><td colspan="6">Loading overtime records...</td></tr>';
