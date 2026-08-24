@@ -2440,6 +2440,7 @@ function buildNavigationMenu(role = 'admin') {
   ];
 
   const visible = options.filter(entry => {
+    if (entry.value === 'overtime') return role === 'overtime' || role === 'overtime_manager' || currentUser?.username === 'supervisor';
     if (entry.value === 'overtime-records') return role === 'overtime_manager' || currentUser?.username === 'supervisor';
     if (role === 'overtime') return entry.value === 'overtime';
     if (role === 'overtime_manager') return ['overtime', 'overtime-records'].includes(entry.value);
@@ -2453,16 +2454,54 @@ function buildNavigationMenu(role = 'admin') {
   setActiveNavOption(visible.some(item => item.value === activePage) ? activePage : (visible[0]?.value || 'scanner'));
 }
 
+function parseOvertimeDate(value) {
+  if (!value) return null;
+  const date = new Date(`${String(value).slice(0, 10)}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function validateOvertimeSubmission(data) {
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const submittedDate = data.dateSubmitted || data.submittedDate || '';
+  const accomplishedDate = data.dateAccomplished || data.accomplishedDate || '';
+  const formDate = submittedDate || accomplishedDate;
+  if (!data.name) throw new Error('Employee name is required.');
+  if (!formDate || !parseOvertimeDate(formDate)) throw new Error('Submitted/accomplished date is required.');
+  if (!(data.empSignatureImage || data.empSignatureImageData || String(data.empSignature || '').trim())) {
+    throw new Error('Employee signature is required.');
+  }
+  if (!rows.length) throw new Error('At least one overtime date is required.');
+  const accomplished = parseOvertimeDate(formDate);
+  rows.forEach((row, index) => {
+    const overtimeDate = parseOvertimeDate(row.date);
+    if (!overtimeDate) throw new Error(`Overtime date is required for row ${index + 1}.`);
+    if (overtimeDate > accomplished) {
+      throw new Error(`Overtime date in row ${index + 1} cannot be after the accomplished date.`);
+    }
+    ['actual', 'auth'].forEach(field => {
+      if (row[field] === '' || row[field] == null) return;
+      const hours = Number(row[field]);
+      if (!Number.isFinite(hours) || hours < 1 || Math.round(hours * 2) !== hours * 2) {
+        throw new Error(`Hours in row ${index + 1} must be at least 1 and use 0.5-hour increments.`);
+      }
+    });
+  });
+  data.dateSubmitted = String(formDate).slice(0, 10);
+  data.submittedDate = data.dateSubmitted;
+  data.dateAccomplished = data.dateSubmitted;
+  data.accomplishedDate = data.dateSubmitted;
+  return data;
+}
+
 window.addEventListener('message', async function(event){
   const frame = document.getElementById('overtimeFrame');
   if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
   try{
-    const data = event.data.data;
-    if (!data || !data.name) throw new Error('Employee name is required.');
+    const data = validateOvertimeSubmission({ ...(event.data.data || {}) });
     await sbFetch('overtime_submissions', {
       method: 'POST',
       body: JSON.stringify({
-        id: 'ot_' + Date.now() + Math.random().toString(36).slice(2, 8),
+        id: 'ot_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random().toString(36).slice(2, 10)),
         submitted_by: currentUser ? currentUser.username : '',
         submitted_by_name: currentUser ? currentUser.full_name : '',
         form_data: data,
@@ -2479,6 +2518,7 @@ window.addEventListener('message', async function(event){
 });
 
 function showPage(name) {
+  if (name === 'overtime' && currentUser?.role !== 'overtime' && currentUser?.role !== 'overtime_manager' && currentUser?.username !== 'supervisor') return;
   if (currentUser?.role === 'overtime' && name !== 'overtime') return;
   if (name === 'overtime-records' && currentUser?.role !== 'overtime_manager' && currentUser?.username !== 'supervisor') return;
   const page = document.getElementById(`page-${name}`);
