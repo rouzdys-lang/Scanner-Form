@@ -1242,6 +1242,7 @@ try {
         <option value="user">User — Can scan, import, export, transfer</option>
         <option value="viewer">Viewer — Global Search only, no other access</option>
         <option value="overtime">Overtime — File overtime only</option>
+        <option value="overtime_manager">Overtime Manager — View and download overtime only</option>
         <option value="admin">Admin — Full access + user management + delete</option>
       </select>
     </div>
@@ -2236,7 +2237,7 @@ function performDailySyncIfDue() {
 
 function getUserAllowedDatabases(user) {
   if (!user || !user.role) return [];
-  if (user.role === 'viewer' || user.role === 'overtime') return [];
+  if (user.role === 'viewer' || user.role === 'overtime' || user.role === 'overtime_manager') return [];
 
   let main = [];
   if (user.allowed_databases) {
@@ -2440,6 +2441,7 @@ function buildNavigationMenu(role = 'admin') {
 
   const visible = options.filter(entry => {
     if (role === 'overtime') return entry.value === 'overtime';
+    if (role === 'overtime_manager') return ['overtime', 'overtime-records'].includes(entry.value);
     if (role === 'viewer') return ['search', 'overtime'].includes(entry.value);
     if (role === 'user') return !['users', 'logs'].includes(entry.value);
     return true;
@@ -2477,7 +2479,7 @@ window.addEventListener('message', async function(event){
 
 function showPage(name) {
   if (currentUser?.role === 'overtime' && name !== 'overtime') return;
-  if (name === 'overtime-records' && !['admin', 'supervisor'].includes(currentUser?.role)) return;
+  if (name === 'overtime-records' && !['admin', 'supervisor', 'overtime_manager'].includes(currentUser?.role)) return;
   const page = document.getElementById(`page-${name}`);
   if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5338,7 +5340,7 @@ function applyRoleUI() {
 
   buildNavigationMenu(role);
 
-  if (role === 'overtime') {
+  if (role === 'overtime' || role === 'overtime_manager') {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-overtime').classList.add('active');
     setActiveNavOption('overtime');
@@ -5408,7 +5410,7 @@ function buildOvertimeDocumentHtml(record) {
   const value = text => text ? escapeOvertimeText(text) : '<span style="display:inline-block;min-width:140px;border-bottom:1px solid #000;">&nbsp;</span>';
   const fields = items => {
     const labels = items.map(item => `<td style="width:${item.width}%;padding:0 6px ${size.padSm}px 0;font:700 ${size.label}pt Arial;text-transform:uppercase;">${escapeOvertimeText(item.label)}</td>`).join('');
-    const values = items.map(item => `<td style="width:${item.width}%;border:1px solid #000;padding:${size.pad}px 8px;font:${size.body}pt Arial;">${item.image ? `<img src="${item.image}" style="max-height:34pt;max-width:100%;">` : value(item.value)}</td>`).join('');
+    const values = items.map(item => `<td style="width:${item.width}%;border:1px solid #000;padding:${size.pad}px 8px;font:${size.body}pt Arial;">${item.image ? `<img src="${item.image}" style="display:block;max-height:18pt;max-width:72pt;width:auto;height:auto;">` : value(item.value)}</td>`).join('');
     return `<table style="width:100%;border-collapse:collapse;margin:0 0 ${size.gap}px"><tr>${labels}</tr><tr>${values}</tr></table>`;
   };
   const section = (text, underline) => `<p style="font:700 ${size.label + 1}pt Arial;margin:0 0 ${size.padSm}px;${underline ? 'text-decoration:underline;' : ''}">${escapeOvertimeText(text)}</p>`;
@@ -5422,6 +5424,7 @@ function buildOvertimeDocumentHtml(record) {
 
 function downloadOvertimeDocument(record) {
   const html = buildOvertimeDocumentHtml(record);
+  const data = record.form_data || {};
   const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -5430,10 +5433,10 @@ function downloadOvertimeDocument(record) {
   URL.revokeObjectURL(link.href);
 }
 
-function openPrintableOvertime(record) {
+function printOvertimeDocument(record) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
-    toast('Please allow pop-ups to open the printable overtime form.', 'warning');
+    toast('Please allow pop-ups to print the overtime form.', 'warning');
     return;
   }
   printWindow.document.open();
@@ -5444,7 +5447,7 @@ function openPrintableOvertime(record) {
 }
 
 async function loadOvertimeRecords() {
-  if (!currentUser || !['admin', 'supervisor'].includes(currentUser.role)) return;
+  if (!currentUser || !['admin', 'supervisor', 'overtime_manager'].includes(currentUser.role)) return;
   const body = document.getElementById('overtimeRecordsBody');
   if (!body) return;
   body.innerHTML = '<tr><td colspan="6">Loading overtime records...</td></tr>';
@@ -5455,7 +5458,7 @@ async function loadOvertimeRecords() {
       const data = record.form_data || {};
       const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
       const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='openPrintableOvertime(${recordJson})'>Open Printable</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button></td></tr>`;
+      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button></td></tr>`;
     }).join('') : '<tr><td colspan="6">No overtime submissions found.</td></tr>';
   } catch (error) {
     document.getElementById('overtimeRecordCount').textContent = '';
@@ -5681,6 +5684,7 @@ function openEditUserPanel(userId) {
         <option value="user" ${user.role==='user'?'selected':''}>User — Can scan, import, export, transfer</option>
         <option value="viewer" ${user.role==='viewer'?'selected':''}>Viewer — Global Search only, no other access</option>
         <option value="overtime" ${user.role==='overtime'?'selected':''}>Overtime — File overtime only</option>
+        <option value="overtime_manager" ${user.role==='overtime_manager'?'selected':''}>Overtime Manager — View and download overtime only</option>
         <option value="admin" ${user.role==='admin'?'selected':''}>Admin — Full access + user management + delete</option>
       </select>
     </div>
