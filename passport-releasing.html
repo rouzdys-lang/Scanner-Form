@@ -2483,12 +2483,21 @@ function validateOvertimeSubmission(data) {
     if (accomplished < overtimeDate) {
       throw new Error(`Accomplished date cannot be before the overtime date in row ${index + 1}.`);
     }
-    const authorizedHours = Number(row.auth);
-    const renderedHours = Number(row.actual);
+    const getHourValue = keys => {
+      for (const key of keys) {
+        if (row[key] !== undefined && row[key] !== null && String(row[key]).trim() !== '') {
+          const match = String(row[key]).match(/-?\d+(?:\.\d+)?/);
+          return match ? Number(match[0]) : NaN;
+        }
+      }
+      return NaN;
+    };
+    const authorizedHours = getHourValue(['auth', 'authorized', 'authorizedHours', 'authorized_hours']);
+    const renderedHours = getHourValue(['actual', 'rendered', 'renderedHours', 'actualHours', 'actual_hours', 'actualOtHours']);
     if (!Number.isFinite(authorizedHours) || authorizedHours < 1 || authorizedHours > 8 || Math.round(authorizedHours * 2) !== authorizedHours * 2) {
       throw new Error(`Authorized hours for row ${index + 1} must be between 1 and 8, using 0.5-hour increments.`);
     }
-    if (row.actual !== '' && row.actual != null && (!Number.isFinite(renderedHours) || renderedHours < 1 || renderedHours > authorizedHours || Math.round(renderedHours * 2) !== renderedHours * 2)) {
+    if (!Number.isFinite(renderedHours) || renderedHours < 1 || renderedHours > authorizedHours || Math.round(renderedHours * 2) !== renderedHours * 2) {
       throw new Error(`Rendered hours for row ${index + 1} must be between 1 and the authorized hours (${authorizedHours}).`);
     }
   });
