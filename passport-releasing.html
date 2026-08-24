@@ -620,6 +620,7 @@ try {
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
     <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
     <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
+    <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
     <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
   </div>
   <div class="table-wrap" style="max-height:calc(100vh - 200px);overflow-y:auto;">
@@ -2508,6 +2509,8 @@ window.addEventListener('message', async function(event){
         created_at: new Date().toISOString()
       })
     });
+    frame.contentWindow.postMessage({ type: 'overtime-reset' }, '*');
+    setTimeout(() => { frame.src = frame.src; }, 50);
     frame.contentWindow.postMessage({type:'overtime-save-result', ok:true}, '*');
     toast('Overtime form saved successfully.', 'success');
   } catch(error){
@@ -5487,6 +5490,73 @@ function printOvertimeDocument(record) {
   setTimeout(() => printWindow.print(), 350);
 }
 
+async function deleteOvertimeRecord(id) {
+  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
+  if (!id || !confirm('Delete this overtime record permanently?')) return;
+  try {
+    await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(id)}`, { method: 'DELETE' });
+    toast('Overtime record deleted.', 'success');
+    await loadOvertimeRecords();
+  } catch (error) {
+    toast('Could not delete overtime record: ' + error.message, 'error');
+  }
+}
+
+async function exportOvertimeRecords() {
+  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
+  try {
+    const records = await sbFetch('overtime_submissions?select=*&order=created_at.asc&limit=5000');
+    if (!records || records.length === 0) {
+      toast('No overtime records to export.', 'warning');
+      return;
+    }
+
+    const headers = ['Filed', 'Employee', 'Employee ID', 'Filed By', 'Submitted/Accomplished Date', 'Overtime Date', 'Authorized Hours', 'Actual OT Hours', 'Total Hours', 'Department', 'Supervisor', 'Justification'];
+    const rows = [];
+    records.forEach(record => {
+      const data = record.form_data || {};
+      const overtimeRows = Array.isArray(data.rows) && data.rows.length ? data.rows : [{}];
+      overtimeRows.forEach(row => rows.push([
+        record.created_at ? new Date(record.created_at).toLocaleString() : '',
+        data.name || data.employeeName || '',
+        data.employeeId || '',
+        record.submitted_by_name || record.submitted_by || '',
+        data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '',
+        row.date || '',
+        row.auth || '',
+        row.actual || '',
+        data.total || data.totalHours || '',
+        data.department || '',
+        data.supervisor || '',
+        data.justification || ''
+      ]));
+    });
+
+    const dateFile = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+    const workbook = makeStyledWorkbook('DFAMPC - OVERTIME RECORDS', `Date: ${new Date().toLocaleDateString('en-US')}`, 'Total Forms', records.length, headers, rows, 'Overtime');
+    await downloadWorkbook(workbook, `DFAMPC-OVERTIME-RECORDS-${dateFile}.xlsx`);
+
+    if (!confirm(`Exported ${records.length} overtime form(s). Permanently delete the exported list now?`)) {
+      toast('Export completed. Records were kept.', 'info');
+      return;
+    }
+
+    let deleted = 0;
+    for (const record of records) {
+      try {
+        await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(record.id)}`, { method: 'DELETE' });
+        deleted++;
+      } catch (error) {
+        console.warn('Failed to delete exported overtime record', record.id, error);
+      }
+    }
+    toast(`Export completed. Deleted ${deleted} of ${records.length} overtime form(s).`, deleted === records.length ? 'success' : 'warning');
+    await loadOvertimeRecords();
+  } catch (error) {
+    toast('Overtime export failed: ' + error.message, 'error');
+  }
+}
+
 async function loadOvertimeRecords() {
   if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
   const body = document.getElementById('overtimeRecordsBody');
@@ -5499,7 +5569,7 @@ async function loadOvertimeRecords() {
       const data = record.form_data || {};
       const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
       const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button></td></tr>`;
+      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
     }).join('') : '<tr><td colspan="6">No overtime submissions found.</td></tr>';
   } catch (error) {
     document.getElementById('overtimeRecordCount').textContent = '';
