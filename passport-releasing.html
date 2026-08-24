@@ -2518,9 +2518,14 @@ function removeDuplicateOvertimeApprovalLabel() {
     const frame = document.getElementById('overtimeFrame');
     const doc = frame?.contentDocument;
     if (!doc?.body) return;
-    doc.querySelectorAll('label,td,th,div,span,p').forEach(element => {
-      if (/^\s*Approval Supervisor\s*$/i.test(element.textContent)) {
-        element.textContent = 'Supervisor';
+    // Only change exact "Approval Supervisor" labels, preserve all data cells
+    doc.querySelectorAll('*').forEach(element => {
+      // Only modify text nodes that are exactly "Approval Supervisor"
+      for (let i = 0; i < element.childNodes.length; i++) {
+        const node = element.childNodes[i];
+        if (node.nodeType === 3 && /^\s*Approval Supervisor\s*$/i.test(node.nodeValue)) {
+          node.nodeValue = 'Supervisor';
+        }
       }
     });
   } catch (e) {}
