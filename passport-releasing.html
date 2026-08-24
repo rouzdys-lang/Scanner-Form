@@ -2522,16 +2522,17 @@
       const frame = document.getElementById('overtimeFrame');
       const doc = frame?.contentDocument;
       if (!doc?.body) return;
-      // Find and replace the old address with the new one
-      doc.querySelectorAll('*').forEach(element => {
-        for (let i = 0; i < element.childNodes.length; i++) {
-          const node = element.childNodes[i];
-          if (node.nodeType === 3) {
-            if (node.nodeValue.includes('2/F') && node.nodeValue.includes('DFA Building') && node.nodeValue.includes('Roxas Boulevard')) {
-              node.nodeValue = node.nodeValue.replace('2/F, DFA Building, Roxas Boulevard, Pasay City', '7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila');
-            }
-          }
+      // Find and replace the old address with the new one - check all text nodes
+      const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+      const nodesToReplace = [];
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeValue.includes('2/F') || node.nodeValue.includes('DFA Building') || node.nodeValue.includes('Roxas Boulevard')) {
+          nodesToReplace.push(node);
         }
+      }
+      nodesToReplace.forEach(node => {
+        node.nodeValue = node.nodeValue.replace(/2\/F,?\s*DFA Building,?\s*Roxas Boulevard,?\s*Pasay City/gi, '7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila');
       });
     } catch (e) {}
   }
@@ -2540,6 +2541,7 @@
     removeDuplicateOvertimeApprovalLabel();
     updateOvertimeFormHeader();
     setTimeout(updateOvertimeFormHeader, 100);
+    setTimeout(updateOvertimeFormHeader, 300);
   });
   setInterval(updateOvertimeFormHeader, 500);
 
