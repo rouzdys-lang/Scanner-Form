@@ -1242,7 +1242,7 @@ try {
         <option value="user">User — Can scan, import, export, transfer</option>
         <option value="viewer">Viewer — Global Search only, no other access</option>
         <option value="overtime">Overtime — File overtime only</option>
-        <option value="overtime_manager">Overtime Manager — View and download overtime only</option>
+        <option value="overtime_manager">HR — View and print overtime only</option>
         <option value="admin">Admin — Full access + user management + delete</option>
       </select>
     </div>
@@ -2440,6 +2440,7 @@ function buildNavigationMenu(role = 'admin') {
   ];
 
   const visible = options.filter(entry => {
+    if (entry.value === 'overtime-records') return role === 'overtime_manager' || currentUser?.username === 'supervisor';
     if (role === 'overtime') return entry.value === 'overtime';
     if (role === 'overtime_manager') return ['overtime', 'overtime-records'].includes(entry.value);
     if (role === 'viewer') return ['search', 'overtime'].includes(entry.value);
@@ -2479,7 +2480,7 @@ window.addEventListener('message', async function(event){
 
 function showPage(name) {
   if (currentUser?.role === 'overtime' && name !== 'overtime') return;
-  if (name === 'overtime-records' && !['admin', 'supervisor', 'overtime_manager'].includes(currentUser?.role)) return;
+  if (name === 'overtime-records' && currentUser?.role !== 'overtime_manager' && currentUser?.username !== 'supervisor') return;
   const page = document.getElementById(`page-${name}`);
   if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -5447,7 +5448,7 @@ function printOvertimeDocument(record) {
 }
 
 async function loadOvertimeRecords() {
-  if (!currentUser || !['admin', 'supervisor', 'overtime_manager'].includes(currentUser.role)) return;
+  if (!currentUser || (currentUser.role !== 'overtime_manager' && currentUser.username !== 'supervisor')) return;
   const body = document.getElementById('overtimeRecordsBody');
   if (!body) return;
   body.innerHTML = '<tr><td colspan="6">Loading overtime records...</td></tr>';
@@ -5684,7 +5685,7 @@ function openEditUserPanel(userId) {
         <option value="user" ${user.role==='user'?'selected':''}>User — Can scan, import, export, transfer</option>
         <option value="viewer" ${user.role==='viewer'?'selected':''}>Viewer — Global Search only, no other access</option>
         <option value="overtime" ${user.role==='overtime'?'selected':''}>Overtime — File overtime only</option>
-        <option value="overtime_manager" ${user.role==='overtime_manager'?'selected':''}>Overtime Manager — View and download overtime only</option>
+        <option value="overtime_manager" ${user.role==='overtime_manager'?'selected':''}>HR — View and print overtime only</option>
         <option value="admin" ${user.role==='admin'?'selected':''}>Admin — Full access + user management + delete</option>
       </select>
     </div>
