@@ -1237,7 +1237,7 @@ try {
     </div>
     <div class="form-group">
       <label>Password</label>
-      <input class="form-control" id="cuPassword" type="password" placeholder="Min 6 characters" />
+      <input class="form-control" id="cuPassword" type="password" placeholder="Min 6 characters; overtime default: 123456" />
     </div>
     <div class="form-group">
       <label>Role</label>
@@ -5812,8 +5812,8 @@ async function createUser() {
   }
   const fullName = document.getElementById('cuFullName').value.trim();
   const username = document.getElementById('cuUsername').value.trim().toLowerCase();
-  const password = document.getElementById('cuPassword').value;
   const role = document.getElementById('cuRole').value;
+  const password = document.getElementById('cuPassword').value || (role === 'overtime' ? '123456' : '');
   const status = document.getElementById('cuStatus').value;
   if (!fullName||!username||!password) { toast('Fill in all fields', 'error'); return; }
   if (password.length < 6) { toast('Password must be at least 6 characters', 'error'); return; }
@@ -5855,10 +5855,12 @@ async function createUser() {
 
 function toggleOvertimeRoleFields() {
   const role = document.getElementById('cuRole')?.value;
+  const passwordInput = document.getElementById('cuPassword');
   const databaseGroup = document.getElementById('createUserDatabaseGroup');
   if (!databaseGroup) return;
   databaseGroup.style.display = role === 'overtime' ? 'none' : '';
   if (role === 'overtime') {
+    if (passwordInput && !passwordInput.value) passwordInput.value = '123456';
     databaseGroup.querySelectorAll('input[data-allowed-db]').forEach(input => { input.checked = false; });
   }
 }
