@@ -2514,21 +2514,7 @@ function validateOvertimeSubmission(data) {
 }
 
 function removeDuplicateOvertimeApprovalLabel() {
-  try {
-    const frame = document.getElementById('overtimeFrame');
-    const doc = frame?.contentDocument;
-    if (!doc?.body) return;
-    // Only change exact "Approval Supervisor" labels, preserve all data cells
-    doc.querySelectorAll('*').forEach(element => {
-      // Only modify text nodes that are exactly "Approval Supervisor"
-      for (let i = 0; i < element.childNodes.length; i++) {
-        const node = element.childNodes[i];
-        if (node.nodeType === 3 && /^\s*Approval Supervisor\s*$/i.test(node.nodeValue)) {
-          node.nodeValue = 'Supervisor';
-        }
-      }
-    });
-  } catch (e) {}
+  // Disabled - let the form display naturally
 }
 
 document.getElementById('overtimeFrame')?.addEventListener('load', () => {
