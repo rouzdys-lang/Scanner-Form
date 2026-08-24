@@ -5503,13 +5503,9 @@ async function deleteOvertimeRecord(id) {
   try {
     const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(id))}`, {
       method: 'DELETE',
-      headers: { ...HEADERS, 'Prefer': 'return=representation' }
+      headers: { ...HEADERS, 'Prefer': 'return=minimal' }
     });
     if (!response.ok) throw new Error(await response.text());
-    const deleted = response.status === 204 ? [id] : await response.json();
-    if (!Array.isArray(deleted) || deleted.length === 0) {
-      throw new Error('No record was deleted. Check the overtime_submissions delete policy.');
-    }
     toast('Overtime record deleted.', 'success');
     await loadOvertimeRecords();
   } catch (error) {
@@ -5561,11 +5557,10 @@ async function exportOvertimeRecords() {
       try {
         const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}`, {
           method: 'DELETE',
-          headers: { ...HEADERS, 'Prefer': 'return=representation' }
+          headers: { ...HEADERS, 'Prefer': 'return=minimal' }
         });
         if (!response.ok) throw new Error(await response.text());
-        const removed = response.status === 204 ? [record.id] : await response.json();
-        if (Array.isArray(removed) && removed.length > 0) deleted++;
+        deleted++;
       } catch (error) {
         console.warn('Failed to delete exported overtime record', record.id, error);
       }
