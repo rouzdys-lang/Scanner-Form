@@ -2547,14 +2547,14 @@
     try {
       const frame = document.getElementById('overtimeFrame');
       const doc = frame?.contentDocument;
-      const username = String(currentUser?.username || '').trim().toUpperCase();
-      if (!doc || !username) return;
+      const fullName = String(currentUser?.full_name || '').trim().toUpperCase();
+      if (!doc || !fullName) return;
 
       const officeInput = doc.querySelector(
         '#department, [name="department"], #consularOffice, [name="consularOffice"], [name="consular_office"], [id*="department" i], [name*="department" i], [id*="consular" i], [name*="consular" i]'
       );
       if (!officeInput) return;
-      officeInput.value = username;
+      officeInput.value = fullName;
       officeInput.dispatchEvent(new Event('input', { bubbles: true }));
       officeInput.dispatchEvent(new Event('change', { bubbles: true }));
     } catch (e) {}
