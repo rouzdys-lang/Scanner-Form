@@ -2563,11 +2563,37 @@
     } catch (e) {}
   }
 
+  function injectOvertimeFormStyles() {
+    const frame = document.getElementById('overtimeFrame');
+    try {
+      const doc = frame?.contentDocument || frame?.contentWindow?.document;
+      if (doc && !doc.getElementById('uppercase-style')) {
+        const style = doc.createElement('style');
+        style.id = 'uppercase-style';
+        style.textContent = `
+          input[type="text"], 
+          input[type="email"], 
+          input[type="number"], 
+          input[type="date"],
+          textarea {
+            text-transform: uppercase !important;
+          }
+          input::placeholder, textarea::placeholder {
+            text-transform: uppercase !important;
+          }
+        `;
+        doc.head.appendChild(style);
+      }
+    } catch(e) {}
+  }
+
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
     removeDuplicateOvertimeApprovalLabel();
     updateOvertimeFormHeader();
+    injectOvertimeFormStyles();
     setTimeout(updateOvertimeFormHeader, 100);
     setTimeout(updateOvertimeFormHeader, 300);
+    setTimeout(injectOvertimeFormStyles, 100);
   });
   setInterval(updateOvertimeFormHeader, 500);
 
