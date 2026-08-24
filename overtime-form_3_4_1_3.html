@@ -224,7 +224,7 @@
   <section class="block">
     <div class="row">
       <div class="field"><label>Employee Name</label><input id="f-emp-sign-name" type="text"/></div>
-      <div class="field"><label>Date Form Submitted</label><input id="f-date-submitted" type="text"/></div>
+      <div class="field"><label>Date Form Submitted</label><input id="f-date-submitted" type="date"/></div>
     </div>
     <div class="field sig-field">
       <label>Employee Signature</label>
@@ -300,8 +300,8 @@
     tr.dataset.rowId = rowId;
     tr.innerHTML = `
       <td><input type="date" class="c-date" value="${date||''}"/></td>
-      <td><input type="number" step="0.25" min="0" class="c-auth" value="${auth||''}"/></td>
-      <td><input type="number" step="0.25" min="0" class="c-actual" value="${actual||''}"/></td>
+      <td><input type="number" step="0.5" min="1" class="c-auth" value="${auth||''}"/></td>
+      <td><input type="number" step="0.5" min="1" class="c-actual" value="${actual||''}"/></td>
       <td class="row-actions"><button onclick="removeRow(this)" title="Remove row">✕</button></td>
     `;
     return tr;
@@ -358,6 +358,9 @@
 
   function collectFormData(){
     const rows = [];
+    const accomplishedDate = document.getElementById('f-date-accomplished').value;
+    const submittedDate = document.getElementById('f-date-submitted').value;
+    const sharedDate = accomplishedDate || submittedDate;
     document.querySelectorAll('#ot-rows tr').forEach(tr=>{
       const date = tr.querySelector('.c-date').value;
       const auth = tr.querySelector('.c-auth').value;
@@ -367,7 +370,7 @@
     return {
       name: document.getElementById('f-name').value,
       employeeId: document.getElementById('f-id').value,
-      dateAccomplished: document.getElementById('f-date-accomplished').value,
+      dateAccomplished: sharedDate,
       supervisor: document.getElementById('f-supervisor').value,
       department: document.getElementById('f-department').value,
       rows,
@@ -377,7 +380,7 @@
       empSignature: document.getElementById('f-emp-signature').value,
       empSignatureMode: sigMode,
       empSignatureImage: empSignatureImageData,
-      dateSubmitted: document.getElementById('f-date-submitted').value,
+      dateSubmitted: sharedDate,
       appSupName: document.getElementById('f-appsup-name').value,
       appSupSignature: document.getElementById('f-appsup-signature').value,
       dateApproval: document.getElementById('f-date-approval').value,
@@ -389,6 +392,20 @@
       hrDateApproval: document.getElementById('f-hr-date-approval').value,
       savedAt: new Date().toISOString()
     };
+  }
+
+  function validateSubmission(data){
+    if(!data.name.trim()) return 'Please enter an employee name before saving.';
+    if(!data.dateAccomplished || !data.dateSubmitted) return 'Please enter the overtime date.';
+    if(!data.empSignature.trim() && !data.empSignatureImage) return 'Employee signature is required before saving.';
+    for(const row of data.rows){
+      for(const field of ['auth','actual']){
+        if(!field || row[field] === '') continue;
+        const hours = Number(row[field]);
+        if(!Number.isFinite(hours) || hours < 1 || !Number.isInteger(hours * 2)) return 'Hours must be at least 1 and use 0.5-hour increments.';
+      }
+    }
+    return '';
   }
 
   function fillFormData(d){
@@ -414,6 +431,18 @@
     document.getElementById('f-hr-name').value = d.hrName||'';
     document.getElementById('f-hr-signature').value = d.hrSignature||'';
     document.getElementById('f-hr-date-approval').value = d.hrDateApproval||'';
+  }
+
+  function setupDateSync(){
+    const accomplished = document.getElementById('f-date-accomplished');
+    const submitted = document.getElementById('f-date-submitted');
+    if(!accomplished || !submitted) return;
+    const sync = (source, target) => {
+      source.addEventListener('input', () => { if(source.value) target.value = source.value; });
+      source.addEventListener('change', () => { if(source.value) target.value = source.value; });
+    };
+    sync(accomplished, submitted);
+    sync(submitted, accomplished);
   }
 
   function setStatus(msg){
@@ -462,8 +491,9 @@
   // Saves the current form to the local database. Returns {ok, reason}.
   function saveCurrentEntryToLocalDb(){
     const data = collectFormData();
-    if(!data.name){
-      return { ok:false, reason:'no-name' };
+    const validation = validateSubmission(data);
+    if(validation){
+      return { ok:false, reason:validation };
     }
     const all = lsGetAll();
     if(findDuplicateEntry(data, all)){
@@ -478,8 +508,9 @@
   window.saveRecord = function(){
     if(embeddedInCourierApp){
       const data = collectFormData();
-      if(!data.name){
-        setStatus('Please enter an employee name before saving.');
+      const validation = validateSubmission(data);
+      if(validation){
+        setStatus(validation);
         return;
       }
       window.parent.postMessage({type:'overtime-save', data}, '*');
@@ -487,8 +518,8 @@
       return;
     }
     const result = saveCurrentEntryToLocalDb();
-    if(result.reason === 'no-name'){
-      setStatus('Please enter an employee name before saving.');
+    if(result.reason){
+      setStatus(result.reason);
       return;
     }
     if(result.reason === 'duplicate'){
@@ -885,6 +916,7 @@
 
   initRows();
   setupNameSync();
+  setupDateSync();
   setupSigCanvas();
   loadRecords();
 })();
