@@ -2543,6 +2543,23 @@
     // Disabled - let the form display naturally
   }
 
+  function populateOvertimeConsularOffice() {
+    try {
+      const frame = document.getElementById('overtimeFrame');
+      const doc = frame?.contentDocument;
+      const username = String(currentUser?.username || '').trim().toUpperCase();
+      if (!doc || !username) return;
+
+      const officeInput = doc.querySelector(
+        '#department, [name="department"], #consularOffice, [name="consularOffice"], [name="consular_office"], [id*="department" i], [name*="department" i], [id*="consular" i], [name*="consular" i]'
+      );
+      if (!officeInput) return;
+      officeInput.value = username;
+      officeInput.dispatchEvent(new Event('input', { bubbles: true }));
+      officeInput.dispatchEvent(new Event('change', { bubbles: true }));
+    } catch (e) {}
+  }
+
   function updateOvertimeFormHeader() {
     try {
       const frame = document.getElementById('overtimeFrame');
@@ -2589,10 +2606,12 @@
 
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
     removeDuplicateOvertimeApprovalLabel();
+    populateOvertimeConsularOffice();
     updateOvertimeFormHeader();
     injectOvertimeFormStyles();
     setTimeout(updateOvertimeFormHeader, 100);
     setTimeout(updateOvertimeFormHeader, 300);
+    setTimeout(populateOvertimeConsularOffice, 100);
     setTimeout(injectOvertimeFormStyles, 100);
   });
   setInterval(updateOvertimeFormHeader, 500);
@@ -5459,6 +5478,7 @@
       currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: user.role, allowed_databases: user.allowed_databases || '' };
       const userJson = JSON.stringify(currentUser);
       sessionStorage.setItem('dfampc_user', userJson);
+      populateOvertimeConsularOffice();
       try { localStorage.removeItem('dfampc_user'); } catch (e) {}
 
       // Log the login
@@ -5860,6 +5880,7 @@
       try {
         currentUser = JSON.parse(saved);
         sessionStorage.setItem('dfampc_user', saved);
+        populateOvertimeConsularOffice();
         document.getElementById('loginScreen').style.display = 'none';
         document.getElementById('mainApp').style.display = 'block';
         loadPersistedHotCache();
