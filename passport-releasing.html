@@ -620,12 +620,14 @@ try {
   <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
     <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
     <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
+    <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
+    <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
     <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
     <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
   </div>
   <div class="table-wrap" style="max-height:calc(100vh - 200px);overflow-y:auto;">
     <table>
-      <thead><tr><th>Filed</th><th>Employee</th><th>Filed By</th><th>Work Date</th><th>Total Hours</th><th>Document</th></tr></thead>
+      <thead><tr><th><input type="checkbox" id="overtimeSelectAllHeader" onchange="toggleAllOvertimeRecords(this.checked)" aria-label="Check all overtime records"></th><th>Filed</th><th>Employee</th><th>Filed By</th><th>Work Date</th><th>Total Hours</th><th>Document</th></tr></thead>
       <tbody id="overtimeRecordsBody"></tbody>
     </table>
   </div>
@@ -5481,6 +5483,8 @@ function downloadOvertimeDocument(record) {
   URL.revokeObjectURL(link.href);
 }
 
+let overtimeRecords = [];
+
 function printOvertimeDocument(record) {
   const printWindow = window.open('', '_blank');
   if (!printWindow) {
@@ -5489,6 +5493,58 @@ function printOvertimeDocument(record) {
   }
   printWindow.document.open();
   printWindow.document.write(buildOvertimeDocumentHtml(record));
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 350);
+}
+
+function toggleAllOvertimeRecords(checked) {
+  document.querySelectorAll('.overtime-record-check').forEach(input => {
+    input.checked = checked;
+  });
+  ['overtimeSelectAll', 'overtimeSelectAllHeader'].forEach(id => {
+    const selectAll = document.getElementById(id);
+    if (selectAll) {
+      selectAll.checked = checked;
+      selectAll.indeterminate = false;
+    }
+  });
+}
+
+function updateOvertimeSelectAllState() {
+  const checkboxes = [...document.querySelectorAll('.overtime-record-check')];
+  const checked = checkboxes.length > 0 && checkboxes.every(input => input.checked);
+  const indeterminate = checkboxes.some(input => input.checked) && !checked;
+  ['overtimeSelectAll', 'overtimeSelectAllHeader'].forEach(id => {
+    const selectAll = document.getElementById(id);
+    if (selectAll) {
+      selectAll.checked = checked;
+      selectAll.indeterminate = indeterminate;
+    }
+  });
+}
+
+function printSelectedOvertimeRecords() {
+  const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
+    .map(input => overtimeRecords.find(record => String(record.id) === input.value))
+    .filter(Boolean);
+  if (!selected.length) {
+    toast('Check at least one overtime record to print.', 'warning');
+    return;
+  }
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    toast('Please allow pop-ups to print the overtime forms.', 'warning');
+    return;
+  }
+  const pages = selected.map(record => {
+    const html = buildOvertimeDocumentHtml(record);
+    const bodyStart = html.indexOf('<body>') + '<body>'.length;
+    const bodyEnd = html.lastIndexOf('</body>');
+    return html.slice(bodyStart, bodyEnd);
+  }).join('<div style="page-break-before:always;"></div>');
+  printWindow.document.open();
+  printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${pages}</body></html>`);
   printWindow.document.close();
   printWindow.focus();
   setTimeout(() => printWindow.print(), 350);
@@ -5506,6 +5562,10 @@ async function deleteOvertimeRecord(id) {
       headers: { ...HEADERS, 'Prefer': 'return=minimal' }
     });
     if (!response.ok) throw new Error(await response.text());
+    const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(id))}&select=id`);
+    if (Array.isArray(remaining) && remaining.length > 0) {
+      throw new Error('Database refused the delete. Add a DELETE policy for the anon role on overtime_submissions.');
+    }
     toast('Overtime record deleted.', 'success');
     await loadOvertimeRecords();
   } catch (error) {
@@ -5560,6 +5620,10 @@ async function exportOvertimeRecords() {
           headers: { ...HEADERS, 'Prefer': 'return=minimal' }
         });
         if (!response.ok) throw new Error(await response.text());
+        const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}&select=id`);
+        if (Array.isArray(remaining) && remaining.length > 0) {
+          throw new Error('Database refused the delete policy');
+        }
         deleted++;
       } catch (error) {
         console.warn('Failed to delete exported overtime record', record.id, error);
@@ -5576,19 +5640,25 @@ async function loadOvertimeRecords() {
   if (!canManageOvertimeRecords()) return;
   const body = document.getElementById('overtimeRecordsBody');
   if (!body) return;
-  body.innerHTML = '<tr><td colspan="6">Loading overtime records...</td></tr>';
+  body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
   try {
     const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
+    overtimeRecords = records;
+    const selectAll = document.getElementById('overtimeSelectAll');
+    if (selectAll) {
+      selectAll.checked = false;
+      selectAll.indeterminate = false;
+    }
     document.getElementById('overtimeRecordCount').textContent = `${records.length} record${records.length === 1 ? '' : 's'}`;
     body.innerHTML = records.length ? records.map(record => {
       const data = record.form_data || {};
       const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
       const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
-    }).join('') : '<tr><td colspan="6">No overtime submissions found.</td></tr>';
+      return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
+    }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
   } catch (error) {
     document.getElementById('overtimeRecordCount').textContent = '';
-    body.innerHTML = `<tr><td colspan="6">Could not load overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
+    body.innerHTML = `<tr><td colspan="7">Could not load overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
   }
 }
 
