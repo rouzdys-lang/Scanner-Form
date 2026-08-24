@@ -5350,7 +5350,7 @@ function applyRoleUI() {
 
   const createUserBtn = document.getElementById('createUserBtn');
   if (createUserBtn) {
-    createUserBtn.style.display = currentUser.username === 'supervisor' ? 'inline-flex' : 'none';
+    createUserBtn.style.display = (currentUser.role === 'admin' || currentUser.username === 'supervisor') ? 'inline-flex' : 'none';
   }
 
   refreshDatabaseSelectors();
@@ -5556,8 +5556,8 @@ async function loadUsers() {
 }
 
 function openCreateUserModal() {
-  if (!currentUser || currentUser.username !== 'supervisor') {
-    toast('Only the supervisor account may create new users', 'error');
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.username !== 'supervisor')) {
+    toast('Only administrator accounts may create new users', 'error');
     return;
   }
   ['cuFullName','cuUsername','cuPassword'].forEach(id => document.getElementById(id).value='');
@@ -5568,8 +5568,8 @@ function openCreateUserModal() {
 }
 
 async function createUser() {
-  if (!currentUser || currentUser.username !== 'supervisor') {
-    toast('Only the supervisor account may create new users', 'error');
+  if (!currentUser || (currentUser.role !== 'admin' && currentUser.username !== 'supervisor')) {
+    toast('Only administrator accounts may create new users', 'error');
     return;
   }
   const fullName = document.getElementById('cuFullName').value.trim();
