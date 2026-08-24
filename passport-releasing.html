@@ -1238,14 +1238,14 @@ try {
     </div>
     <div class="form-group">
       <label>Role</label>
-      <select class="form-control" id="cuRole">
+      <select class="form-control" id="cuRole" onchange="toggleOvertimeRoleFields()">
         <option value="user">User — Can scan, import, export, transfer</option>
         <option value="viewer">Viewer — Global Search only, no other access</option>
         <option value="overtime">Overtime — File overtime only</option>
         <option value="admin">Admin — Full access + user management + delete</option>
       </select>
     </div>
-    <div class="form-group">
+    <div class="form-group" id="createUserDatabaseGroup">
       <label>Assigned Databases</label>
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="ASEANA" style="margin-right:6px;" /> ASEANA</label>
@@ -2236,7 +2236,7 @@ function performDailySyncIfDue() {
 
 function getUserAllowedDatabases(user) {
   if (!user || !user.role) return [];
-  if (user.role === 'viewer') return [];
+  if (user.role === 'viewer' || user.role === 'overtime') return [];
 
   let main = [];
   if (user.allowed_databases) {
@@ -5562,6 +5562,7 @@ function openCreateUserModal() {
   }
   ['cuFullName','cuUsername','cuPassword'].forEach(id => document.getElementById(id).value='');
   document.getElementById('cuRole').value='user';
+  toggleOvertimeRoleFields();
   document.getElementById('cuStatus').value='active';
   document.querySelectorAll('#createUserModal input[data-allowed-db]').forEach(cb => cb.checked = true);
   document.getElementById('createUserModal').classList.add('show');
@@ -5586,7 +5587,7 @@ async function createUser() {
 
   const hashHex = await hashPassword(password);
 
-  const allowedDatabases = getSelectedAllowedDatabases(document.getElementById('createUserModal'));
+  const allowedDatabases = role === 'overtime' ? [] : getSelectedAllowedDatabases(document.getElementById('createUserModal'));
   const payload = {
     id: 'u_' + Date.now() + Math.random().toString(36).slice(2,6),
     username, full_name: fullName, password_hash: hashHex, role, status,
@@ -5613,6 +5614,16 @@ async function createUser() {
   await writeLog('CREATE_USER', `Created user @${username} (${role})`, '');
   toast(`User @${username} created`, 'success');
   loadUsers();
+}
+
+function toggleOvertimeRoleFields() {
+  const role = document.getElementById('cuRole')?.value;
+  const databaseGroup = document.getElementById('createUserDatabaseGroup');
+  if (!databaseGroup) return;
+  databaseGroup.style.display = role === 'overtime' ? 'none' : '';
+  if (role === 'overtime') {
+    databaseGroup.querySelectorAll('input[data-allowed-db]').forEach(input => { input.checked = false; });
+  }
 }
 
 function openEditUserPanel(userId) {
