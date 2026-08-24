@@ -5502,7 +5502,7 @@ function buildOvertimeDocumentHtml(record) {
   const sealSrc = iframe?.contentDocument?.querySelector('.seal')?.src || '';
   const scale = rows.length <= 6 ? 1 : rows.length <= 9 ? 0.9 : rows.length <= 12 ? 0.8 : rows.length <= 16 ? 0.7 : 0.6;
   const size = { body:(11 * scale).toFixed(1), label:(9.5 * scale).toFixed(1), title:(15 * scale).toFixed(1), small:(8.5 * scale).toFixed(1), total:(13 * scale).toFixed(1), pad:Math.max(3, Math.round(8 * scale)), padSm:Math.max(2, Math.round(6 * scale)), gap:Math.max(6, Math.round(14 * scale)), justif:Math.max(24, Math.round(70 * scale)) };
-  const value = text => text ? escapeOvertimeText(text) : '<span style="display:inline-block;min-width:140px;border-bottom:1px solid #000;">&nbsp;</span>';
+  const value = text => text ? escapeOvertimeText(text) : '<span style="display:inline-block;min-width:140px;">&nbsp;</span>';
   const fields = items => {
     const labels = items.map(item => `<td style="width:${item.width}%;padding:0 6px ${size.padSm}px 0;font:700 ${size.label}pt Arial;text-transform:uppercase;">${escapeOvertimeText(item.label)}</td>`).join('');
     const values = items.map(item => `<td style="width:${item.width}%;border:1px solid #000;padding:${size.pad}px 8px;font:${size.body}pt Arial;">${item.image ? `<img src="${item.image}" style="display:block;max-height:18pt;max-width:72pt;width:auto;height:auto;">` : value(item.value)}</td>`).join('');
