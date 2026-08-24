@@ -1709,6 +1709,7 @@ function saveDorEntries(arr) {
 }
 
 async function checkDorTriggers() {
+  if (isOnOvertimePage()) return;
   const entriesOrPromise = loadDorEntries();
   const entries = (entriesOrPromise && typeof entriesOrPromise.then === 'function') ? await entriesOrPromise : entriesOrPromise;
   console.debug('[DOR] loaded entries', entries);
@@ -2085,6 +2086,7 @@ function setLastDailySync(value) {
 }
 
 function updateSyncBadge() {
+  if (isOnOvertimePage()) return;
   const badge = document.getElementById('syncBadge');
   if (!badge) return;
   if (offlineSyncProgress >= 0) {
@@ -2394,12 +2396,14 @@ function cacheUpdateSource(trackingNum, newSource) {
 }
 function buildCache() { hotCache.clear(); savePersistedHotCache(); updateCacheBadge(); }
 function updateCacheBadge() {
+  if (isOnOvertimePage()) return;
   const b = document.getElementById('cacheBadge');
   if (b) { b.textContent = `✓ ${hotCache.size} cached`; b.style.color = 'var(--success)'; }
 }
 
 // ==================== SUPABASE API ====================
 async function checkConn() {
+  if (isOnOvertimePage()) return;
   try {
     await sbFetch('entries?select=id&limit=1');
     document.getElementById('connBadge').className = 'conn-badge conn-ok';
@@ -2413,6 +2417,7 @@ async function checkConn() {
 }
 
 async function updateTotalCount() {
+  if (isOnOvertimePage()) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=id`, { headers: { ...HEADERS, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' } });
     const count = r.headers.get('Content-Range')?.split('/')[1] || '?';
@@ -2425,6 +2430,11 @@ function setActiveNavOption(name) {
   document.querySelectorAll('.nav-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.page === name);
   });
+}
+
+// Helper to check if we're on overtime page
+function isOnOvertimePage() {
+  return document.getElementById('page-overtime')?.classList.contains('active') || false;
 }
 
 function buildNavigationMenu(role = 'admin') {
