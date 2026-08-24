@@ -2517,11 +2517,31 @@
     // Disabled - let the form display naturally
   }
 
+  function updateOvertimeFormHeader() {
+    try {
+      const frame = document.getElementById('overtimeFrame');
+      const doc = frame?.contentDocument;
+      if (!doc?.body) return;
+      // Find and replace the old address with the new one
+      doc.querySelectorAll('*').forEach(element => {
+        for (let i = 0; i < element.childNodes.length; i++) {
+          const node = element.childNodes[i];
+          if (node.nodeType === 3) {
+            if (node.nodeValue.includes('2/F') && node.nodeValue.includes('DFA Building') && node.nodeValue.includes('Roxas Boulevard')) {
+              node.nodeValue = node.nodeValue.replace('2/F, DFA Building, Roxas Boulevard, Pasay City', '7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila');
+            }
+          }
+        }
+      });
+    } catch (e) {}
+  }
+
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
     removeDuplicateOvertimeApprovalLabel();
-    setTimeout(removeDuplicateOvertimeApprovalLabel, 100);
+    updateOvertimeFormHeader();
+    setTimeout(updateOvertimeFormHeader, 100);
   });
-  setInterval(removeDuplicateOvertimeApprovalLabel, 500);
+  setInterval(updateOvertimeFormHeader, 500);
 
   window.addEventListener('message', async function(event){
     const frame = document.getElementById('overtimeFrame');
