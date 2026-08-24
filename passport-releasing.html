@@ -2475,8 +2475,8 @@ function validateOvertimeSubmission(data) {
   rows.forEach((row, index) => {
     const overtimeDate = parseOvertimeDate(row.date);
     if (!overtimeDate) throw new Error(`Overtime date is required for row ${index + 1}.`);
-    if (overtimeDate > accomplished) {
-      throw new Error(`Overtime date in row ${index + 1} cannot be after the accomplished date.`);
+    if (accomplished < overtimeDate) {
+      throw new Error(`Accomplished date cannot be before the overtime date in row ${index + 1}.`);
     }
     ['actual', 'auth'].forEach(field => {
       if (row[field] === '' || row[field] == null) return;
