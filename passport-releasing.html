@@ -616,6 +616,20 @@ try {
   <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
 </div>
 
+<div id="page-overtime-records" class="page">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
+    <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
+    <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
+    <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
+  </div>
+  <div class="table-wrap" style="max-height:calc(100vh - 200px);overflow-y:auto;">
+    <table>
+      <thead><tr><th>Filed</th><th>Employee</th><th>Filed By</th><th>Work Date</th><th>Total Hours</th><th>Document</th></tr></thead>
+      <tbody id="overtimeRecordsBody"></tbody>
+    </table>
+  </div>
+</div>
+
 <!-- ========== SCANNER PAGE ========== -->
 <div id="page-scanner" class="page active">
   <div class="summary-grid">
@@ -1227,6 +1241,7 @@ try {
       <select class="form-control" id="cuRole">
         <option value="user">User — Can scan, import, export, transfer</option>
         <option value="viewer">Viewer — Global Search only, no other access</option>
+        <option value="overtime">Overtime — File overtime only</option>
         <option value="admin">Admin — Full access + user management + delete</option>
       </select>
     </div>
@@ -2413,6 +2428,7 @@ function buildNavigationMenu(role = 'admin') {
   const options = [
     { value: 'scanner', label: 'Scanner' },
     { value: 'overtime', label: 'Overtime' },
+    { value: 'overtime-records', label: 'Overtime Records' },
     { value: 'db', label: 'Database' },
     { value: 'released-db', label: 'Released DB' },
     { value: 'import', label: 'Import' },
@@ -2423,6 +2439,7 @@ function buildNavigationMenu(role = 'admin') {
   ];
 
   const visible = options.filter(entry => {
+    if (role === 'overtime') return entry.value === 'overtime';
     if (role === 'viewer') return ['search', 'overtime'].includes(entry.value);
     if (role === 'user') return !['users', 'logs'].includes(entry.value);
     return true;
@@ -2459,6 +2476,8 @@ window.addEventListener('message', async function(event){
 });
 
 function showPage(name) {
+  if (currentUser?.role === 'overtime' && name !== 'overtime') return;
+  if (name === 'overtime-records' && !['admin', 'supervisor'].includes(currentUser?.role)) return;
   const page = document.getElementById(`page-${name}`);
   if (!page) return;
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2476,6 +2495,7 @@ function showPage(name) {
   if (name === 'released-db') { loadReleasedPage(); setTimeout(initRelScanner, 100); }
   if (name === 'bulk-delete') loadDBCounts();
   if (name === 'users') loadUsers();
+  if (name === 'overtime-records') loadOvertimeRecords();
   if (name === 'logs') { logPage=1; loadActivityLog(); }
 }
 
@@ -5318,7 +5338,11 @@ function applyRoleUI() {
 
   buildNavigationMenu(role);
 
-  if (role === 'viewer') {
+  if (role === 'overtime') {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.getElementById('page-overtime').classList.add('active');
+    setActiveNavOption('overtime');
+  } else if (role === 'viewer') {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-search').classList.add('active');
     setActiveNavOption('search');
@@ -5367,6 +5391,42 @@ function applyRoleUI() {
         }
       });
     }, 120);
+  }
+}
+
+function escapeOvertimeText(value) {
+  return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
+}
+
+function downloadOvertimeDocument(record) {
+  const data = record.form_data || {};
+  const rows = Array.isArray(data.rows) ? data.rows : [];
+  const rowHtml = rows.map(row => `<tr><td>${escapeOvertimeText(row.date)}</td><td>${escapeOvertimeText(row.authorized || row.authorizedHours)}</td><td>${escapeOvertimeText(row.actual || row.renderedHours)}</td></tr>`).join('');
+  const html = `<!doctype html><html><head><meta charset="utf-8"><title>Overtime Form</title></head><body><h2>Actual Rendered Overtime</h2><p><b>Employee:</b> ${escapeOvertimeText(data.name || data.employeeName)}</p><p><b>Date accomplished:</b> ${escapeOvertimeText(data.dateAccomplished || data.accomplishedDate)}</p><p><b>Justification:</b> ${escapeOvertimeText(data.justification)}</p><table border="1" cellspacing="0" cellpadding="6"><tr><th>Date</th><th>Authorized Hours</th><th>Rendered Hours</th></tr>${rowHtml}</table><p><b>Total Hours:</b> ${escapeOvertimeText(data.totalHours)}</p></body></html>`;
+  const blob = new Blob(['\ufeff', html], { type: 'application/msword' });
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = `overtime_${String(data.name || 'record').replace(/[^a-z0-9]+/gi, '_')}.doc`;
+  link.click();
+  URL.revokeObjectURL(link.href);
+}
+
+async function loadOvertimeRecords() {
+  if (!currentUser || !['admin', 'supervisor'].includes(currentUser.role)) return;
+  const body = document.getElementById('overtimeRecordsBody');
+  if (!body) return;
+  body.innerHTML = '<tr><td colspan="6">Loading overtime records...</td></tr>';
+  try {
+    const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
+    document.getElementById('overtimeRecordCount').textContent = `${records.length} record${records.length === 1 ? '' : 's'}`;
+    body.innerHTML = records.length ? records.map(record => {
+      const data = record.form_data || {};
+      const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
+      return `<tr><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || 'N/A')}</td><td><button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${JSON.stringify(record).replace(/'/g, '&#39;')})'>Download Word</button></td></tr>`;
+    }).join('') : '<tr><td colspan="6">No overtime submissions found.</td></tr>';
+  } catch (error) {
+    document.getElementById('overtimeRecordCount').textContent = '';
+    body.innerHTML = `<tr><td colspan="6">Could not load overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
   }
 }
 
@@ -5576,6 +5636,7 @@ function openEditUserPanel(userId) {
       <select class="form-control" id="euRole">
         <option value="user" ${user.role==='user'?'selected':''}>User — Can scan, import, export, transfer</option>
         <option value="viewer" ${user.role==='viewer'?'selected':''}>Viewer — Global Search only, no other access</option>
+        <option value="overtime" ${user.role==='overtime'?'selected':''}>Overtime — File overtime only</option>
         <option value="admin" ${user.role==='admin'?'selected':''}>Admin — Full access + user management + delete</option>
       </select>
     </div>
