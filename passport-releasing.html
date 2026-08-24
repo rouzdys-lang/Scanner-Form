@@ -2567,6 +2567,9 @@ function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   page.classList.add('active');
   setActiveNavOption(name);
+  // Hide status badges on overtime page for end users
+  const badges = document.querySelectorAll('.conn-badge, #cacheBadge, #syncBadge, #totalBadge, #dorBadge');
+  badges.forEach(b => b.style.display = name === 'overtime' ? 'none' : 'inline-flex');
   if (name === 'scanner') {
     const allowed = getUserAllowedDatabases(currentUser) || [];
     const mainAndDefaults = allowed.slice();
