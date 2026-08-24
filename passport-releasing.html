@@ -2568,8 +2568,19 @@ function showPage(name) {
   page.classList.add('active');
   setActiveNavOption(name);
   // Hide status badges on overtime page for end users
-  const badges = document.querySelectorAll('.conn-badge, #cacheBadge, #syncBadge, #totalBadge, #dorBadge');
-  badges.forEach(b => b.style.display = name === 'overtime' ? 'none' : 'inline-flex');
+  if (name === 'overtime') {
+    document.getElementById('connBadge')?.setAttribute('style', 'display:none !important');
+    document.getElementById('cacheBadge')?.setAttribute('style', 'display:none !important');
+    document.getElementById('syncBadge')?.setAttribute('style', 'display:none !important');
+    document.getElementById('totalBadge')?.setAttribute('style', 'display:none !important');
+    document.getElementById('dorBadge')?.setAttribute('style', 'display:none !important');
+  } else {
+    document.getElementById('connBadge')?.removeAttribute('style');
+    document.getElementById('cacheBadge')?.removeAttribute('style');
+    document.getElementById('syncBadge')?.removeAttribute('style');
+    document.getElementById('totalBadge')?.removeAttribute('style');
+    document.getElementById('dorBadge')?.removeAttribute('style');
+  }
   if (name === 'scanner') {
     const allowed = getUserAllowedDatabases(currentUser) || [];
     const mainAndDefaults = allowed.slice();
