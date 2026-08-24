@@ -2483,13 +2483,14 @@ function validateOvertimeSubmission(data) {
     if (accomplished < overtimeDate) {
       throw new Error(`Accomplished date cannot be before the overtime date in row ${index + 1}.`);
     }
-    ['actual', 'auth'].forEach(field => {
-      if (row[field] === '' || row[field] == null) return;
-      const hours = Number(row[field]);
-      if (!Number.isFinite(hours) || hours < 1 || Math.round(hours * 2) !== hours * 2) {
-        throw new Error(`Hours in row ${index + 1} must be at least 1 and use 0.5-hour increments.`);
-      }
-    });
+    const authorizedHours = Number(row.auth);
+    const renderedHours = Number(row.actual);
+    if (!Number.isFinite(authorizedHours) || authorizedHours < 1 || authorizedHours > 8 || Math.round(authorizedHours * 2) !== authorizedHours * 2) {
+      throw new Error(`Authorized hours for row ${index + 1} must be between 1 and 8, using 0.5-hour increments.`);
+    }
+    if (row.actual !== '' && row.actual != null && (!Number.isFinite(renderedHours) || renderedHours < 1 || renderedHours > authorizedHours || Math.round(renderedHours * 2) !== renderedHours * 2)) {
+      throw new Error(`Rendered hours for row ${index + 1} must be between 1 and the authorized hours (${authorizedHours}).`);
+    }
   });
   data.dateSubmitted = String(formDate).slice(0, 10);
   data.submittedDate = data.dateSubmitted;
