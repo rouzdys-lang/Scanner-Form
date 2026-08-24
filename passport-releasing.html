@@ -2509,21 +2509,23 @@ function validateOvertimeSubmission(data) {
 }
 
 function removeDuplicateOvertimeApprovalLabel() {
-  const frame = document.getElementById('overtimeFrame');
-  const doc = frame?.contentDocument;
-  if (!doc?.body) return;
-  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
-  const textNodes = [];
-  while (walker.nextNode()) textNodes.push(walker.currentNode);
-  textNodes.forEach(node => {
-    if (/^\s*Approval Supervisor\s*$/i.test(node.nodeValue)) node.nodeValue = 'Supervisor';
-  });
+  try {
+    const frame = document.getElementById('overtimeFrame');
+    const doc = frame?.contentDocument;
+    if (!doc?.body) return;
+    doc.querySelectorAll('label,td,th,div,span,p').forEach(element => {
+      if (/^\s*Approval Supervisor\s*$/i.test(element.textContent)) {
+        element.textContent = 'Supervisor';
+      }
+    });
+  } catch (e) {}
 }
 
 document.getElementById('overtimeFrame')?.addEventListener('load', () => {
   removeDuplicateOvertimeApprovalLabel();
   setTimeout(removeDuplicateOvertimeApprovalLabel, 100);
 });
+setInterval(removeDuplicateOvertimeApprovalLabel, 500);
 
 window.addEventListener('message', async function(event){
   const frame = document.getElementById('overtimeFrame');
