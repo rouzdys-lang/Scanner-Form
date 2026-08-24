@@ -2512,13 +2512,16 @@ window.addEventListener('message', async function(event){
   const frame = document.getElementById('overtimeFrame');
   if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
   try{
-    const data = validateOvertimeSubmission({ ...(event.data.data || {}) });
+    const employeeName = String(currentUser?.full_name || '').trim();
+    if (!employeeName) throw new Error('Your account must have a full name before filing overtime.');
+    const data = { ...(event.data.data || {}), name: employeeName };
+    validateOvertimeSubmission(data);
     await sbFetch('overtime_submissions', {
       method: 'POST',
       body: JSON.stringify({
         id: 'ot_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random().toString(36).slice(2, 10)),
         submitted_by: currentUser ? currentUser.username : '',
-        submitted_by_name: currentUser ? currentUser.full_name : '',
+        submitted_by_name: employeeName,
         form_data: data,
         created_at: new Date().toISOString()
       })
@@ -5606,7 +5609,7 @@ async function exportOvertimeRecords() {
         record.created_at ? new Date(record.created_at).toLocaleString() : '',
         data.name || data.employeeName || '',
         data.employeeId || '',
-        record.submitted_by_name || record.submitted_by || '',
+        record.submitted_by_name || data.name || data.employeeName || '',
         data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '',
         row.date || '',
         row.auth || '',
@@ -5669,7 +5672,7 @@ async function loadOvertimeRecords() {
       const data = record.form_data || {};
       const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
       const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-      return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || record.submitted_by || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
+      return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(record.submitted_by_name || data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
     }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
   } catch (error) {
     document.getElementById('overtimeRecordCount').textContent = '';
