@@ -1366,6 +1366,7 @@ function saveSbCache(path, method, data) {
 
 // Toggle controls for debug and release notifications
 function toggleDorDebug() {
+  if (currentUser?.role === 'overtime') return;
   const el = document.getElementById('dorDebug');
   const btn = document.getElementById('btnToggleDebug');
   if (!el) return;
@@ -1379,6 +1380,7 @@ function toggleDorDebug() {
 }
 
 function toggleReleaseNotifications() {
+  if (currentUser?.role === 'overtime') return;
   const panel = document.getElementById('releaseNotificationsPanel');
   const btn = document.getElementById('btnToggleRelease');
   if (!panel) return;
@@ -5389,6 +5391,9 @@ function applyRoleUI() {
     `<b>${currentUser.full_name}</b>${supervisorBadge} <span style="color:var(--accent);font-size:10px;">[${role.toUpperCase()}]</span>`;
 
   buildNavigationMenu(role);
+
+  const floatingControls = document.getElementById('floatingControls');
+  if (floatingControls) floatingControls.style.display = role === 'overtime' ? 'none' : 'flex';
 
   if (role === 'overtime' || ['overtime_manager', 'hr', 'human_resources'].includes(role)) {
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
