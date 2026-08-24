@@ -2508,6 +2508,23 @@ function validateOvertimeSubmission(data) {
   return data;
 }
 
+function removeDuplicateOvertimeApprovalLabel() {
+  const frame = document.getElementById('overtimeFrame');
+  const doc = frame?.contentDocument;
+  if (!doc?.body) return;
+  const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  while (walker.nextNode()) textNodes.push(walker.currentNode);
+  textNodes.forEach(node => {
+    if (/^\s*Approval Supervisor\s*$/i.test(node.nodeValue)) node.nodeValue = 'Supervisor';
+  });
+}
+
+document.getElementById('overtimeFrame')?.addEventListener('load', () => {
+  removeDuplicateOvertimeApprovalLabel();
+  setTimeout(removeDuplicateOvertimeApprovalLabel, 100);
+});
+
 window.addEventListener('message', async function(event){
   const frame = document.getElementById('overtimeFrame');
   if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
