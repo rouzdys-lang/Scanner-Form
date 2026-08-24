@@ -599,6 +599,7 @@
       <span id="currentUserBadge" style="font-size:11px;color:var(--muted);border-left:1px solid var(--border);padding-left:12px;"></span>
       <button id="btnNavToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;display:none;">Hide Nav</button>
       <button id="themeToggle" class="btn btn-muted" style="padding:4px 12px;font-size:11px;">Theme</button>
+      <button class="btn btn-muted" id="btnChangePassword" onclick="openChangePasswordModal()" style="padding:4px 12px;font-size:11px;display:none;">Change Password</button>
       <button class="btn btn-muted" onclick="doLogout()" style="padding:4px 12px;font-size:11px;">Logout</button>
     </div>
   </div>
@@ -1288,6 +1289,31 @@
       <div class="modal-footer">
         <button class="btn btn-muted" onclick="document.getElementById('transferModal').classList.remove('show')">Cancel</button>
         <button class="btn btn-info" onclick="executeTransfer()">Transfer Now</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHANGE PASSWORD MODAL -->
+  <div class="modal-overlay" id="changePasswordModal">
+    <div class="modal">
+      <div class="modal-header">Change Password</div>
+      <div class="modal-body" style="gap:16px;">
+        <div class="form-group">
+          <label>Current Password</label>
+          <input class="form-control" id="cpCurrentPassword" type="password" placeholder="Enter current password" />
+        </div>
+        <div class="form-group">
+          <label>New Password</label>
+          <input class="form-control" id="cpNewPassword" type="password" placeholder="Min 6 characters" />
+        </div>
+        <div class="form-group">
+          <label>Confirm New Password</label>
+          <input class="form-control" id="cpConfirmPassword" type="password" placeholder="Confirm new password" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-muted" onclick="document.getElementById('changePasswordModal').classList.remove('show')">Cancel</button>
+        <button class="btn btn-primary" onclick="changeUserPassword()">Update Password</button>
       </div>
     </div>
   </div>
@@ -5444,6 +5470,69 @@
     document.getElementById('loginError').textContent = '';
   }
 
+  function openChangePasswordModal() {
+    ['cpCurrentPassword','cpNewPassword','cpConfirmPassword'].forEach(id => document.getElementById(id).value='');
+    document.getElementById('changePasswordModal').classList.add('show');
+  }
+
+  async function changeUserPassword() {
+    if (!currentUser) {
+      toast('Not logged in', 'error');
+      return;
+    }
+    const currentPwd = document.getElementById('cpCurrentPassword').value;
+    const newPwd = document.getElementById('cpNewPassword').value;
+    const confirmPwd = document.getElementById('cpConfirmPassword').value;
+    
+    if (!currentPwd || !newPwd || !confirmPwd) {
+      toast('All fields required', 'error');
+      return;
+    }
+    if (newPwd.length < 6) {
+      toast('New password must be at least 6 characters', 'error');
+      return;
+    }
+    if (newPwd !== confirmPwd) {
+      toast('Passwords do not match', 'error');
+      return;
+    }
+
+    try {
+      // Verify current password
+      const currentHash = await hashPassword(currentPwd);
+      const user = await sbFetch(`app_users?id=eq.${currentUser.id}&select=*`);
+      if (!user || user.length === 0) {
+        toast('User not found', 'error');
+        return;
+      }
+      const storedHash = String(user[0].password_hash || '').trim().toLowerCase();
+      const storedPassword = String(user[0].password || '').trim();
+      const enteredHash = currentHash.toLowerCase();
+      const matchesPassword = (
+        (storedHash && (storedHash === enteredHash || storedHash === currentPwd || storedHash === currentPwd.toLowerCase()))
+        || (storedPassword && (storedPassword === currentPwd || storedPassword === enteredHash))
+      );
+      if (!matchesPassword) {
+        toast('Current password is incorrect', 'error');
+        return;
+      }
+
+      // Update password
+      const newHash = await hashPassword(newPwd);
+      await sbFetch(`app_users?id=eq.${currentUser.id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({ password_hash: newHash })
+      });
+      
+      toast('Password changed successfully', 'success');
+      document.getElementById('changePasswordModal').classList.remove('show');
+      await writeLog('PASSWORD_CHANGE', 'User changed their own password', '');
+    } catch (e) {
+      toast('Error: ' + (e.message || 'Failed to change password'), 'error');
+      console.error('Password change error:', e);
+    }
+  }
+
   function applyRoleUI() {
     if (!currentUser) return;
     const role = currentUser.role;
@@ -5451,6 +5540,10 @@
     const supervisorBadge = currentUser.username === 'supervisor' ? ` <span style="color:#f59e0b;font-size:10px;font-weight:700;">[SUPERVISOR]</span>` : '';
     document.getElementById('currentUserBadge').innerHTML =
       `<b>${currentUser.full_name}</b>${supervisorBadge} <span style="color:var(--accent);font-size:10px;">[${role.toUpperCase()}]</span>`;
+
+    // Show change password button for all logged-in users
+    const btnChangePassword = document.getElementById('btnChangePassword');
+    if (btnChangePassword) btnChangePassword.style.display = 'inline-block';
 
     buildNavigationMenu(role);
 
