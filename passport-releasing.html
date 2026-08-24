@@ -1709,7 +1709,6 @@ function saveDorEntries(arr) {
 }
 
 async function checkDorTriggers() {
-  if (isOnOvertimePage()) return;
   const entriesOrPromise = loadDorEntries();
   const entries = (entriesOrPromise && typeof entriesOrPromise.then === 'function') ? await entriesOrPromise : entriesOrPromise;
   console.debug('[DOR] loaded entries', entries);
@@ -2086,7 +2085,6 @@ function setLastDailySync(value) {
 }
 
 function updateSyncBadge() {
-  if (isOnOvertimePage()) return;
   const badge = document.getElementById('syncBadge');
   if (!badge) return;
   if (offlineSyncProgress >= 0) {
@@ -2396,14 +2394,12 @@ function cacheUpdateSource(trackingNum, newSource) {
 }
 function buildCache() { hotCache.clear(); savePersistedHotCache(); updateCacheBadge(); }
 function updateCacheBadge() {
-  if (isOnOvertimePage()) return;
   const b = document.getElementById('cacheBadge');
   if (b) { b.textContent = `✓ ${hotCache.size} cached`; b.style.color = 'var(--success)'; }
 }
 
 // ==================== SUPABASE API ====================
 async function checkConn() {
-  if (isOnOvertimePage()) return;
   try {
     await sbFetch('entries?select=id&limit=1');
     document.getElementById('connBadge').className = 'conn-badge conn-ok';
@@ -2417,7 +2413,6 @@ async function checkConn() {
 }
 
 async function updateTotalCount() {
-  if (isOnOvertimePage()) return;
   try {
     const r = await fetch(`${SUPABASE_URL}/rest/v1/entries?select=id`, { headers: { ...HEADERS, 'Prefer': 'count=exact', 'Range-Unit': 'items', 'Range': '0-0' } });
     const count = r.headers.get('Content-Range')?.split('/')[1] || '?';
@@ -2579,17 +2574,17 @@ function showPage(name) {
   setActiveNavOption(name);
   // Hide status badges on overtime page for end users
   if (name === 'overtime') {
-    document.getElementById('connBadge')?.setAttribute('style', 'display:none !important');
-    document.getElementById('cacheBadge')?.setAttribute('style', 'display:none !important');
-    document.getElementById('syncBadge')?.setAttribute('style', 'display:none !important');
-    document.getElementById('totalBadge')?.setAttribute('style', 'display:none !important');
-    document.getElementById('dorBadge')?.setAttribute('style', 'display:none !important');
+    document.getElementById('connBadge')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('cacheBadge')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('syncBadge')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('totalBadge')?.style.setProperty('display', 'none', 'important');
+    document.getElementById('dorBadge')?.style.setProperty('display', 'none', 'important');
   } else {
-    document.getElementById('connBadge')?.removeAttribute('style');
-    document.getElementById('cacheBadge')?.removeAttribute('style');
-    document.getElementById('syncBadge')?.removeAttribute('style');
-    document.getElementById('totalBadge')?.removeAttribute('style');
-    document.getElementById('dorBadge')?.removeAttribute('style');
+    document.getElementById('connBadge')?.style.removeProperty('display');
+    document.getElementById('cacheBadge')?.style.removeProperty('display');
+    document.getElementById('syncBadge')?.style.removeProperty('display');
+    document.getElementById('totalBadge')?.style.removeProperty('display');
+    document.getElementById('dorBadge')?.style.removeProperty('display');
   }
   if (name === 'scanner') {
     const allowed = getUserAllowedDatabases(currentUser) || [];
