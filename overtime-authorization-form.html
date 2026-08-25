@@ -143,11 +143,12 @@
         signatureInput.value = signatureMode === 'type' ? document.getElementById('typedSignature').textContent.trim() : signatureCanvas.toDataURL('image/png');
       }
       function setSignatureMode(mode) {
+        const previousMode = signatureMode;
         signatureMode = mode;
         const typed = document.getElementById('typedSignature');
         typed.style.display = mode === 'type' ? 'flex' : 'none';
         signatureCanvas.style.display = mode === 'type' ? 'none' : 'block';
-        if (mode === 'type') {
+        if (mode === 'type' && previousMode !== 'type') {
           const name = employeeNameInput.value.trim();
           typed.textContent = name;
           updateSignatureValue();
@@ -165,9 +166,13 @@
       function syncAuthorizationFields() {
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
-        overtimeDates.forEach(input => { input.min = accomplished || ''; });
         const enteredDates = overtimeDates.map(input => input.value).filter(Boolean).sort();
         accomplishedInput.max = enteredDates[0] || '';
+        if (enteredDates[0] && accomplished && accomplished > enteredDates[0]) {
+          accomplishedInput.value = enteredDates[0];
+          submittedInput.value = enteredDates[0];
+        }
+        overtimeDates.forEach(input => { input.min = accomplishedInput.value || ''; });
         employeeSignatureNameInput.value = employeeNameInput.value;
         if (signatureMode === 'type') setSignatureMode('type');
         const total = hourInputs.reduce((sum, input) => {
@@ -204,7 +209,8 @@
           totalHours: anticipatedInput.value,
           justification: justificationInput.value,
           empSignName: document.querySelector('[name="employeeSignatureName"]').value.trim(),
-          empSignature: signatureInput.value.trim()
+          empSignature: signatureInput.value.startsWith('data:image/') ? '' : signatureInput.value.trim(),
+          empSignatureImage: signatureInput.value.startsWith('data:image/') ? signatureInput.value : ''
         };
         window.parent.postMessage({ type: 'overtime-save', data }, '*');
       }
