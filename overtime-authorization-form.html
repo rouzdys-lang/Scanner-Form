@@ -6,31 +6,38 @@
   <title>Overtime Authorization Form</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 22px; color: #111; background: #fff; font-family: Arial, sans-serif; font-size: 12px; }
+    body { margin: 0; padding: 16px; color: #111; background: #fff; font-family: Arial, sans-serif; font-size: 11px; }
     .sheet { max-width: 980px; margin: 0 auto; }
-    h1 { margin: 0 0 26px; color: #111cff; font-size: 17px; }
+    .department-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+    .seal-placeholder { width: 58px; height: 58px; border: 2px solid #aa8d27; border-radius: 50%; display: grid; place-items: center; flex: 0 0 58px; color: #aa8d27; font-size: 9px; font-weight: 700; text-align: center; }
+    .department-name { font-size: 15px; font-weight: 700; }
+    .department-details { margin-top: 2px; font-size: 8px; }
+    h1 { margin: 0 0 20px; color: #111; font-size: 16px; }
     .grid { display: grid; gap: 0; }
-    .grid-four { grid-template-columns: 1.3fr 1.15fr 1.35fr 1fr; }
+    .grid-three-top { grid-template-columns: 1.3fr 1.15fr 1.35fr; }
     .grid-two { grid-template-columns: 1fr 1fr; }
     .grid-three { grid-template-columns: 1fr 1fr 1fr; }
-    .field { min-height: 42px; border: 1px solid #222; padding: 7px; }
-    .label { display: block; margin-bottom: 7px; font-weight: 700; font-size: 12px; text-transform: uppercase; }
+    .field { min-height: 38px; border: 1px solid #222; padding: 5px 7px; }
+    .label { display: block; margin-bottom: 5px; font-weight: 700; font-size: 10px; text-transform: uppercase; }
     input, textarea { width: 100%; border: 0; outline: 0; font: inherit; color: #111; background: transparent; }
     textarea { min-height: 34px; resize: vertical; }
-    .section-title { margin: 22px 0 5px; font-size: 13px; font-weight: 700; text-transform: uppercase; }
+    .section-title { margin: 18px 0 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
     table { width: 100%; border-collapse: collapse; }
-    th, td { height: 33px; border: 1px solid #222; padding: 5px 7px; text-align: left; }
+    th, td { height: 29px; border: 1px solid #222; padding: 4px 7px; text-align: left; }
     th { text-align: center; font-weight: 700; }
-    .hours { display: grid; grid-template-columns: 1fr 1fr; max-width: 580px; margin-top: 18px; }
+    .hours { display: grid; grid-template-columns: 1fr 1fr; max-width: 580px; margin-top: 14px; }
     .hours .field:last-child { background: #ddd; color: #e11; font-size: 16px; font-weight: 700; }
-    .note { margin: 16px 0 8px; }
-    .signature-field { min-height: 106px; }
+    .note { margin: 14px 0 7px; }
+    .signature-field { min-height: 92px; }
     .footer-note { margin-top: 4px; }
     .form-number { margin-top: 28px; text-align: right; font-weight: 700; font-style: italic; }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
+    .form-actions button { border: 1px solid #222; padding: 7px 14px; background: #fff; color: #111; font: 700 11px Arial, sans-serif; cursor: pointer; }
+    .form-actions button[type="submit"] { background: #111; color: #fff; }
     @media (max-width: 680px) {
-      body { padding: 12px; font-size: 11px; }
-      .grid-four, .grid-two, .grid-three { grid-template-columns: 1fr 1fr; }
-      .grid-four .field:last-child { grid-column: 1 / -1; }
+      body { padding: 10px; font-size: 10px; }
+      .grid-three-top, .grid-two, .grid-three { grid-template-columns: 1fr 1fr; }
+      .grid-three-top .field:last-child { grid-column: 1 / -1; }
       .field { min-height: 48px; }
       .label { font-size: 10px; }
     }
@@ -38,16 +45,22 @@
 </head>
 <body>
   <main class="sheet">
+    <div class="department-header">
+      <div class="seal-placeholder" aria-label="DFAMPC seal">DFAMPC</div>
+      <div>
+        <div class="department-name">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</div>
+        <div class="department-details">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939</div>
+      </div>
+    </div>
     <h1>OVERTIME AUTHORIZATION FORM</h1>
-    <div class="grid grid-four">
+    <div class="grid grid-three-top">
       <div class="field"><span class="label">Employee Name</span><input name="employeeName"></div>
       <div class="field"><span class="label">Employee ID</span><input name="employeeId"></div>
-      <div class="field"><span class="label">Email Address</span><input type="email" name="email"></div>
       <div class="field"><span class="label">Date Form Accomplished</span><input type="date" name="dateAccomplished"></div>
     </div>
     <div class="grid grid-two" style="margin-top: 26px;">
-      <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor"></div>
-      <div class="field"><span class="label">Department</span><input name="department"></div>
+      <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor" value="RONEL JC RUBIO"></div>
+      <div class="field"><span class="label">Consular Office</span><input name="department" value="CONSULAR OFFICE"></div>
     </div>
     <div class="section-title">Date(s) of Overtime Work</div>
     <table>
@@ -61,10 +74,10 @@
     </table>
     <div class="hours">
       <div class="field"><span class="label">Anticipated Number of Overtime Hours</span></div>
-      <div class="field"><input name="anticipatedHours" inputmode="decimal"></div>
+      <div class="field"><input name="anticipatedHours" inputmode="decimal" readonly></div>
     </div>
     <div class="note">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</div>
-    <div class="field"><textarea name="justification"></textarea></div>
+    <div class="field"><textarea name="justification" readonly></textarea></div>
     <div class="grid grid-three" style="margin-top: 26px;">
       <div class="field signature-field"><span class="label">Employee Name</span><input name="employeeSignatureName"></div>
       <div class="field signature-field"><span class="label">Signature</span><input name="employeeSignature"></div>
@@ -83,6 +96,71 @@
     </div>
     <div class="footer-note">Note: This form must be accomplished before rendering an actual overtime; no authorization means no payment of overtime.</div>
     <div class="form-number">HR Form No. 2022-006</div>
+    <div class="form-actions">
+      <button type="button" onclick="clearAuthorizationForm()">Clear</button>
+      <button type="submit" onclick="saveAuthorization(event)">Save Authorization</button>
+    </div>
+    <script>
+      const accomplishedInput = document.querySelector('[name="dateAccomplished"]');
+      const submittedInput = document.querySelector('[name="dateSubmitted"]');
+      const overtimeDates = [...document.querySelectorAll('input[type="date"][name^="date"]')].filter(input => input !== accomplishedInput && input !== submittedInput);
+      const hourInputs = [...document.querySelectorAll('input[name^="hours"]')];
+      const reasonInputs = [...document.querySelectorAll('input[name^="reason"]')];
+      const anticipatedInput = document.querySelector('[name="anticipatedHours"]');
+      const justificationInput = document.querySelector('[name="justification"]');
+
+      function syncAuthorizationFields() {
+        const accomplished = accomplishedInput.value;
+        submittedInput.value = accomplished;
+        overtimeDates.forEach(input => { input.max = accomplished || ''; });
+        const total = hourInputs.reduce((sum, input) => {
+          const value = Number.parseFloat(input.value);
+          return Number.isFinite(value) ? sum + value : sum;
+        }, 0);
+        anticipatedInput.value = total ? String(Number(total.toFixed(2))) : '';
+        justificationInput.value = reasonInputs.map(input => input.value.trim()).filter(Boolean).join('; ');
+      }
+
+      accomplishedInput.addEventListener('input', syncAuthorizationFields);
+      [...hourInputs, ...reasonInputs].forEach(input => input.addEventListener('input', syncAuthorizationFields));
+      syncAuthorizationFields();
+
+      function saveAuthorization(event) {
+        event.preventDefault();
+        syncAuthorizationFields();
+        const rows = overtimeDates.map((dateInput, index) => ({
+          date: dateInput.value,
+          auth: document.querySelector(`[name="hours${index + 1}"]`).value,
+          reason: document.querySelector(`[name="reason${index + 1}"]`).value
+        })).filter(row => row.date || row.auth || row.reason);
+        const data = {
+          formType: 'authorization',
+          name: document.querySelector('[name="employeeName"]').value.trim(),
+          employeeId: document.querySelector('[name="employeeId"]').value.trim(),
+          dateAccomplished: accomplishedInput.value,
+          dateSubmitted: submittedInput.value,
+          supervisor: document.querySelector('[name="supervisor"]').value,
+          department: document.querySelector('[name="department"]').value,
+          rows,
+          total: anticipatedInput.value,
+          totalHours: anticipatedInput.value,
+          justification: justificationInput.value,
+          empSignName: document.querySelector('[name="employeeSignatureName"]').value.trim(),
+          empSignature: document.querySelector('[name="employeeSignature"]').value.trim()
+        };
+        window.parent.postMessage({ type: 'overtime-save', data }, '*');
+      }
+
+      function clearAuthorizationForm() {
+        document.querySelectorAll('input:not([name="supervisor"]):not([name="department"]), textarea').forEach(input => { input.value = ''; });
+        syncAuthorizationFields();
+      }
+
+      window.addEventListener('message', event => {
+        if (event.data?.type === 'overtime-reset') clearAuthorizationForm();
+        if (event.data?.type === 'overtime-save-result' && !event.data.ok) alert('Authorization could not be saved. Please check the required fields.');
+      });
+    </script>
   </main>
 </body>
 </html>
