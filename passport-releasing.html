@@ -103,6 +103,12 @@
     /* PAGES */
     .page { display: none; padding: 22px 24px 28px; }
     .page.active { display: block; }
+    .overtime-tabs { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+    .overtime-tab { padding: 10px 16px; border: 1px solid rgba(103,245,226,0.22); border-radius: 10px; background: rgba(8,14,24,0.9); color: var(--muted); font-size: 13px; font-weight: 800; cursor: pointer; transition: all 0.18s ease; }
+    .overtime-tab:hover { border-color: var(--accent); color: var(--text); }
+    .overtime-tab.active { background: linear-gradient(135deg, rgba(102,243,225,0.18) 0%, rgba(69,184,255,0.14) 100%); border-color: var(--accent); color: var(--text); }
+    .overtime-form-panel { display: none; }
+    .overtime-form-panel.active { display: block; }
     .overtime-frame { width: 100%; height: calc(100vh - 190px); min-height: 760px; border: 0; background: #fff; display: block; }
 
     /* SCANNER PAGE */
@@ -614,7 +620,16 @@
 
   <!-- ========== SCANNER PAGE ========== -->
   <div id="page-overtime" class="page">
-    <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
+    <div class="overtime-tabs" role="tablist" aria-label="Overtime forms">
+      <button type="button" class="overtime-tab" role="tab" aria-selected="false" data-overtime-form="authorization" onclick="showOvertimeForm('authorization')">Overtime Authorization Form</button>
+      <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
+    </div>
+    <div id="overtime-form-authorization" class="overtime-form-panel">
+      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1" title="Overtime Authorization form"></iframe>
+    </div>
+    <div id="overtime-form-rendered" class="overtime-form-panel active">
+      <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
+    </div>
   </div>
 
   <div id="page-overtime-records" class="page">
@@ -2456,6 +2471,18 @@
   // Helper to check if we're on overtime page
   function isOnOvertimePage() {
     return document.getElementById('page-overtime')?.classList.contains('active') || false;
+  }
+
+  function showOvertimeForm(formType) {
+    const selected = formType === 'authorization' ? 'authorization' : 'rendered';
+    document.querySelectorAll('.overtime-form-panel').forEach(panel => {
+      panel.classList.toggle('active', panel.id === `overtime-form-${selected}`);
+    });
+    document.querySelectorAll('.overtime-tab').forEach(tab => {
+      const active = tab.dataset.overtimeForm === selected;
+      tab.classList.toggle('active', active);
+      tab.setAttribute('aria-selected', String(active));
+    });
   }
 
   function buildNavigationMenu(role = 'admin') {
