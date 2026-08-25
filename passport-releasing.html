@@ -4951,7 +4951,7 @@
     }
 
     html += `</div>`;
-    return html;
+    return html.replace(/<p[^>]*>note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i><\/p>/i, '');
   }
 
   // ==================== DELETE BULK ====================
