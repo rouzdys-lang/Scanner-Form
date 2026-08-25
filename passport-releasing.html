@@ -664,7 +664,7 @@
       </div>
       <div class="overtime-auth-row two">
         <div class="overtime-auth-field"><label>Immediate Supervisor</label><input type="text" aria-label="Immediate supervisor"></div>
-        <div class="overtime-auth-field"><label>Department</label><input type="text" aria-label="Department"></div>
+        <div class="overtime-auth-field"><label>Consular Office</label><input type="text" aria-label="Consular office"></div>
       </div>
       <p class="overtime-auth-section-title">Date(s) of Overtime Work</p>
       <table class="overtime-auth-table" aria-label="Dates of overtime work">
@@ -678,7 +678,7 @@
         <div>Anticipated Number<br>of Overtime Hours</div><div><input type="number" min="0" step="0.5" aria-label="Anticipated number of overtime hours"></div>
       </div>
       <div class="overtime-auth-signatures">
-        <div class="overtime-auth-field"><label>Supervisor</label><input type="text" aria-label="Supervisor"></div>
+        <div class="overtime-auth-field"><label>Supervisor</label><input type="text" aria-label="Supervisor" value="RONEL JC RUBIO" readonly></div>
         <div class="overtime-auth-field"><label>Signature</label><input type="text" aria-label="Signature"></div>
         <div class="overtime-auth-field"><label>Date of Approval</label><input type="date" aria-label="Date of approval"></div>
       </div>
@@ -2677,6 +2677,81 @@
     } catch(e) {}
   }
 
+  function getOvertimeAuthorizationDate(rows) {
+    const dates = rows.map(row => String(row?.date || '').slice(0, 10)).filter(Boolean).sort();
+    return dates[0] || '';
+  }
+
+  function syncOvertimeAuthorizationForm() {
+    try {
+      const frame = document.getElementById('overtimeFrame');
+      const doc = frame?.contentDocument;
+      if (!doc) return;
+      const rows = [...doc.querySelectorAll('#ot-rows tr')].map(row => ({
+        date: row.querySelector('.c-date')?.value || '',
+        auth: row.querySelector('.c-auth')?.value || '',
+        reason: doc.getElementById('f-justification')?.value || ''
+      })).filter(row => row.date || row.auth || row.reason);
+      const name = doc.getElementById('f-name')?.value || '';
+      const employeeId = doc.getElementById('f-id')?.value || '';
+      const office = doc.getElementById('f-department')?.value || '';
+      const authorizationDate = getOvertimeAuthorizationDate(rows);
+      const fields = document.querySelectorAll('.overtime-authorization .overtime-auth-field input');
+      const setValue = (label, value) => {
+        const field = [...fields].find(input => input.getAttribute('aria-label') === label);
+        if (field) field.value = value;
+      };
+      setValue('Employee name', name);
+      setValue('Employee ID', employeeId);
+      setValue('Consular office', office);
+      setValue('Date form accomplished', authorizationDate);
+      setValue('Immediate supervisor', 'RONEL JC RUBIO');
+      setValue('Date of approval', authorizationDate);
+
+      const tbody = document.querySelector('.overtime-auth-table tbody');
+      if (tbody) {
+        tbody.innerHTML = (rows.length ? rows : [{}, {}]).map((row, index) => `<tr><td><input type="date" aria-label="Overtime date ${index + 1}" value="${row.date}"></td><td><input type="number" aria-label="Overtime hours ${index + 1}" value="${row.auth}"></td><td><input type="text" aria-label="Overtime reason ${index + 1}" value="${escapeOvertimeText(row.reason)}"></td></tr>`).join('');
+      }
+      const anticipated = rows.reduce((total, row) => total + (Number(row.auth) || 0), 0);
+      const anticipatedInput = document.querySelector('.overtime-auth-total input');
+      if (anticipatedInput) anticipatedInput.value = anticipated ? String(anticipated) : '';
+    } catch (e) {}
+  }
+
+  function syncRenderedOvertimeFormFromAuthorization(event) {
+    try {
+      const frame = document.getElementById('overtimeFrame');
+      const doc = frame?.contentDocument;
+      const target = event?.target;
+      if (!doc || !target) return;
+      const setRenderedValue = (id, value) => {
+        const input = doc.getElementById(id);
+        if (!input || input.value === value) return;
+        input.value = value;
+        input.dispatchEvent(new Event('input', { bubbles: true }));
+        input.dispatchEvent(new Event('change', { bubbles: true }));
+      };
+      if (target.getAttribute('aria-label') === 'Employee name') setRenderedValue('f-name', target.value);
+      if (target.getAttribute('aria-label') === 'Employee ID') setRenderedValue('f-id', target.value);
+      if (target.getAttribute('aria-label') === 'Consular office') setRenderedValue('f-department', target.value);
+      if (target.closest('.overtime-auth-table')) {
+        const authRows = [...document.querySelectorAll('.overtime-auth-table tbody tr')];
+        while (doc.querySelectorAll('#ot-rows tr').length < authRows.length) doc.defaultView.addRow();
+        authRows.forEach((row, index) => {
+          const renderedRow = doc.querySelectorAll('#ot-rows tr')[index];
+          if (!renderedRow) return;
+          const date = row.querySelector('input[type="date"]')?.value || '';
+          const hours = row.querySelector('input[type="number"]')?.value || '';
+          const reason = row.querySelector('input[type="text"]')?.value || '';
+          renderedRow.querySelector('.c-date').value = date;
+          renderedRow.querySelector('.c-auth').value = hours;
+          doc.getElementById('f-justification').value = reason;
+        });
+        doc.querySelectorAll('.c-actual').forEach(input => input.dispatchEvent(new Event('input', { bubbles: true })));
+      }
+    } catch (e) {}
+  }
+
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
     removeDuplicateOvertimeApprovalLabel();
     populateOvertimeConsularOffice();
@@ -2686,6 +2761,12 @@
     setTimeout(updateOvertimeFormHeader, 300);
     setTimeout(populateOvertimeConsularOffice, 100);
     setTimeout(injectOvertimeFormStyles, 100);
+    const doc = document.getElementById('overtimeFrame')?.contentDocument;
+    doc?.addEventListener('input', syncOvertimeAuthorizationForm);
+    doc?.addEventListener('change', syncOvertimeAuthorizationForm);
+    document.querySelector('.overtime-authorization')?.addEventListener('input', syncRenderedOvertimeFormFromAuthorization);
+    document.querySelector('.overtime-authorization')?.addEventListener('change', syncRenderedOvertimeFormFromAuthorization);
+    syncOvertimeAuthorizationForm();
   });
   setInterval(updateOvertimeFormHeader, 500);
 
@@ -5755,6 +5836,21 @@
     return removeOvertimeApprovalSection(html);
   }
 
+  function buildCombinedOvertimeDocumentHtml(record) {
+    const data = record.form_data || {};
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    const authorizationDate = getOvertimeAuthorizationDate(rows);
+    const anticipated = rows.reduce((total, row) => total + (Number(row?.auth) || 0), 0);
+    const reason = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
+    const authRows = (rows.length ? rows : [{}]).map(row => `<tr><td>${escapeOvertimeText(row.date || '')}</td><td>${escapeOvertimeText(row.auth || '')}</td><td>${reason}</td></tr>`).join('');
+    const authorization = `<section class="authorization"><h2>OVERTIME AUTHORIZATION FORM</h2><table class="auth-fields"><tr><th>EMPLOYEE NAME</th><th>EMPLOYEE ID</th><th>EMAIL ADDRESS</th><th>DATE FORM<br>ACCOMPLISHED</th></tr><tr><td>${escapeOvertimeText(data.name)}</td><td>${escapeOvertimeText(data.employeeId)}</td><td>${escapeOvertimeText(data.email || data.emailAddress || '')}</td><td>${escapeOvertimeText(authorizationDate)}</td></tr><tr><th colspan="2">IMMEDIATE SUPERVISOR</th><th colspan="2">CONSULAR OFFICE</th></tr><tr><td colspan="2">RONEL JC RUBIO</td><td colspan="2">${escapeOvertimeText(data.department || '')}</td></tr></table><h3>DATE(S) OF OVERTIME WORK</h3><table class="auth-table"><tr><th>DATE</th><th>HOURS</th><th>REASON</th></tr>${authRows}</table><table class="auth-total"><tr><th>ANTICIPATED NUMBER<br>OF OVERTIME HOURS</th><td>${anticipated || ''}</td></tr></table><table class="auth-sign"><tr><th>SUPERVISOR</th><th>SIGNATURE</th><th>DATE OF APPROVAL</th></tr><tr><td>RONEL JC RUBIO</td><td></td><td>${escapeOvertimeText(authorizationDate)}</td></tr></table></section>`;
+    const renderedHtml = buildOvertimeDocumentHtml(record);
+    const bodyStart = renderedHtml.indexOf('<body>');
+    const bodyEnd = renderedHtml.lastIndexOf('</body>');
+    const renderedBody = bodyStart >= 0 && bodyEnd > bodyStart ? renderedHtml.slice(bodyStart + 6, bodyEnd) : '';
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization and Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.2in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#000;margin:0}.authorization{height:3.45in;overflow:hidden;margin:0 0 .04in;padding:.02in .08in}.authorization h2{margin:0 0 .12in;color:#00f;font-size:10pt;line-height:1}.authorization table{width:100%;border-collapse:collapse;table-layout:fixed}.authorization th,.authorization td{border:1px solid #000;padding:2px 4px;height:.2in;font-size:6.5pt;line-height:1.02;text-transform:uppercase}.authorization th{font-weight:700;border:0;text-align:left;padding:0 3px 2px}.authorization .auth-fields{margin-bottom:.12in}.authorization .auth-fields tr:nth-child(3) th{padding-top:.08in}.authorization h3{font-size:7.5pt;margin:0 0 1px;text-transform:uppercase}.authorization .auth-table{margin-bottom:.07in}.authorization .auth-table th{border:1px solid #000;text-align:center;padding:2px}.authorization .auth-table td{text-align:center}.authorization .auth-total{width:67%;margin-bottom:.1in}.authorization .auth-total th,.authorization .auth-total td{border:1px solid #000;height:.34in;font-size:7.5pt;text-align:center;font-weight:700}.authorization .auth-total td{background:#d9d9d9}.authorization .auth-sign th{text-align:left}.authorization .auth-sign td{height:.26in}.rendered-form{zoom:.5}</style></head><body>${authorization}<div class="rendered-form">${renderedBody}</div></body></html>`;
+  }
+
   function downloadOvertimeDocument(record) {
     const html = buildOvertimeDocumentHtml(record);
     const data = record.form_data || {};
@@ -5775,7 +5871,7 @@
       return;
     }
     printWindow.document.open();
-    printWindow.document.write(buildOvertimeDocumentHtml(record));
+    printWindow.document.write(buildCombinedOvertimeDocumentHtml(record));
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 350);
@@ -5788,7 +5884,7 @@
       return;
     }
     previewWindow.document.open();
-    previewWindow.document.write(buildOvertimeDocumentHtml(record));
+    previewWindow.document.write(buildCombinedOvertimeDocumentHtml(record));
     previewWindow.document.close();
     previewWindow.focus();
   }
@@ -5823,7 +5919,7 @@
     const list = Array.isArray(records) ? records.filter(Boolean) : [];
     if (!list.length) return '';
     const pages = list.map(record => {
-      const html = buildOvertimeDocumentHtml(record);
+      const html = buildCombinedOvertimeDocumentHtml(record);
       const bodyStart = html.indexOf('<body>');
       const bodyEnd = html.lastIndexOf('</body>');
       if (bodyStart === -1 || bodyEnd === -1 || bodyEnd <= bodyStart) return '';
