@@ -109,6 +109,9 @@
     .overtime-tab.active { background: linear-gradient(135deg, rgba(102,243,225,0.18) 0%, rgba(69,184,255,0.14) 100%); border-color: var(--accent); color: var(--text); }
     .overtime-form-panel { display: none; }
     .overtime-form-panel.active { display: block; }
+    .overtime-record-tabs { display: flex; gap: 6px; margin-left: auto; }
+    .overtime-record-tab { padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; background: rgba(8,14,24,0.9); color: var(--muted); font-size: 11px; font-weight: 800; cursor: pointer; }
+    .overtime-record-tab.active { background: linear-gradient(135deg, rgba(102,243,225,0.18), rgba(69,184,255,0.14)); border-color: var(--accent); color: var(--text); }
     .overtime-frame { width: 100%; height: calc(100vh - 190px); min-height: 760px; border: 0; background: #fff; display: block; }
 
     /* SCANNER PAGE */
@@ -625,7 +628,7 @@
       <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
     </div>
     <div id="overtime-form-authorization" class="overtime-form-panel">
-      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1" title="Overtime Authorization form"></iframe>
+      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260826" title="Overtime Authorization form"></iframe>
     </div>
     <div id="overtime-form-rendered" class="overtime-form-panel active">
       <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
@@ -635,6 +638,10 @@
   <div id="page-overtime-records" class="page">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
+      <div class="overtime-record-tabs" role="tablist" aria-label="Overtime record database">
+        <button type="button" class="overtime-record-tab active" data-record-type="rendered" onclick="setOvertimeRecordType('rendered')">Rendered Records</button>
+        <button type="button" class="overtime-record-tab" data-record-type="authorization" onclick="setOvertimeRecordType('authorization')">Authorization Records</button>
+      </div>
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print All Checked</button>
@@ -5744,6 +5751,21 @@
   }
 
   let overtimeRecords = [];
+  let overtimeRecordType = 'rendered';
+
+  function getOvertimeRecordType(record) {
+    return record?.form_data?.formType === 'authorization' ? 'authorization' : 'rendered';
+  }
+
+  function getVisibleOvertimeRecords() {
+    return overtimeRecords.filter(record => getOvertimeRecordType(record) === overtimeRecordType);
+  }
+
+  function setOvertimeRecordType(type) {
+    overtimeRecordType = type === 'authorization' ? 'authorization' : 'rendered';
+    document.querySelectorAll('.overtime-record-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.recordType === overtimeRecordType));
+    loadOvertimeRecords();
+  }
 
   function printOvertimeDocument(record) {
     const printWindow = window.open('', '_blank');
@@ -5789,9 +5811,10 @@
   }
 
   function printSelectedOvertimeRecords() {
+    const visibleIds = new Set(getVisibleOvertimeRecords().map(record => String(record.id)));
     const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
       .map(input => overtimeRecords.find(record => String(record.id) === decodeURIComponent(input.value)))
-      .filter(Boolean);
+      .filter(record => record && visibleIds.has(String(record.id)));
     if (!selected.length) {
       toast('Check at least one overtime record to print.', 'warning');
       return;
@@ -5839,13 +5862,16 @@
   }
 
   function previewSelectedOvertimeRecords() {
+    const visibleIds = new Set(getVisibleOvertimeRecords().map(record => String(record.id)));
     const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
       .map(input => overtimeRecords.find(record => String(record.id) === decodeURIComponent(input.value))).filter(Boolean);
-    openOvertimePreview(selected);
+    const filtered = selected.filter(record => visibleIds.has(String(record.id)));
+    openOvertimePreview(filtered);
   }
 
   function printAllOvertimeRecords() {
-    if (!overtimeRecords.length) {
+    const recordsToPrint = getVisibleOvertimeRecords();
+    if (!recordsToPrint.length) {
       toast('No overtime records to print.', 'warning');
       return;
     }
@@ -5855,7 +5881,7 @@
       return;
     }
     printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(overtimeRecords)}</body></html>`);
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(recordsToPrint)}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 350);
@@ -5888,7 +5914,8 @@
   async function exportOvertimeRecords() {
     if (!canManageOvertimeRecords()) return;
     try {
-      const records = await sbFetch('overtime_submissions?select=*&order=created_at.asc&limit=5000');
+      const allRecords = await sbFetch('overtime_submissions?select=*&order=created_at.asc&limit=5000');
+      const records = allRecords.filter(record => getOvertimeRecordType(record) === overtimeRecordType);
       if (!records || records.length === 0) {
         toast('No overtime records to export.', 'warning');
         return;
@@ -5956,19 +5983,21 @@
     try {
       const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
       overtimeRecords = records;
+      const visibleRecords = getVisibleOvertimeRecords();
       const selectAll = document.getElementById('overtimeSelectAll');
       if (selectAll) {
         selectAll.checked = false;
         selectAll.indeterminate = false;
       }
-      document.getElementById('overtimeRecordCount').textContent = `${records.length} record${records.length === 1 ? '' : 's'}`;
-      body.innerHTML = records.length ? records.map(record => {
+      document.getElementById('overtimeRecordCount').textContent = `${visibleRecords.length} ${overtimeRecordType} record${visibleRecords.length === 1 ? '' : 's'}`;
+      body.innerHTML = visibleRecords.length ? visibleRecords.map(record => {
         const data = record.form_data || {};
         const employeeName = data.name || data.employeeName || 'N/A';
         const filedBy = record.submitted_by || 'N/A';
         const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
         const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${encodeURIComponent(String(record.id))}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${encodeURIComponent(String(record.id))}')">Delete</button></td></tr>`;
+        const recordTypeLabel = getOvertimeRecordType(record) === 'authorization' ? 'Authorization' : 'Rendered';
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${encodeURIComponent(String(record.id))}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><span style="font-size:10px;color:var(--accent);font-weight:700;">${recordTypeLabel}</span> <button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${encodeURIComponent(String(record.id))}')">Delete</button></td></tr>`;
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
