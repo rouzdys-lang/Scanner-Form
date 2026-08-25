@@ -4948,7 +4948,7 @@
     }
 
     html += `</div>`;
-    return html;
+    return html.replace(/<p[^>]*>note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i><\/p>/i, '');
   }
 
   // ==================== DELETE BULK ====================
@@ -5703,6 +5703,18 @@
     setTimeout(() => printWindow.print(), 350);
   }
 
+  function previewOvertimeDocument(record) {
+    const previewWindow = window.open('', '_blank');
+    if (!previewWindow) {
+      toast('Please allow pop-ups to preview the overtime form.', 'warning');
+      return;
+    }
+    previewWindow.document.open();
+    previewWindow.document.write(buildOvertimeDocumentHtml(record));
+    previewWindow.document.close();
+    previewWindow.focus();
+  }
+
   function toggleAllOvertimeRecords(checked) {
     document.querySelectorAll('.overtime-record-check').forEach(input => {
       input.checked = checked;
@@ -5861,7 +5873,7 @@
         const filedBy = record.submitted_by || 'N/A';
         const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
         const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-info" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
