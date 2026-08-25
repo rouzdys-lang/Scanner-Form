@@ -65,7 +65,7 @@
     </div>
     <div class="grid grid-two" style="margin-top: 26px;">
       <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor" value="RONEL JC RUBIO"></div>
-      <div class="field"><span class="label">Consular Office</span><input name="department" value="" readonly></div>
+      <div class="field"><span class="label">Consular Office</span><input name="department" value=""></div>
     </div>
     <div class="section-title">Date(s) of Overtime Work</div>
     <table>
@@ -110,6 +110,13 @@
       if (departmentLogo && window.parent !== window && window.parent.DFAMPC_LOGO_B64) {
         departmentLogo.src = `data:image/jpeg;base64,${window.parent.DFAMPC_LOGO_B64}`;
       }
+      function applyUserConsularOffice(fullName) {
+        const officeInput = document.querySelector('[name="department"]');
+        if (officeInput && fullName) officeInput.value = String(fullName).trim().toUpperCase();
+      }
+      window.addEventListener('message', event => {
+        if (event.data?.type === 'overtime-user-context') applyUserConsularOffice(event.data.fullName);
+      });
       const accomplishedInput = document.querySelector('[name="dateAccomplished"]');
       const submittedInput = document.querySelector('[name="dateSubmitted"]');
       const overtimeDates = [...document.querySelectorAll('input[type="date"][name^="date"]')].filter(input => input !== accomplishedInput && input !== submittedInput);
