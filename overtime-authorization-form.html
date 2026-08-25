@@ -9,7 +9,7 @@
     body { margin: 0; padding: 16px; color: #111; background: #fff; font-family: Arial, sans-serif; font-size: 11px; }
     .sheet { max-width: 980px; margin: 0 auto; }
     .department-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
-    .seal-placeholder { width: 58px; height: 58px; border: 2px solid #aa8d27; border-radius: 50%; display: grid; place-items: center; flex: 0 0 58px; color: #aa8d27; font-size: 9px; font-weight: 700; text-align: center; }
+    .department-logo { width: 58px; height: 58px; object-fit: contain; flex: 0 0 58px; }
     .department-name { font-size: 15px; font-weight: 700; }
     .department-details { margin-top: 2px; font-size: 8px; }
     h1 { margin: 0 0 20px; color: #111; font-size: 16px; }
@@ -34,6 +34,10 @@
     .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
     .form-actions button { border: 1px solid #222; padding: 7px 14px; background: #fff; color: #111; font: 700 11px Arial, sans-serif; cursor: pointer; }
     .form-actions button[type="submit"] { background: #111; color: #fff; }
+    .signature-tools { display: flex; gap: 6px; margin-top: 4px; }
+    .signature-tools button { border: 1px solid #222; padding: 3px 8px; background: #fff; color: #111; font: 700 10px Arial, sans-serif; cursor: pointer; }
+    .signature-canvas { display: block; width: 100%; height: 48px; border: 1px solid #999; margin-top: 4px; touch-action: none; }
+    .signature-typed { display: none; font: italic 22px cursive; height: 48px; align-items: center; }
     @media (max-width: 680px) {
       body { padding: 10px; font-size: 10px; }
       .grid-three-top, .grid-two, .grid-three { grid-template-columns: 1fr 1fr; }
@@ -46,7 +50,7 @@
 <body>
   <main class="sheet">
     <div class="department-header">
-      <div class="seal-placeholder" aria-label="DFAMPC seal">DFAMPC</div>
+      <img class="department-logo" id="departmentLogo" alt="DFAMPC seal">
       <div>
         <div class="department-name">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</div>
         <div class="department-details">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939</div>
@@ -79,13 +83,13 @@
     <div class="note">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</div>
     <div class="field"><textarea name="justification" readonly></textarea></div>
     <div class="grid grid-three" style="margin-top: 26px;">
-      <div class="field signature-field"><span class="label">Employee Name</span><input name="employeeSignatureName"></div>
-      <div class="field signature-field"><span class="label">Signature</span><input name="employeeSignature"></div>
+      <div class="field signature-field"><span class="label">Employee Name</span><input name="employeeSignatureName" readonly></div>
+      <div class="field signature-field"><span class="label">Employee Signature</span><canvas class="signature-canvas" id="signatureCanvas" aria-label="Employee signature"></canvas><div class="signature-typed" id="typedSignature"></div><div class="signature-tools"><button type="button" onclick="setSignatureMode('type')">Type</button><button type="button" onclick="setSignatureMode('draw')">Draw signature</button><button type="button" onclick="document.getElementById('signatureFile').click()">Attach image</button><input type="file" id="signatureFile" accept="image/*" hidden></div><input name="employeeSignature" type="hidden"></div>
       <div class="field signature-field"><span class="label">Date Form Submitted</span><input type="date" name="dateSubmitted"></div>
     </div>
     <div class="section-title" style="text-decoration: underline;">Approval</div>
     <div class="grid grid-three">
-      <div class="field"><span class="label">Supervisor</span><input name="approvalSupervisor"></div>
+      <div class="field"><span class="label">Supervisor</span><input name="approvalSupervisor" value="RONEL JC RUBIO"></div>
       <div class="field"><span class="label">Signature</span><input name="approvalSignature"></div>
       <div class="field"><span class="label">Date of Approval</span><input type="date" name="approvalDate"></div>
     </div>
@@ -101,6 +105,10 @@
       <button type="submit" onclick="saveAuthorization(event)">Save Authorization</button>
     </div>
     <script>
+      const departmentLogo = document.getElementById('departmentLogo');
+      if (departmentLogo && window.parent !== window && window.parent.DFAMPC_LOGO_B64) {
+        departmentLogo.src = `data:image/jpeg;base64,${window.parent.DFAMPC_LOGO_B64}`;
+      }
       const accomplishedInput = document.querySelector('[name="dateAccomplished"]');
       const submittedInput = document.querySelector('[name="dateSubmitted"]');
       const overtimeDates = [...document.querySelectorAll('input[type="date"][name^="date"]')].filter(input => input !== accomplishedInput && input !== submittedInput);
@@ -108,11 +116,55 @@
       const reasonInputs = [...document.querySelectorAll('input[name^="reason"]')];
       const anticipatedInput = document.querySelector('[name="anticipatedHours"]');
       const justificationInput = document.querySelector('[name="justification"]');
+      const employeeNameInput = document.querySelector('[name="employeeName"]');
+      const employeeSignatureNameInput = document.querySelector('[name="employeeSignatureName"]');
+      const signatureInput = document.querySelector('[name="employeeSignature"]');
+      const signatureCanvas = document.getElementById('signatureCanvas');
+      const signatureContext = signatureCanvas.getContext('2d');
+      let signatureMode = 'draw';
+      let drawingSignature = false;
+
+      function resizeSignatureCanvas() {
+        const ratio = window.devicePixelRatio || 1;
+        const bounds = signatureCanvas.getBoundingClientRect();
+        signatureCanvas.width = Math.max(1, Math.round(bounds.width * ratio));
+        signatureCanvas.height = Math.max(1, Math.round(bounds.height * ratio));
+        signatureContext.scale(ratio, ratio);
+        signatureContext.strokeStyle = '#222';
+        signatureContext.lineWidth = 1.5;
+        signatureContext.lineCap = 'round';
+      }
+      function signaturePoint(event) {
+        const bounds = signatureCanvas.getBoundingClientRect();
+        return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
+      }
+      function updateSignatureValue() {
+        signatureInput.value = signatureMode === 'type' ? document.getElementById('typedSignature').textContent.trim() : signatureCanvas.toDataURL('image/png');
+      }
+      function setSignatureMode(mode) {
+        signatureMode = mode;
+        const typed = document.getElementById('typedSignature');
+        typed.style.display = mode === 'type' ? 'flex' : 'none';
+        signatureCanvas.style.display = mode === 'type' ? 'none' : 'block';
+        if (mode === 'type') {
+          const name = employeeNameInput.value.trim();
+          typed.textContent = name;
+          updateSignatureValue();
+        }
+      }
+      signatureCanvas.addEventListener('pointerdown', event => { drawingSignature = true; signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); });
+      signatureCanvas.addEventListener('pointermove', event => { if (!drawingSignature) return; const point = signaturePoint(event); signatureContext.lineTo(point.x, point.y); signatureContext.stroke(); updateSignatureValue(); });
+      signatureCanvas.addEventListener('pointerup', () => { drawingSignature = false; updateSignatureValue(); });
+      document.getElementById('signatureFile').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { signatureInput.value = reader.result; signatureMode = 'image'; }; reader.readAsDataURL(file); });
+      window.addEventListener('resize', resizeSignatureCanvas);
+      resizeSignatureCanvas();
 
       function syncAuthorizationFields() {
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
-        overtimeDates.forEach(input => { input.max = accomplished || ''; });
+        overtimeDates.forEach(input => { input.min = accomplished || ''; });
+        employeeSignatureNameInput.value = employeeNameInput.value;
+        if (signatureMode === 'type') setSignatureMode('type');
         const total = hourInputs.reduce((sum, input) => {
           const value = Number.parseFloat(input.value);
           return Number.isFinite(value) ? sum + value : sum;
@@ -122,6 +174,7 @@
       }
 
       accomplishedInput.addEventListener('input', syncAuthorizationFields);
+      employeeNameInput.addEventListener('input', syncAuthorizationFields);
       [...hourInputs, ...reasonInputs].forEach(input => input.addEventListener('input', syncAuthorizationFields));
       syncAuthorizationFields();
 
@@ -146,13 +199,16 @@
           totalHours: anticipatedInput.value,
           justification: justificationInput.value,
           empSignName: document.querySelector('[name="employeeSignatureName"]').value.trim(),
-          empSignature: document.querySelector('[name="employeeSignature"]').value.trim()
+          empSignature: signatureInput.value.trim()
         };
         window.parent.postMessage({ type: 'overtime-save', data }, '*');
       }
 
       function clearAuthorizationForm() {
-        document.querySelectorAll('input:not([name="supervisor"]):not([name="department"]), textarea').forEach(input => { input.value = ''; });
+        document.querySelectorAll('input:not([name="supervisor"]):not([name="department"]):not([name="employeeSignature"]), textarea').forEach(input => { input.value = ''; });
+        signatureInput.value = '';
+        signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        document.getElementById('typedSignature').textContent = '';
         syncAuthorizationFields();
       }
 
