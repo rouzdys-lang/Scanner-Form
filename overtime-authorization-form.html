@@ -37,7 +37,8 @@
     .signature-tools { display: flex; gap: 6px; margin-top: 4px; }
     .signature-tools button { border: 1px solid #222; padding: 3px 8px; background: #fff; color: #111; font: 700 10px Arial, sans-serif; cursor: pointer; }
     .signature-canvas { display: block; width: 100%; height: 48px; border: 1px solid #999; margin-top: 4px; touch-action: none; }
-    .signature-typed { display: none; font: italic 22px cursive; height: 48px; align-items: center; }
+    .signature-canvas.drawing { height: 110px; }
+    .signature-typed { display: none; font: italic 22px cursive; min-height: 48px; align-items: center; border: 1px solid #999; padding: 4px 8px; outline: 0; }
     @media (max-width: 680px) {
       body { padding: 10px; font-size: 10px; }
       .grid-three-top, .grid-two, .grid-three { grid-template-columns: 1fr 1fr; }
@@ -53,7 +54,7 @@
       <img class="department-logo" id="departmentLogo" alt="DFAMPC seal">
       <div>
         <div class="department-name">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</div>
-        <div class="department-details">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939</div>
+        <div class="department-details">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</div>
       </div>
     </div>
     <h1>OVERTIME AUTHORIZATION FORM</h1>
@@ -64,7 +65,7 @@
     </div>
     <div class="grid grid-two" style="margin-top: 26px;">
       <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor" value="RONEL JC RUBIO"></div>
-      <div class="field"><span class="label">Consular Office</span><input name="department" value="CONSULAR OFFICE"></div>
+      <div class="field"><span class="label">Consular Office</span><input name="department" value="" readonly></div>
     </div>
     <div class="section-title">Date(s) of Overtime Work</div>
     <table>
@@ -84,7 +85,7 @@
     <div class="field"><textarea name="justification" readonly></textarea></div>
     <div class="grid grid-three" style="margin-top: 26px;">
       <div class="field signature-field"><span class="label">Employee Name</span><input name="employeeSignatureName" readonly></div>
-      <div class="field signature-field"><span class="label">Employee Signature</span><canvas class="signature-canvas" id="signatureCanvas" aria-label="Employee signature"></canvas><div class="signature-typed" id="typedSignature"></div><div class="signature-tools"><button type="button" onclick="setSignatureMode('type')">Type</button><button type="button" onclick="setSignatureMode('draw')">Draw signature</button><button type="button" onclick="document.getElementById('signatureFile').click()">Attach image</button><input type="file" id="signatureFile" accept="image/*" hidden></div><input name="employeeSignature" type="hidden"></div>
+      <div class="field signature-field"><span class="label">Employee Signature</span><canvas class="signature-canvas" id="signatureCanvas" aria-label="Employee signature"></canvas><div class="signature-typed" id="typedSignature" contenteditable="true" role="textbox" aria-label="Typed employee signature"></div><div class="signature-tools"><button type="button" onclick="setSignatureMode('type')">Type</button><button type="button" onclick="setSignatureMode('draw')">Draw signature</button><button type="button" onclick="document.getElementById('signatureFile').click()">Attach image</button><input type="file" id="signatureFile" accept="image/*" hidden></div><input name="employeeSignature" type="hidden"></div>
       <div class="field signature-field"><span class="label">Date Form Submitted</span><input type="date" name="dateSubmitted"></div>
     </div>
     <div class="section-title" style="text-decoration: underline;">Approval</div>
@@ -96,7 +97,7 @@
     <div class="grid grid-three">
       <div class="field"><span class="label">ACOO COH HR Officer/HR Assistant</span><input name="hrOfficer"></div>
       <div class="field"><span class="label">Signature</span><input name="hrSignature"></div>
-      <div class="field"><span class="label">Department</span><input name="approvalDepartment"></div>
+      <div class="field"><span class="label">Date of Approval</span><input type="date" name="approvalDepartment"></div>
     </div>
     <div class="footer-note">Note: This form must be accomplished before rendering an actual overtime; no authorization means no payment of overtime.</div>
     <div class="form-number">HR Form No. 2022-006</div>
@@ -152,9 +153,11 @@
           updateSignatureValue();
         }
       }
-      signatureCanvas.addEventListener('pointerdown', event => { drawingSignature = true; signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); });
+      signatureCanvas.addEventListener('pointerdown', event => { drawingSignature = true; signatureCanvas.classList.add('drawing'); signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); });
       signatureCanvas.addEventListener('pointermove', event => { if (!drawingSignature) return; const point = signaturePoint(event); signatureContext.lineTo(point.x, point.y); signatureContext.stroke(); updateSignatureValue(); });
-      signatureCanvas.addEventListener('pointerup', () => { drawingSignature = false; updateSignatureValue(); });
+      signatureCanvas.addEventListener('pointerup', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
+      signatureCanvas.addEventListener('pointercancel', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
+      document.getElementById('typedSignature').addEventListener('input', updateSignatureValue);
       document.getElementById('signatureFile').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { signatureInput.value = reader.result; signatureMode = 'image'; }; reader.readAsDataURL(file); });
       window.addEventListener('resize', resizeSignatureCanvas);
       resizeSignatureCanvas();
@@ -163,6 +166,8 @@
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
         overtimeDates.forEach(input => { input.min = accomplished || ''; });
+        const enteredDates = overtimeDates.map(input => input.value).filter(Boolean).sort();
+        accomplishedInput.max = enteredDates[0] || '';
         employeeSignatureNameInput.value = employeeNameInput.value;
         if (signatureMode === 'type') setSignatureMode('type');
         const total = hourInputs.reduce((sum, input) => {
