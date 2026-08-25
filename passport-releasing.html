@@ -626,20 +626,6 @@
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
-    <div class="panel" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;">
-      <strong style="font-size:12px;">Supervisor Signature</strong>
-      <div id="supervisorSignaturePaste" tabindex="0" onpaste="pasteSupervisorSignature(event)" style="min-width:220px;min-height:38px;border:1px dashed var(--border);padding:6px;font-size:10px;color:var(--muted);">Paste supervisor signature here</div>
-      <img id="supervisorSignaturePreview" alt="Supervisor signature preview" style="display:none;max-height:38px;max-width:150px;border:1px solid var(--border);padding:3px;background:#fff;">
-      <button class="btn btn-muted" type="button" onclick="clearSupervisorSignature()" style="padding:5px 9px;font-size:10px;">Clear Signature</button>
-      <span style="font-size:10px;color:var(--muted);">Upload your signature image once, then use Approve on a record.</span>
-    </div>
-    <div class="panel" tabindex="0" onpaste="pasteOperationOfficerSignature(event)" style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;padding:12px 14px;">
-      <strong style="font-size:12px;">Operation Officer Signature</strong>
-      <div id="operationOfficerSignaturePaste" tabindex="0" onpaste="pasteOperationOfficerSignature(event)" style="min-width:220px;min-height:38px;border:1px dashed var(--border);padding:6px;font-size:10px;color:var(--muted);">Paste operation officer signature here</div>
-      <img id="operationOfficerSignaturePreview" alt="Operation Officer signature preview" style="display:none;max-height:38px;max-width:150px;border:1px solid var(--border);padding:3px;background:#fff;">
-      <button class="btn btn-muted" type="button" onclick="clearOperationOfficerSignature()" style="padding:5px 9px;font-size:10px;">Clear Signature</button>
-      <span style="font-size:10px;color:var(--muted);">Choose the image or focus this panel and paste the signature.</span>
-    </div>
     <div class="table-wrap" style="max-height:calc(100vh - 200px);overflow-y:auto;">
       <table>
         <thead><tr><th><input type="checkbox" id="overtimeSelectAllHeader" onchange="toggleAllOvertimeRecords(this.checked)" aria-label="Check all overtime records"></th><th>Filed</th><th>Employee</th><th>Filed By</th><th>Work Date</th><th>Total Hours</th><th>Document</th></tr></thead>
@@ -5687,18 +5673,9 @@
     const otRows = (rows.length ? rows : [{}]).map(row => `<tr><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.date)}</td><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.auth)}</td><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.actual)}</td></tr>`).join('');
     const overtimeTable = `<table style="width:100%;border-collapse:collapse"><tr><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:34%">Date</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Authorized Hours</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Actual OT Hours Rendered</th></tr>${otRows}</table><table style="width:100%;border-collapse:collapse"><tr><td style="border:1px solid #000;border-right:none;padding:${size.pad}px 10px;text-align:center;font:700 ${size.label}pt Arial;text-transform:uppercase;width:70%">Total Actual Number of Overtime Hours Rendered</td><td style="border:1px solid #000;background:#e2e2e2;padding:${size.pad}px 10px;text-align:center;font:700 ${size.total}pt Arial;text-transform:uppercase;width:30%">${escapeOvertimeText(data.total || data.totalHours || '0')}</td></tr></table>`;
     const signatureImage = data.empSignatureImage || data.empSignatureImageData || '';
-    const approvalSignatureImage = data.appSupSignatureImage || '';
-    const operationOfficerSignatureImage = data.opOffSignatureImage || '';
     const justification = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Actual Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body><table style="width:100%;margin-bottom:${size.gap}px"><tr><td style="width:76px;padding-right:14px;vertical-align:middle">${sealSrc ? `<img src="${sealSrc}" width="70" height="70">` : ''}</td><td style="vertical-align:middle"><p style="margin:0;font:700 11.5pt Arial">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</p><p style="margin:2px 0 0;font:${size.small}pt Arial;color:#444">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</p></td></tr></table><p style="text-align:center;font:700 ${size.title}pt Arial;text-transform:uppercase;margin:0 0 ${size.gap}px">Actual Rendered Overtime</p>${fields([{label:'Employee Name',value:data.name,width:34},{label:'Employee ID',value:data.employeeId,width:33},{label:'Date Form Accomplished',value:data.dateAccomplished,width:33}])}${fields([{label:'Immediate Supervisor',value:data.supervisor,width:34},{label:'Consular Office',value:data.department,width:66}])}${section('Date(s) of Overtime Work',false)}${overtimeTable}<div style="margin:${size.gap}px 0 ${size.padSm}px"><p style="font:${size.small}pt Arial;margin:0 0 ${size.padSm}px">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</p><div style="border:1px solid #000;min-height:${size.justif}pt;padding:${size.pad}px 10px;font:${size.body}pt Arial;text-transform:uppercase">${justification || '&nbsp;'}</div></div>${fields([{label:'Employee Name',value:data.empSignName,width:34},{label:'Signature',value:data.empSignature,image:signatureImage,width:33},{label:'Date Form Submitted',value:data.dateSubmitted,width:33}])}${section('Approval',true)}${fields([{label:'Supervisor',value:data.appSupName,width:34},{label:'Signature',value:data.appSupSignature,width:33},{label:'Date of Approval',value:data.dateApproval,width:33}])}${fields([{label:'Operation Officer',value:data.opOffName,width:34},{label:'Signature',value:data.opOffSignature,width:33},{label:'Date of Approval',value:data.dateApprovalOp,width:33}])}${fields([{label:'HR Officer',value:data.hrName,width:34},{label:'Signature',value:data.hrSignature,width:33},{label:'Date of Approval',value:data.hrDateApproval,width:33}])}<p style="font:${size.small}pt Arial;font-style:italic;color:#333;margin:${size.padSm}px 0 2px">note : This form must be submitted together with the <i>Approved Overtime Authorization Form</i></p><p style="font:${size.small}pt Arial;color:#333;text-align:right;margin:2px 0 0">HR Form No. 2022-007</p></body></html>`;
-    let printableHtml = html;
-    if (approvalSignatureImage) {
-      printableHtml = printableHtml.replace('DIGITALLY APPROVED', `<img src="${approvalSignatureImage}" style="display:block;max-height:18pt;max-width:72pt;width:auto;height:auto;">`);
-    }
-    if (operationOfficerSignatureImage) {
-      printableHtml = printableHtml.replace('OPERATION OFFICER APPROVED', `<img src="${operationOfficerSignatureImage}" style="display:block;max-height:18pt;max-width:72pt;width:auto;height:auto;">`);
-    }
-    return printableHtml;
+    return html;
   }
 
   function downloadOvertimeDocument(record) {
@@ -5713,217 +5690,6 @@
   }
 
   let overtimeRecords = [];
-
-  const supervisorSignatureStorageKey = 'dfampc_supervisor_signature';
-  const operationOfficerSignatureStorageKey = 'dfampc_operation_officer_signature';
-
-  function getSupervisorSignature() {
-    try { return localStorage.getItem(supervisorSignatureStorageKey) || ''; } catch (e) { return ''; }
-  }
-
-  function getOperationOfficerSignature() {
-    try { return localStorage.getItem(operationOfficerSignatureStorageKey) || ''; } catch (e) { return ''; }
-  }
-
-  function getLocalDateString() {
-    const now = new Date();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const day = String(now.getDate()).padStart(2, '0');
-    return `${now.getFullYear()}-${month}-${day}`;
-  }
-
-  function renderSupervisorSignaturePreview() {
-    const preview = document.getElementById('supervisorSignaturePreview');
-    if (!preview) return;
-    const signature = getSupervisorSignature();
-    preview.src = signature;
-    preview.style.display = signature ? 'block' : 'none';
-  }
-
-  function saveSupervisorSignature(event) {
-    const file = event.target.files?.[0];
-    if (!file || !file.type.startsWith('image/')) {
-      toast('Choose a signature image file.', 'warning');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        localStorage.setItem(supervisorSignatureStorageKey, reader.result);
-        renderSupervisorSignaturePreview();
-        toast('Supervisor signature saved on this device.', 'success');
-      } catch (error) {
-        toast('Could not save the signature image.', 'error');
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function pasteSupervisorSignature(event) {
-    const file = [...(event.clipboardData?.items || [])]
-      .map(item => item.kind === 'file' ? item.getAsFile() : null)
-      .find(item => item?.type.startsWith('image/'));
-    if (!file) return;
-    event.preventDefault();
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        localStorage.setItem(supervisorSignatureStorageKey, reader.result);
-        renderSupervisorSignaturePreview();
-        toast('Supervisor signature pasted and saved.', 'success');
-      } catch (error) {
-        toast('Could not save the pasted supervisor signature.', 'error');
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function renderOperationOfficerSignaturePreview() {
-    const preview = document.getElementById('operationOfficerSignaturePreview');
-    if (!preview) return;
-    const signature = getOperationOfficerSignature();
-    preview.src = signature;
-    preview.style.display = signature ? 'block' : 'none';
-  }
-
-  function storeOperationOfficerSignature(file) {
-    if (!file || !file.type.startsWith('image/')) {
-      toast('Choose or paste an operation officer signature image.', 'warning');
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      try {
-        localStorage.setItem(operationOfficerSignatureStorageKey, reader.result);
-        renderOperationOfficerSignaturePreview();
-        toast('Operation officer signature saved on this device.', 'success');
-      } catch (error) {
-        toast('Could not save the operation officer signature.', 'error');
-      }
-    };
-    reader.readAsDataURL(file);
-  }
-
-  function saveOperationOfficerSignature(event) {
-    storeOperationOfficerSignature(event.target.files?.[0]);
-  }
-
-  function pasteOperationOfficerSignature(event) {
-    const file = [...(event.clipboardData?.items || [])]
-      .map(item => item.kind === 'file' ? item.getAsFile() : null)
-      .find(item => item?.type.startsWith('image/'));
-    if (file) {
-      event.preventDefault();
-      storeOperationOfficerSignature(file);
-    }
-  }
-
-  function clearOperationOfficerSignature() {
-    try { localStorage.removeItem(operationOfficerSignatureStorageKey); } catch (e) {}
-    const input = document.getElementById('operationOfficerSignatureFile');
-    if (input) input.value = '';
-    renderOperationOfficerSignaturePreview();
-  }
-
-  function clearSupervisorSignature() {
-    try { localStorage.removeItem(supervisorSignatureStorageKey); } catch (e) {}
-    const input = document.getElementById('supervisorSignatureFile');
-    if (input) input.value = '';
-    renderSupervisorSignaturePreview();
-  }
-
-  async function approveOvertimeRecord(id) {
-    if (!currentUser || currentUser.username !== 'supervisor') {
-      toast('Only the supervisor account can approve overtime records.', 'error');
-      return;
-    }
-    const record = overtimeRecords.find(item => String(item.id) === String(id));
-    const signature = getSupervisorSignature();
-    if (!record) { toast('Overtime record not found.', 'error'); return; }
-    if (!signature) {
-      toast('Upload your supervisor signature before approving.', 'warning');
-      return;
-    }
-    if (!confirm('Approve this overtime record?')) return;
-
-    const data = { ...(record.form_data || {}) };
-    data.appSupName = String(currentUser.full_name || currentUser.username || '').trim();
-    data.appSupSignatureImage = signature;
-    data.appSupSignature = 'Digitally approved';
-    data.dateApproval = getLocalDateString();
-    try {
-      await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(record.id)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ form_data: data })
-      });
-      record.form_data = data;
-      await loadOvertimeRecords();
-      toast('Overtime record approved.', 'success');
-    } catch (error) {
-      toast('Approval failed: ' + (error.message || 'Could not update the record.'), 'error');
-    }
-  }
-
-  async function approveOperationOfficerRecord(id) {
-    if (!canManageOvertimeRecords()) {
-      toast('Only an authorized overtime manager can approve records.', 'error');
-      return;
-    }
-    const record = overtimeRecords.find(item => String(item.id) === String(id));
-    const signature = getOperationOfficerSignature();
-    if (!record) { toast('Overtime record not found.', 'error'); return; }
-    if (!signature) {
-      toast('Choose or paste the operation officer signature first.', 'warning');
-      return;
-    }
-    if (!confirm('Approve this overtime record as operation officer?')) return;
-    const data = { ...(record.form_data || {}) };
-    data.opOffName = String(currentUser.full_name || currentUser.username || '').trim();
-    data.opOffSignatureImage = signature;
-    data.opOffSignature = 'Operation officer approved';
-    data.dateApprovalOp = getLocalDateString();
-    try {
-      await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(record.id)}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ form_data: data })
-      });
-      record.form_data = data;
-      await loadOvertimeRecords();
-      toast('Operation officer approval saved.', 'success');
-    } catch (error) {
-      toast('Operation officer approval failed: ' + (error.message || 'Could not update the record.'), 'error');
-    }
-  }
-
-  function addOvertimeApprovalButtons() {
-    document.querySelectorAll('#overtimeRecordsBody tr').forEach((row, index) => {
-      const record = overtimeRecords[index];
-      const actionCell = row.lastElementChild;
-      if (!record || !actionCell || actionCell.querySelector('[data-overtime-approve]')) return;
-      const button = document.createElement('button');
-      button.type = 'button';
-      button.className = 'btn ' + (record.form_data?.dateApproval ? 'btn-muted' : 'btn-success');
-      button.style.cssText = 'padding:5px 9px;font-size:10px;';
-      button.textContent = record.form_data?.dateApproval ? 'Approved' : 'Approve';
-      button.dataset.overtimeApprove = 'true';
-      button.disabled = !!record.form_data?.dateApproval;
-      button.title = record.form_data?.dateApproval ? `Approved on ${record.form_data.dateApproval}` : 'Approve overtime record';
-      if (!button.disabled) button.addEventListener('click', () => approveOvertimeRecord(record.id));
-      actionCell.appendChild(document.createTextNode(' '));
-      actionCell.appendChild(button);
-      const operationButton = document.createElement('button');
-      operationButton.type = 'button';
-      operationButton.className = 'btn ' + (record.form_data?.dateApprovalOp ? 'btn-muted' : 'btn-info');
-      operationButton.style.cssText = 'padding:5px 9px;font-size:10px;';
-      operationButton.textContent = record.form_data?.dateApprovalOp ? 'Ops Approved' : 'Ops Approve';
-      operationButton.dataset.operationOfficerApprove = 'true';
-      operationButton.disabled = !!record.form_data?.dateApprovalOp;
-      operationButton.title = record.form_data?.dateApprovalOp ? `Operation officer approved on ${record.form_data.dateApprovalOp}` : 'Approve as operation officer';
-      if (!operationButton.disabled) operationButton.addEventListener('click', () => approveOperationOfficerRecord(record.id));
-      actionCell.appendChild(document.createTextNode(' '));
-      actionCell.appendChild(operationButton);
-    });
-  }
 
   function printOvertimeDocument(record) {
     const printWindow = window.open('', '_blank');
@@ -6126,7 +5892,6 @@
     try {
       const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
       overtimeRecords = records;
-      setTimeout(addOvertimeApprovalButtons, 0);
       const selectAll = document.getElementById('overtimeSelectAll');
       if (selectAll) {
         selectAll.checked = false;
@@ -6571,8 +6336,6 @@
 
   // Only start app if already logged in (session restored above)
   // Otherwise login screen handles it
-  renderSupervisorSignaturePreview();
-  renderOperationOfficerSignaturePreview();
   if (currentUser) {
     checkConn();
     setInterval(checkConn, 30000);
