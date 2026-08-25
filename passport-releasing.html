@@ -2579,7 +2579,7 @@
     const accomplishedDate = data.dateAccomplished || '';
     if (!data.name) throw new Error('Employee name is required.');
     if (!accomplishedDate || !parseOvertimeDate(accomplishedDate)) throw new Error('Date form accomplished is required.');
-    if (!String(data.empSignature || '').trim()) throw new Error('Employee signature is required.');
+    if (!data.empSignatureImage && !data.empSignatureImageData && !String(data.empSignature || '').trim()) throw new Error('Employee signature is required.');
     const rows = Array.isArray(data.rows) ? data.rows.filter(row => row.date || row.auth || row.reason) : [];
     if (!rows.length) throw new Error('At least one overtime date is required.');
     rows.forEach((row, index) => {
