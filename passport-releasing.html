@@ -5657,7 +5657,7 @@
   }
 
   function removeOvertimeApprovalSection(html) {
-    return html.replace(/<p style="font:700 [^>]*text-decoration:underline;[^\"]*">Approval<\/p>(?:<table[\s\S]*?<\/table>){3}/i, '');
+    return html.replace(/<p[^>]*font-style:italic[^>]*>\s*note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i>\s*<\/p>/i, '');
   }
 
   function buildOvertimeDocumentHtml(record) {
