@@ -103,6 +103,47 @@
     .page { display: none; padding: 22px 24px 28px; }
     .page.active { display: block; }
     .overtime-frame { width: 100%; height: calc(100vh - 190px); min-height: 760px; border: 0; background: #fff; display: block; }
+    .overtime-authorization {
+      width: min(100%, 8.5in);
+      min-height: 5.9in;
+      margin: 0 auto 24px;
+      padding: 10px 12px 8px;
+      background: #fff;
+      color: #000;
+      font: 12px/1.2 Arial, sans-serif;
+      page-break-after: always;
+    }
+    .overtime-authorization h2 { margin: 0 0 26px; color: #00f; font-size: 15px; line-height: 1; }
+    .overtime-auth-row { display: grid; gap: 0; margin-bottom: 28px; }
+    .overtime-auth-row.four { grid-template-columns: 1.1fr 1.1fr 1.1fr 1.1fr; }
+    .overtime-auth-row.two { grid-template-columns: 1fr 1fr; }
+    .overtime-auth-field { min-width: 0; }
+    .overtime-auth-field label { display: block; min-height: 29px; padding: 0 7px 7px; font-weight: 700; font-size: 14px; line-height: 1.25; text-transform: uppercase; }
+    .overtime-auth-field input, .overtime-auth-field textarea { width: 100%; height: 30px; border: 1px solid #000; border-radius: 0; background: #fff; color: #000; font: 12px Arial, sans-serif; padding: 3px 6px; }
+    .overtime-auth-field textarea { height: 30px; resize: none; }
+    .overtime-auth-section-title { margin: 0 0 3px; font-size: 14px; font-weight: 700; text-transform: uppercase; }
+    .overtime-auth-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 18px; }
+    .overtime-auth-table th, .overtime-auth-table td { height: 29px; border: 1px solid #000; padding: 3px 6px; font-weight: 400; text-align: center; }
+    .overtime-auth-table th { height: 30px; font-size: 13px; text-transform: uppercase; }
+    .overtime-auth-table td { padding: 0; }
+    .overtime-auth-table input { width: 100%; height: 28px; border: 0; padding: 3px 5px; text-align: center; font: 12px Arial, sans-serif; }
+    .overtime-auth-total { display: grid; grid-template-columns: 1fr 1fr; width: 67%; margin-bottom: 29px; }
+    .overtime-auth-total > div { min-height: 53px; border: 1px solid #000; padding: 7px; font-size: 14px; font-weight: 700; text-transform: uppercase; }
+    .overtime-auth-total > div:last-child { background: #d9d9d9; border-left: 0; }
+    .overtime-auth-signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
+    .overtime-auth-signatures .overtime-auth-field label { min-height: 23px; padding-left: 0; }
+    .overtime-auth-signatures input { height: 36px; }
+    @media (max-width: 700px) {
+      .overtime-authorization { padding: 10px 4px 8px; }
+      .overtime-auth-field label { font-size: 11px; }
+      .overtime-auth-total { width: 72%; }
+    }
+    @media print {
+      .overtime-authorization { width: 8.5in; height: 5.9in; min-height: 0; margin: 0; padding: 10px 12px 8px; overflow: hidden; }
+      .overtime-frame { display: none; }
+      .page { padding: 0; }
+      body { background: #fff !important; }
+    }
 
     /* SCANNER PAGE */
     .scanner-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
@@ -613,6 +654,35 @@
 
   <!-- ========== SCANNER PAGE ========== -->
   <div id="page-overtime" class="page">
+    <section class="overtime-authorization" aria-label="Overtime authorization form">
+      <h2>OVERTIME AUTHORIZATION FORM</h2>
+      <div class="overtime-auth-row four">
+        <div class="overtime-auth-field"><label>Employee Name</label><input type="text" aria-label="Employee name"></div>
+        <div class="overtime-auth-field"><label>Employee ID</label><input type="text" aria-label="Employee ID"></div>
+        <div class="overtime-auth-field"><label>Email Address</label><input type="email" aria-label="Email address"></div>
+        <div class="overtime-auth-field"><label>Date Form<br>Accomplished</label><input type="date" aria-label="Date form accomplished"></div>
+      </div>
+      <div class="overtime-auth-row two">
+        <div class="overtime-auth-field"><label>Immediate Supervisor</label><input type="text" aria-label="Immediate supervisor"></div>
+        <div class="overtime-auth-field"><label>Department</label><input type="text" aria-label="Department"></div>
+      </div>
+      <p class="overtime-auth-section-title">Date(s) of Overtime Work</p>
+      <table class="overtime-auth-table" aria-label="Dates of overtime work">
+        <thead><tr><th>Date</th><th>Hours</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><input type="date" aria-label="Overtime date 1"></td><td><input type="number" min="0" step="0.5" aria-label="Overtime hours 1"></td><td><input type="text" aria-label="Overtime reason 1"></td></tr>
+          <tr><td><input type="date" aria-label="Overtime date 2"></td><td><input type="number" min="0" step="0.5" aria-label="Overtime hours 2"></td><td><input type="text" aria-label="Overtime reason 2"></td></tr>
+        </tbody>
+      </table>
+      <div class="overtime-auth-total">
+        <div>Anticipated Number<br>of Overtime Hours</div><div><input type="number" min="0" step="0.5" aria-label="Anticipated number of overtime hours"></div>
+      </div>
+      <div class="overtime-auth-signatures">
+        <div class="overtime-auth-field"><label>Supervisor</label><input type="text" aria-label="Supervisor"></div>
+        <div class="overtime-auth-field"><label>Signature</label><input type="text" aria-label="Signature"></div>
+        <div class="overtime-auth-field"><label>Date of Approval</label><input type="date" aria-label="Date of approval"></div>
+      </div>
+    </section>
     <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1&v=20260825" title="Actual Rendered Overtime form"></iframe>
   </div>
 
@@ -620,6 +690,9 @@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">From <input type="date" id="overtimePrintDateFrom" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" /></label>
+      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">To <input type="date" id="overtimePrintDateTo" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" /></label>
+      <button class="btn btn-muted" onclick="clearOvertimePrintDateFilter()" style="padding:8px 12px;font-size:11px;">Clear Dates</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
       <button class="btn btn-secondary" onclick="printAllOvertimeRecords()">Print All</button>
@@ -5760,6 +5833,33 @@
     return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${pages}</body></html>`;
   }
 
+  function getOvertimeRecordDate(record) {
+    const data = record?.form_data || {};
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    const workDate = rows.map(row => String(row?.date || '').slice(0, 10)).find(Boolean);
+    return workDate || String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || record?.created_at || '').slice(0, 10);
+  }
+
+  function getOvertimePrintDateFilteredRecords(records) {
+    const from = document.getElementById('overtimePrintDateFrom')?.value || '';
+    const to = document.getElementById('overtimePrintDateTo')?.value || '';
+    if (from && to && from > to) {
+      toast('The overtime print start date cannot be after the end date.', 'warning');
+      return null;
+    }
+    return records.filter(record => {
+      const date = getOvertimeRecordDate(record);
+      return (!from || date >= from) && (!to || date <= to);
+    });
+  }
+
+  function clearOvertimePrintDateFilter() {
+    const from = document.getElementById('overtimePrintDateFrom');
+    const to = document.getElementById('overtimePrintDateTo');
+    if (from) from.value = '';
+    if (to) to.value = '';
+  }
+
   function printOvertimeRecordsList(records, title = 'Overtime Forms') {
     const list = Array.isArray(records) ? records.filter(Boolean) : [];
     if (!list.length) {
@@ -5791,7 +5891,13 @@
       toast('There are no overtime records to print.', 'warning');
       return;
     }
-    printOvertimeRecordsList(overtimeRecords, 'All Overtime Forms');
+    const filteredRecords = getOvertimePrintDateFilteredRecords(overtimeRecords);
+    if (!filteredRecords) return;
+    if (!filteredRecords.length) {
+      toast('No overtime records found for the selected date range.', 'warning');
+      return;
+    }
+    printOvertimeRecordsList(filteredRecords, 'Overtime Forms by Date');
   }
 
   function printSelectedOvertimeRecords() {
