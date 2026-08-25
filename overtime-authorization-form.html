@@ -210,7 +210,13 @@
           justification: justificationInput.value,
           empSignName: document.querySelector('[name="employeeSignatureName"]').value.trim(),
           empSignature: signatureInput.value.startsWith('data:image/') ? '' : signatureInput.value.trim(),
-          empSignatureImage: signatureInput.value.startsWith('data:image/') ? signatureInput.value : ''
+          empSignatureImage: signatureInput.value.startsWith('data:image/') ? signatureInput.value : '',
+          approvalSupervisor: document.querySelector('[name="approvalSupervisor"]').value.trim(),
+          approvalSignature: document.querySelector('[name="approvalSignature"]').value.trim(),
+          approvalDate: document.querySelector('[name="approvalDate"]').value,
+          hrOfficer: document.querySelector('[name="hrOfficer"]').value.trim(),
+          hrSignature: document.querySelector('[name="hrSignature"]').value.trim(),
+          approvalDepartment: document.querySelector('[name="approvalDepartment"]').value
         };
         window.parent.postMessage({ type: 'overtime-save', data }, '*');
       }
