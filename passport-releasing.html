@@ -5916,29 +5916,42 @@
 
   let overtimeRecords = [];
 
-  function printOvertimeDocument(record) {
-    const printWindow = window.open('', '_blank');
+  function openOvertimeDocument(documentHtml, shouldPrint, actionLabel) {
+    const printWindow = window.open('about:blank', '_blank');
     if (!printWindow) {
-      toast('Please allow pop-ups to print the overtime form.', 'warning');
+      toast(`Please allow pop-ups to ${actionLabel}.`, 'warning');
       return;
     }
-    printWindow.document.open();
-    printWindow.document.write(buildCombinedOvertimeDocumentHtml(record));
-    printWindow.document.close();
-    printWindow.focus();
-    setTimeout(() => printWindow.print(), 350);
+    const documentUrl = URL.createObjectURL(new Blob([documentHtml], { type: 'text/html' }));
+    let handled = false;
+    const handleLoad = () => {
+      if (handled) return;
+      handled = true;
+      printWindow.focus();
+      if (shouldPrint) setTimeout(() => printWindow.print(), 350);
+      setTimeout(() => URL.revokeObjectURL(documentUrl), 5000);
+    };
+    printWindow.addEventListener('load', handleLoad, { once: true });
+    printWindow.location.replace(documentUrl);
+    setTimeout(() => {
+      if (!handled && !printWindow.closed) handleLoad();
+    }, 1500);
+  }
+
+  function printOvertimeDocument(record) {
+    try {
+      openOvertimeDocument(buildCombinedOvertimeDocumentHtml(record), true, 'print the overtime form');
+    } catch (error) {
+      toast('Could not prepare the overtime form for printing: ' + error.message, 'error');
+    }
   }
 
   function previewOvertimeDocument(record) {
-    const previewWindow = window.open('', '_blank');
-    if (!previewWindow) {
-      toast('Please allow pop-ups to preview the overtime form.', 'warning');
-      return;
+    try {
+      openOvertimeDocument(buildCombinedOvertimeDocumentHtml(record), false, 'preview the overtime form');
+    } catch (error) {
+      toast('Could not prepare the overtime form preview: ' + error.message, 'error');
     }
-    previewWindow.document.open();
-    previewWindow.document.write(buildCombinedOvertimeDocumentHtml(record));
-    previewWindow.document.close();
-    previewWindow.focus();
   }
 
   function toggleAllOvertimeRecords(checked) {
@@ -6019,27 +6032,8 @@
       return;
     }
 
-    const printWindow = window.open('', '_blank');
-    if (!printWindow) {
-      toast('Please allow pop-ups to print the overtime forms.', 'warning');
-      return;
-    }
-
     const documentHtml = buildOvertimePrintDocument(list, title);
-    let hasPrinted = false;
-    const printWhenReady = () => {
-      if (hasPrinted) return;
-      hasPrinted = true;
-      setTimeout(() => printWindow.print(), 350);
-    };
-    printWindow.addEventListener('load', printWhenReady, { once: true });
-    printWindow.document.open();
-    printWindow.document.write(documentHtml);
-    printWindow.document.close();
-    printWindow.focus();
-    if (printWindow.document.readyState === 'complete') {
-      printWhenReady();
-    }
+    openOvertimeDocument(documentHtml, true, 'print the overtime forms');
   }
 
   function printAllOvertimeRecords() {
