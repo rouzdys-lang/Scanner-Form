@@ -621,8 +621,6 @@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">From <input type="date" id="overtimeDateFrom" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" onchange="loadOvertimeRecords()"></label>
-        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">To <input type="date" id="overtimeDateTo" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" onchange="loadOvertimeRecords()"></label>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
@@ -4951,7 +4949,7 @@
     }
 
     html += `</div>`;
-    return html.replace(/<p[^>]*>note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i><\/p>/i, '');
+    return html;
   }
 
   // ==================== DELETE BULK ====================
@@ -5658,10 +5656,6 @@
     return String(value ?? '').toUpperCase().replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
-  function escapeOvertimeAttribute(value) {
-    return String(value ?? '').replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
-  }
-
   function buildOvertimeDocumentHtml(record) {
     const data = record.form_data || {};
     const rows = Array.isArray(data.rows) ? data.rows : [];
@@ -5762,23 +5756,6 @@
     setTimeout(() => printWindow.print(), 350);
   }
 
-  function getOvertimeRecordDateKeys(record) {
-    const data = record?.form_data || {};
-    const values = [data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '')];
-    return values.map(value => {
-      const text = String(value || '').trim();
-      if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
-      const parsed = new Date(text);
-      if (Number.isNaN(parsed.getTime())) return '';
-      return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
-    }).filter(Boolean);
-  }
-
-  function overtimeRecordMatchesDateRange(record, dateFrom, dateTo) {
-    const dates = getOvertimeRecordDateKeys(record);
-    return dates.some(date => (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo));
-  }
-
   async function deleteOvertimeRecord(id) {
     if (!canManageOvertimeRecords() || !String(id || '').trim()) {
       toast('Only HR or supervisor can delete overtime records.', 'error');
@@ -5871,15 +5848,7 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const dateFrom = document.getElementById('overtimeDateFrom')?.value || '';
-      const dateTo = document.getElementById('overtimeDateTo')?.value || '';
-      if (dateFrom && dateTo && dateFrom > dateTo) {
-        body.innerHTML = '<tr><td colspan="7">The start date cannot be after the end date.</td></tr>';
-        document.getElementById('overtimeRecordCount').textContent = '';
-        return;
-      }
-      const allRecords = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=5000');
-      const records = (allRecords || []).filter(record => overtimeRecordMatchesDateRange(record, dateFrom, dateTo));
+      const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
       overtimeRecords = records;
       const selectAll = document.getElementById('overtimeSelectAll');
       if (selectAll) {
@@ -5893,7 +5862,7 @@
         const filedBy = record.submitted_by || 'N/A';
         const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
         const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeAttribute(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
