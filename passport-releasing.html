@@ -36,6 +36,7 @@
       background: transparent;
       color: var(--text);
       font-family: 'Inter', 'Roboto', 'Segoe UI', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      font-size: 15px;
       line-height: 1.6;
       min-height: 100vh;
       position: relative;
@@ -103,60 +104,6 @@
     .page { display: none; padding: 22px 24px 28px; }
     .page.active { display: block; }
     .overtime-frame { width: 100%; height: calc(100vh - 190px); min-height: 760px; border: 0; background: #fff; display: block; }
-    .overtime-authorization {
-      width: min(100%, 8.5in);
-      min-height: 5.9in;
-      margin: 0 auto 24px;
-      padding: 10px 12px 8px;
-      background: #fff;
-      color: #000;
-      font: 12px/1.2 Arial, sans-serif;
-      page-break-after: always;
-    }
-    .overtime-auth-header { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
-    .overtime-auth-logo { width: 58px; height: 58px; object-fit: contain; flex: 0 0 auto; }
-    .overtime-auth-letterhead { min-width: 0; color: #000; }
-    .overtime-auth-letterhead strong { display: block; font-size: 15px; line-height: 1.05; white-space: nowrap; }
-    .overtime-auth-letterhead span { display: block; margin-top: 3px; font-size: 9px; line-height: 1.1; }
-    .overtime-authorization input,
-    .overtime-authorization textarea,
-    .overtime-authorization select { font-family: Arial, sans-serif !important; font-size: 13px !important; font-weight: 400 !important; }
-    .overtime-auth-title { margin: 0 0 26px; }
-    .overtime-authorization h2 { margin: 0 0 26px; color: #00f; font-size: 15px; line-height: 1; }
-    .overtime-auth-row { display: grid; gap: 0; margin-bottom: 28px; }
-    .overtime-auth-row.four { grid-template-columns: 1.1fr 1.1fr 1.1fr 1.1fr; }
-    .overtime-auth-row.three { grid-template-columns: 1fr 1fr 1fr; }
-    .overtime-auth-row.two { grid-template-columns: 1fr 1fr; }
-    .overtime-auth-field { min-width: 0; }
-    .overtime-auth-field label { display: block; min-height: 29px; padding: 0 7px 7px; font-weight: 700; font-size: 10.5px; line-height: 1.25; text-transform: uppercase; }
-    .overtime-auth-field input, .overtime-auth-field textarea { width: 100%; height: 30px; border: 1px solid #000; border-radius: 0; background: #fff; color: #000; font: 13px Arial, sans-serif; padding: 3px 6px; }
-    .overtime-auth-field textarea { height: 30px; resize: none; }
-    .overtime-auth-section-title { margin: 0 0 3px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
-    .overtime-auth-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 18px; }
-    .overtime-auth-table th, .overtime-auth-table td { height: 29px; border: 1px solid #000; padding: 3px 6px; font-weight: 400; text-align: center; }
-    .overtime-auth-table th { height: 30px; font-size: 11px; text-transform: uppercase; }
-    .overtime-auth-table td { padding: 0; }
-    .overtime-auth-table input { width: 100%; height: 28px; border: 0; padding: 3px 5px; text-align: center; font: 13px Arial, sans-serif; }
-    .overtime-auth-add-row { display: block; margin: -10px 0 12px; border: 1px solid #000; border-radius: 3px; background: #fff; color: #000; padding: 4px 9px; font: 12px Arial, sans-serif; cursor: pointer; }
-    .overtime-auth-add-row:hover { background: #000; color: #fff; }
-    .overtime-auth-total { display: grid; grid-template-columns: 1fr 1fr; width: 67%; margin-bottom: 29px; }
-    .overtime-auth-total > div { min-height: 53px; border: 1px solid #000; padding: 7px; font-size: 14px; font-weight: 700; text-transform: uppercase; }
-    .overtime-auth-total > div:last-child { background: #d9d9d9; border-left: 0; }
-    .overtime-auth-signatures { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0; }
-    .overtime-auth-signatures .overtime-auth-field label { min-height: 23px; padding-left: 0; }
-    .overtime-auth-signatures input { height: 36px; }
-    @media (max-width: 700px) {
-      .overtime-authorization { padding: 10px 4px 8px; }
-      .overtime-auth-field label { font-size: 10.5px; }
-      .overtime-auth-total { width: 72%; }
-    }
-    @media print {
-      .overtime-authorization { width: 8.5in; height: 5.9in; min-height: 0; margin: 0; padding: 10px 12px 8px; overflow: hidden; }
-      .overtime-auth-add-row { display: none; }
-      .overtime-frame { display: none; }
-      .page { padding: 0; }
-      body { background: #fff !important; }
-    }
 
     /* SCANNER PAGE */
     .scanner-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
@@ -667,49 +614,15 @@
 
   <!-- ========== SCANNER PAGE ========== -->
   <div id="page-overtime" class="page">
-    <section class="overtime-authorization" aria-label="Overtime authorization form">
-      <div class="overtime-auth-header"><img id="overtimeAuthorizationLogo" class="overtime-auth-logo" alt="DFAMPC seal"><div class="overtime-auth-letterhead"><strong>DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</strong><span>7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</span></div></div>
-      <h2 class="overtime-auth-title">OVERTIME AUTHORIZATION FORM</h2>
-      <div class="overtime-auth-row three">
-        <div class="overtime-auth-field"><label>Employee Name</label><input type="text" aria-label="Employee name"></div>
-        <div class="overtime-auth-field"><label>Employee ID</label><input type="text" aria-label="Employee ID"></div>
-        <div class="overtime-auth-field"><label>Date Form<br>Accomplished</label><input type="date" aria-label="Date form accomplished"></div>
-      </div>
-      <div class="overtime-auth-row two">
-        <div class="overtime-auth-field"><label>Immediate Supervisor</label><input type="text" aria-label="Immediate supervisor"></div>
-        <div class="overtime-auth-field"><label>Consular Office</label><input type="text" aria-label="Consular office"></div>
-      </div>
-      <p class="overtime-auth-section-title">Date(s) of Overtime Work</p>
-      <table class="overtime-auth-table" aria-label="Dates of overtime work">
-        <thead><tr><th>Date</th><th>Hours</th><th>Reason</th></tr></thead>
-        <tbody>
-          <tr><td><input type="date" aria-label="Overtime date 1"></td><td><input type="number" min="0" step="0.5" aria-label="Overtime hours 1"></td><td><input type="text" aria-label="Overtime reason 1"></td></tr>
-          <tr><td><input type="date" aria-label="Overtime date 2"></td><td><input type="number" min="0" step="0.5" aria-label="Overtime hours 2"></td><td><input type="text" aria-label="Overtime reason 2"></td></tr>
-        </tbody>
-      </table>
-      <button type="button" class="overtime-auth-add-row" onclick="addOvertimeAuthorizationRow()">+ Add date row</button>
-      <div class="overtime-auth-total">
-        <div>Anticipated Number<br>of Overtime Hours</div><div><input type="number" min="0" step="0.5" aria-label="Anticipated number of overtime hours" readonly></div>
-      </div>
-      <div class="overtime-auth-signatures">
-        <div class="overtime-auth-field"><label>Supervisor</label><input type="text" aria-label="Supervisor" value="RONEL JC RUBIO" readonly></div>
-        <div class="overtime-auth-field"><label>Signature</label><input type="text" aria-label="Signature"></div>
-        <div class="overtime-auth-field"><label>Date of Approval</label><input type="date" aria-label="Date of approval"></div>
-      </div>
-    </section>
-    <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1&v=20260825" title="Actual Rendered Overtime form"></iframe>
+    <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
   </div>
 
   <div id="page-overtime-records" class="page">
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">From <input type="date" id="overtimePrintDateFrom" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" /></label>
-      <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">To <input type="date" id="overtimePrintDateTo" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" /></label>
-      <button class="btn btn-muted" onclick="clearOvertimePrintDateFilter()" style="padding:8px 12px;font-size:11px;">Clear Dates</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
-      <button class="btn btn-secondary" onclick="printAllOvertimeRecords()">Print All</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
@@ -2682,9 +2595,6 @@
           textarea {
             text-transform: uppercase !important;
           }
-          .letterhead {
-            display: none !important;
-          }
           input::placeholder, textarea::placeholder {
             text-transform: uppercase !important;
           }
@@ -2692,109 +2602,6 @@
         doc.head.appendChild(style);
       }
     } catch(e) {}
-  }
-
-  function getOvertimeAuthorizationDate(rows) {
-    const dates = rows.map(row => String(row?.date || '').slice(0, 10)).filter(Boolean).sort();
-    return dates[0] || '';
-  }
-
-  function addOvertimeAuthorizationRow() {
-    const tbody = document.querySelector('.overtime-auth-table tbody');
-    if (!tbody) return;
-    const index = tbody.querySelectorAll('tr').length + 1;
-    const row = document.createElement('tr');
-    row.innerHTML = `<td><input type="date" aria-label="Overtime date ${index}"></td><td><input type="number" min="0" step="0.5" aria-label="Overtime hours ${index}"></td><td><input type="text" aria-label="Overtime reason ${index}"></td>`;
-    tbody.appendChild(row);
-    syncRenderedOvertimeFormFromAuthorization({ target: row.querySelector('input') });
-  }
-
-  function updateOvertimeAuthorizationTotal() {
-    const total = [...document.querySelectorAll('.overtime-auth-table tbody input[type="number"]')]
-      .reduce((sum, input) => sum + (Number(input.value) || 0), 0);
-    const totalInput = document.querySelector('.overtime-auth-total input');
-    if (totalInput) totalInput.value = total ? String(total) : '';
-  }
-
-  function resizeOvertimeAuthorizationText(container = document.querySelector('.overtime-authorization')) {
-    if (!container) return;
-    container.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="date"]').forEach(input => {
-      const valueLength = String(input.value || '').length;
-      const availableWidth = Math.max(70, input.clientWidth - 12);
-      const fittedSize = valueLength ? Math.floor(availableWidth / (valueLength * 0.62)) : 13;
-      input.style.fontSize = `${Math.max(8, Math.min(13, fittedSize))}px`;
-    });
-  }
-
-  function syncOvertimeAuthorizationForm() {
-    try {
-      const frame = document.getElementById('overtimeFrame');
-      const doc = frame?.contentDocument;
-      if (!doc) return;
-      const seal = doc.querySelector('.seal');
-      const authorizationLogo = document.getElementById('overtimeAuthorizationLogo');
-      if (authorizationLogo) authorizationLogo.src = typeof DFAMPC_LOGO_B64 === 'string' ? `data:image/jpeg;base64,${DFAMPC_LOGO_B64}` : (seal?.src || '');
-      const rows = [...doc.querySelectorAll('#ot-rows tr')].map(row => ({
-        date: row.querySelector('.c-date')?.value || '',
-        auth: row.querySelector('.c-auth')?.value || '',
-        reason: doc.getElementById('f-justification')?.value || ''
-      })).filter(row => row.date || row.auth || row.reason);
-      const name = doc.getElementById('f-name')?.value || '';
-      const employeeId = doc.getElementById('f-id')?.value || '';
-      const office = doc.getElementById('f-department')?.value || '';
-      const authorizationDate = getOvertimeAuthorizationDate(rows);
-      const fields = document.querySelectorAll('.overtime-authorization .overtime-auth-field input');
-      const setValue = (label, value) => {
-        const field = [...fields].find(input => input.getAttribute('aria-label') === label);
-        if (field) field.value = value;
-      };
-      setValue('Employee name', name);
-      setValue('Employee ID', employeeId);
-      setValue('Consular office', office);
-      setValue('Date form accomplished', authorizationDate);
-      setValue('Immediate supervisor', 'RONEL JC RUBIO');
-      setValue('Date of approval', authorizationDate);
-
-      const tbody = document.querySelector('.overtime-auth-table tbody');
-      if (tbody) {
-        tbody.innerHTML = (rows.length ? rows : [{}, {}]).map((row, index) => `<tr><td><input type="date" aria-label="Overtime date ${index + 1}" value="${row.date}"></td><td><input type="number" aria-label="Overtime hours ${index + 1}" value="${row.auth}"></td><td><input type="text" aria-label="Overtime reason ${index + 1}" value="${escapeOvertimeText(row.reason)}"></td></tr>`).join('');
-      }
-      updateOvertimeAuthorizationTotal();
-      resizeOvertimeAuthorizationText();
-    } catch (e) {}
-  }
-
-  function syncRenderedOvertimeFormFromAuthorization(event) {
-    try {
-      const frame = document.getElementById('overtimeFrame');
-      const doc = frame?.contentDocument;
-      const target = event?.target;
-      if (!doc || !target) return;
-      const setRenderedValue = (id, value) => {
-        const input = doc.getElementById(id);
-        if (!input || input.value === value) return;
-        input.value = value;
-      };
-      if (target.getAttribute('aria-label') === 'Employee name') setRenderedValue('f-name', target.value);
-      if (target.getAttribute('aria-label') === 'Employee ID') setRenderedValue('f-id', target.value);
-      if (target.getAttribute('aria-label') === 'Consular office') setRenderedValue('f-department', target.value);
-      if (target.closest('.overtime-auth-table')) {
-        const authRows = [...document.querySelectorAll('.overtime-auth-table tbody tr')];
-        while (doc.querySelectorAll('#ot-rows tr').length < authRows.length) doc.defaultView.addRow();
-        const reason = authRows.map(row => row.querySelector('input[type="text"]')?.value || '').find(Boolean) || '';
-        authRows.forEach((row, index) => {
-          const renderedRow = doc.querySelectorAll('#ot-rows tr')[index];
-          if (!renderedRow) return;
-          const date = row.querySelector('input[type="date"]')?.value || '';
-          const hours = row.querySelector('input[type="number"]')?.value || '';
-          renderedRow.querySelector('.c-date').value = date;
-          renderedRow.querySelector('.c-auth').value = hours;
-        });
-        doc.getElementById('f-justification').value = reason;
-        updateOvertimeAuthorizationTotal();
-        resizeOvertimeAuthorizationText();
-      }
-    } catch (e) {}
   }
 
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
@@ -2806,14 +2613,6 @@
     setTimeout(updateOvertimeFormHeader, 300);
     setTimeout(populateOvertimeConsularOffice, 100);
     setTimeout(injectOvertimeFormStyles, 100);
-    const doc = document.getElementById('overtimeFrame')?.contentDocument;
-    doc?.addEventListener('input', syncOvertimeAuthorizationForm);
-    doc?.addEventListener('change', syncOvertimeAuthorizationForm);
-    document.querySelector('.overtime-authorization')?.addEventListener('input', syncRenderedOvertimeFormFromAuthorization);
-    document.querySelector('.overtime-authorization')?.addEventListener('change', syncRenderedOvertimeFormFromAuthorization);
-    document.querySelector('.overtime-authorization')?.addEventListener('input', event => resizeOvertimeAuthorizationText(event.currentTarget));
-    document.querySelector('.overtime-authorization')?.addEventListener('change', event => resizeOvertimeAuthorizationText(event.currentTarget));
-    syncOvertimeAuthorizationForm();
   });
   setInterval(updateOvertimeFormHeader, 500);
 
@@ -5150,7 +4949,7 @@
     }
 
     html += `</div>`;
-    return html.replace(/<p[^>]*>note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i><\/p>/i, '');
+    return html;
   }
 
   // ==================== DELETE BULK ====================
@@ -5289,6 +5088,7 @@
           </td>
           <td style="font-family:monospace;font-size:11px;font-weight:700;">${r.tracking_number}</td>
           <td>${r.last_name||''}</td><td>${r.first_name||''}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.address||''}">${r.address||''}</td>
           <td><span class="status-pill ${statusClass(r.status)}">${r.status||''}</span></td>
           <td style="font-weight:700;color:var(--released);white-space:nowrap;">${r._released_date ? `<span style="background:rgba(16,185,129,0.1);border:1px solid var(--released);padding:2px 8px;border-radius:6px;font-size:11px;">ðŸ“… ${r._released_date}</span>` : '<span style="color:var(--muted);font-size:10px;">â€”</span>'}</td>
           <td style="white-space:nowrap;">${r._scan_date ? `<span style="color:var(--muted);font-size:11px;">ðŸ• ${r._scan_date}</span>` : '<span style="color:var(--muted);font-size:10px;">â€”</span>'}</td>
@@ -5856,10 +5656,6 @@
     return String(value ?? '').toUpperCase().replace(/[&<>"']/g, char => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[char]));
   }
 
-  function removeOvertimeApprovalSection(html) {
-    return html.replace(/<p[^>]*font-style:italic[^>]*>\s*note\s*:\s*This form must be submitted together with the\s*<i>Approved Overtime Authorization Form<\/i>\s*<\/p>/i, '');
-  }
-
   function buildOvertimeDocumentHtml(record) {
     const data = record.form_data || {};
     const rows = Array.isArray(data.rows) ? data.rows : [];
@@ -5878,29 +5674,8 @@
     const overtimeTable = `<table style="width:100%;border-collapse:collapse"><tr><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:34%">Date</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Authorized Hours</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Actual OT Hours Rendered</th></tr>${otRows}</table><table style="width:100%;border-collapse:collapse"><tr><td style="border:1px solid #000;border-right:none;padding:${size.pad}px 10px;text-align:center;font:700 ${size.label}pt Arial;text-transform:uppercase;width:70%">Total Actual Number of Overtime Hours Rendered</td><td style="border:1px solid #000;background:#e2e2e2;padding:${size.pad}px 10px;text-align:center;font:700 ${size.total}pt Arial;text-transform:uppercase;width:30%">${escapeOvertimeText(data.total || data.totalHours || '0')}</td></tr></table>`;
     const signatureImage = data.empSignatureImage || data.empSignatureImageData || '';
     const justification = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
-    const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Actual Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body><table style="width:100%;margin-bottom:${size.gap}px"><tr><td style="width:76px;padding-right:14px;vertical-align:middle">${sealSrc ? `<img src="${sealSrc}" width="70" height="70">` : ''}</td><td style="vertical-align:middle"><p style="margin:0;font:700 11.5pt Arial">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</p><p style="margin:2px 0 0;font:${size.small}pt Arial;color:#444">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</p></td></tr></table><p style="text-align:left;font:700 ${size.title}pt Arial;text-transform:uppercase;margin:0 0 ${size.gap}px">Actual Rendered Overtime</p>${section('Date(s) of Overtime Work',false)}${overtimeTable}<div style="margin:${size.gap}px 0 ${size.padSm}px"><p style="font:${size.small}pt Arial;margin:0 0 ${size.padSm}px">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</p><div style="border:1px solid #000;min-height:${size.justif}pt;padding:${size.pad}px 10px;font:${size.body}pt Arial;text-transform:uppercase">${justification || '&nbsp;'}</div></div>${fields([{label:'Employee Name',value:data.empSignName,width:34},{label:'Signature',value:data.empSignature,image:signatureImage,width:33},{label:'Date Form Submitted',value:data.dateSubmitted,width:33}])}${section('Approval',true)}${fields([{label:'Supervisor',value:data.appSupName,width:34},{label:'Signature',value:data.appSupSignature,width:33},{label:'Date of Approval',value:data.dateApproval,width:33}])}${fields([{label:'Operation Officer',value:data.opOffName,width:34},{label:'Signature',value:data.opOffSignature,width:33},{label:'Date of Approval',value:data.dateApprovalOp,width:33}])}${fields([{label:'HR Officer',value:data.hrName,width:34},{label:'Signature',value:data.hrSignature,width:33},{label:'Date of Approval',value:data.hrDateApproval,width:33}])}<p style="font:${size.small}pt Arial;font-style:italic;color:#333;margin:${size.padSm}px 0 2px">note : This form must be submitted together with the <i>Approved Overtime Authorization Form</i></p><p style="font:${size.small}pt Arial;color:#333;text-align:right;margin:2px 0 0">HR Form No. 2022-007</p></body></html>`;
-    return removeOvertimeApprovalSection(html);
-  }
-
-  function buildCombinedOvertimeDocumentHtml(record) {
-    const data = record.form_data || {};
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-    const sealSrc = typeof DFAMPC_LOGO_B64 === 'string' ? `data:image/jpeg;base64,${DFAMPC_LOGO_B64}` : (document.getElementById('overtimeFrame')?.contentDocument?.querySelector('.seal')?.src || '');
-    const authorizationDate = getOvertimeAuthorizationDate(rows);
-    const anticipated = rows.reduce((total, row) => total + (Number(row?.auth) || 0), 0);
-    const reason = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
-    const contentLength = rows.length * 8 + String(data.name || '').length + String(data.employeeId || '').length + String(data.department || '').length + String(data.justification || '').length;
-    const authorizationScale = Math.max(0.86, Math.min(1, 1 - Math.max(0, contentLength - 100) * 0.0008));
-    const authRows = (rows.length ? rows : [{}]).map(row => `<tr><td>${escapeOvertimeText(row.date || '')}</td><td>${escapeOvertimeText(row.auth || '')}</td><td>${reason}</td></tr>`).join('');
-    const authorization = `<section class="authorization"><div class="auth-heading">${sealSrc ? `<img src="${sealSrc}" alt="DFAMPC seal">` : ''}<h2>OVERTIME AUTHORIZATION FORM</h2></div><table class="auth-fields"><tr><th>EMPLOYEE NAME</th><th>EMPLOYEE ID</th><th>DATE FORM<br>ACCOMPLISHED</th></tr><tr><td>${escapeOvertimeText(data.name)}</td><td>${escapeOvertimeText(data.employeeId)}</td><td>${escapeOvertimeText(authorizationDate)}</td></tr><tr><th colspan="2">IMMEDIATE SUPERVISOR</th><th>CONSULAR OFFICE</th></tr><tr><td colspan="2">RONEL JC RUBIO</td><td>${escapeOvertimeText(data.department || '')}</td></tr></table><h3>DATE(S) OF OVERTIME WORK</h3><table class="auth-table"><tr><th>DATE</th><th>HOURS</th><th>REASON</th></tr>${authRows}</table><table class="auth-total"><tr><th>ANTICIPATED NUMBER<br>OF OVERTIME HOURS</th><td>${anticipated || ''}</td></tr></table><table class="auth-sign"><tr><th>SUPERVISOR</th><th>SIGNATURE</th><th>DATE OF APPROVAL</th></tr><tr><td>RONEL JC RUBIO</td><td></td><td>${escapeOvertimeText(authorizationDate)}</td></tr></table></section>`;
-    const printableAuthorization = authorization.replace('<div class="auth-heading">', '<div class="auth-heading"><div class="auth-letterhead"><strong>DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</strong><span>7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</span></div>');
-    const authorizationPrintOverrides = '<style>.authorization .auth-heading{flex-wrap:wrap!important}.authorization .auth-heading img{width:70px!important;height:70px!important;object-fit:contain!important;order:1}.authorization .auth-letterhead{order:2;flex:1}.authorization .auth-letterhead strong{display:block!important;font-size:11.5pt!important;font-weight:700!important;line-height:1.05!important}.authorization .auth-letterhead span{display:block!important;font-size:8.5pt!important;color:#111!important;line-height:1.1!important}.authorization .auth-heading h2{flex-basis:100%;order:3;margin:0!important;font-size:12pt!important}.authorization th,.authorization td{font-size:8.5pt!important}.authorization h3{font-size:9pt!important}.authorization .auth-total th,.authorization .auth-total td{font-size:9pt!important}</style>';
-    const renderedHtml = buildOvertimeDocumentHtml(record);
-    const bodyStart = renderedHtml.indexOf('<body>');
-    const bodyEnd = renderedHtml.lastIndexOf('</body>');
-    let renderedBody = (bodyStart >= 0 && bodyEnd > bodyStart ? renderedHtml.slice(bodyStart + 6, bodyEnd) : '') + '<style>.rendered-form{zoom:.6;margin:0 .08in;border-top:2px solid #000;padding-top:.08in}.rendered-form>table:first-child{display:none}</style><scr' + 'ipt>window.addEventListener("load",function(){requestAnimationFrame(function(){document.querySelectorAll(".rendered-form").forEach(function(form){var authorization=form.previousElementSibling;var available=10.6*96;var used=authorization.getBoundingClientRect().height+form.scrollHeight;var scale=Math.min(0.9,Math.max(0.35,(available-8)/used));form.style.zoom=scale.toFixed(3);});});});</scr' + 'ipt>';
-    renderedBody += authorizationPrintOverrides;
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization and Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.2in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#000;margin:0}.authorization{min-height:3.45in;height:auto;overflow:visible;break-inside:avoid;page-break-inside:avoid;margin:0 0 .04in;padding:.02in .08in;zoom:${authorizationScale.toFixed(3)}}.auth-heading{display:flex;align-items:center;gap:10px;margin-bottom:.12in}.auth-heading img{width:52px;height:52px;object-fit:contain;flex:0 0 auto}.auth-letterhead{flex:1;color:#000}.auth-letterhead strong{display:block;font-size:10pt;line-height:1.05}.auth-letterhead span{display:block;margin-top:2px;font-size:6.5pt;line-height:1.1}.auth-heading h2{margin:0;color:#00f;font-size:10pt;line-height:1}.authorization table{width:100%;border-collapse:collapse;table-layout:fixed}.authorization th,.authorization td{border:1px solid #000;padding:2px 4px;height:.2in;font-size:6.5pt;line-height:1.02;text-transform:uppercase}.authorization th{font-weight:700;border:0;text-align:left;padding:0 3px 2px}.authorization .auth-fields{margin-bottom:.12in}.authorization .auth-fields tr:nth-child(3) th{padding-top:.08in}.authorization h3{font-size:7.5pt;margin:0 0 1px;text-transform:uppercase}.authorization .auth-table{margin-bottom:.07in}.authorization .auth-table th{border:1px solid #000;text-align:center;padding:2px}.authorization .auth-table td{text-align:center}.authorization .auth-total{width:67%;margin-bottom:.1in}.authorization .auth-total th,.authorization .auth-total td{border:1px solid #000;height:.34in;font-size:7.5pt;text-align:center;font-weight:700}.authorization .auth-total td{background:#d9d9d9}.authorization .auth-sign th{text-align:left}.authorization .auth-sign td{height:.26in}.rendered-form{zoom:.6;margin:0 .08in}</style></head><body>${printableAuthorization}<div class="rendered-form">${renderedBody}</div></body></html>`;
+    const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Actual Rendered Overtime</title><style>@page Section1{size:8.5in 11in;margin:.5in}div.Section1{page:Section1}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body><div class="Section1"><table style="width:100%;margin-bottom:${size.gap}px"><tr><td style="width:76px;padding-right:14px;vertical-align:middle">${sealSrc ? `<img src="${sealSrc}" width="70" height="70">` : ''}</td><td style="vertical-align:middle"><p style="margin:0;font:700 11.5pt Arial">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</p><p style="margin:2px 0 0;font:${size.small}pt Arial;color:#444">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</p></td></tr></table><p style="text-align:center;font:700 ${size.title}pt Arial;text-transform:uppercase;margin:0 0 ${size.gap}px">Actual Rendered Overtime</p>${fields([{label:'Employee Name',value:data.name,width:34},{label:'Employee ID',value:data.employeeId,width:33},{label:'Date Form Accomplished',value:data.dateAccomplished,width:33}])}${fields([{label:'Immediate Supervisor',value:data.supervisor,width:34},{label:'Consular Office',value:data.department,width:66}])}${section('Date(s) of Overtime Work',false)}${overtimeTable}<div style="margin:${size.gap}px 0 ${size.padSm}px"><p style="font:${size.small}pt Arial;margin:0 0 ${size.padSm}px">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</p><div style="border:1px solid #000;min-height:${size.justif}pt;padding:${size.pad}px 10px;font:${size.body}pt Arial;text-transform:uppercase">${justification || '&nbsp;'}</div></div>${fields([{label:'Employee Name',value:data.empSignName,width:34},{label:'Signature',value:data.empSignature,image:signatureImage,width:33},{label:'Date Form Submitted',value:data.dateSubmitted,width:33}])}${section('Approval',true)}${fields([{label:'Supervisor',value:data.appSupName,width:34},{label:'Signature',value:data.appSupSignature,width:33},{label:'Date of Approval',value:data.dateApproval,width:33}])}${fields([{label:'Operation Officer',value:data.opOffName,width:34},{label:'Signature',value:data.opOffSignature,width:33},{label:'Date of Approval',value:data.dateApprovalOp,width:33}])}${fields([{label:'HR Officer',value:data.hrName,width:34},{label:'Signature',value:data.hrSignature,width:33},{label:'Date of Approval',value:data.hrDateApproval,width:33}])}<p style="font:${size.small}pt Arial;font-style:italic;color:#333;margin:${size.padSm}px 0 2px">note : This form must be submitted together with the <i>Approved Overtime Authorization Form</i></p><p style="font:${size.small}pt Arial;color:#333;text-align:right;margin:2px 0 0">HR Form No. 2022-007</p></div></body></html>`;
+    return html;
   }
 
   function downloadOvertimeDocument(record) {
@@ -5916,42 +5691,17 @@
 
   let overtimeRecords = [];
 
-  function openOvertimeDocument(documentHtml, shouldPrint, actionLabel) {
-    const printWindow = window.open('about:blank', '_blank');
+  function printOvertimeDocument(record) {
+    const printWindow = window.open('', '_blank');
     if (!printWindow) {
-      toast(`Please allow pop-ups to ${actionLabel}.`, 'warning');
+      toast('Please allow pop-ups to print the overtime form.', 'warning');
       return;
     }
-    const documentUrl = URL.createObjectURL(new Blob([documentHtml], { type: 'text/html' }));
-    let handled = false;
-    const handleLoad = () => {
-      if (handled) return;
-      handled = true;
-      printWindow.focus();
-      if (shouldPrint) setTimeout(() => printWindow.print(), 350);
-      setTimeout(() => URL.revokeObjectURL(documentUrl), 5000);
-    };
-    printWindow.addEventListener('load', handleLoad, { once: true });
-    printWindow.location.replace(documentUrl);
-    setTimeout(() => {
-      if (!handled && !printWindow.closed) handleLoad();
-    }, 1500);
-  }
-
-  function printOvertimeDocument(record) {
-    try {
-      openOvertimeDocument(buildCombinedOvertimeDocumentHtml(record), true, 'print the overtime form');
-    } catch (error) {
-      toast('Could not prepare the overtime form for printing: ' + error.message, 'error');
-    }
-  }
-
-  function previewOvertimeDocument(record) {
-    try {
-      openOvertimeDocument(buildCombinedOvertimeDocumentHtml(record), false, 'preview the overtime form');
-    } catch (error) {
-      toast('Could not prepare the overtime form preview: ' + error.message, 'error');
-    }
+    printWindow.document.open();
+    printWindow.document.write(buildOvertimeDocumentHtml(record));
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 350);
   }
 
   function toggleAllOvertimeRecords(checked) {
@@ -5980,113 +5730,30 @@
     });
   }
 
-  function buildOvertimePrintDocument(records, title = 'Overtime Forms') {
-    const list = Array.isArray(records) ? records.filter(Boolean) : [];
-    if (!list.length) return '';
-    const firstHtml = buildCombinedOvertimeDocumentHtml(list[0]);
-    const styleStart = firstHtml.indexOf('<style>');
-    const styleEnd = firstHtml.indexOf('</style>');
-    const printStyles = styleStart >= 0 && styleEnd > styleStart ? firstHtml.slice(styleStart + 7, styleEnd) : '';
-    const pages = list.map(record => {
-      const html = buildCombinedOvertimeDocumentHtml(record);
-      const bodyStart = html.indexOf('<body>');
-      const bodyEnd = html.lastIndexOf('</body>');
-      if (bodyStart === -1 || bodyEnd === -1 || bodyEnd <= bodyStart) return '';
-      return html.slice(bodyStart + '<body>'.length, bodyEnd);
-    }).join('<div style="page-break-before:always;"></div>');
-
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>${printStyles}.rendered-form{zoom:.6}</style></head><body>${pages}</body></html>`;
-  }
-
-  function getOvertimeRecordDate(record) {
-    const data = record?.form_data || {};
-    const rows = Array.isArray(data.rows) ? data.rows : [];
-    const workDate = rows.map(row => String(row?.date || '').slice(0, 10)).find(Boolean);
-    return workDate || String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || record?.created_at || '').slice(0, 10);
-  }
-
-  function getOvertimePrintDateFilteredRecords(records) {
-    const from = document.getElementById('overtimePrintDateFrom')?.value || '';
-    const to = document.getElementById('overtimePrintDateTo')?.value || '';
-    if (from && to && from > to) {
-      toast('The overtime print start date cannot be after the end date.', 'warning');
-      return null;
-    }
-    return records.filter(record => {
-      const date = getOvertimeRecordDate(record);
-      return (!from || date >= from) && (!to || date <= to);
-    });
-  }
-
-  function clearOvertimePrintDateFilter() {
-    const from = document.getElementById('overtimePrintDateFrom');
-    const to = document.getElementById('overtimePrintDateTo');
-    if (from) from.value = '';
-    if (to) to.value = '';
-  }
-
-  function printOvertimeRecordsList(records, title = 'Overtime Forms') {
-    const list = Array.isArray(records) ? records.filter(Boolean) : [];
-    if (!list.length) {
-      toast('No overtime records available to print.', 'warning');
-      return;
-    }
-
-    const documentHtml = buildOvertimePrintDocument(list, title);
-    openOvertimeDocument(documentHtml, true, 'print the overtime forms');
-  }
-
-  function printAllOvertimeRecords() {
-    if (!overtimeRecords.length) {
-      toast('There are no overtime records to print.', 'warning');
-      return;
-    }
-    const filteredRecords = getOvertimePrintDateFilteredRecords(overtimeRecords);
-    if (!filteredRecords) return;
-    if (!filteredRecords.length) {
-      toast('No overtime records found for the selected date range.', 'warning');
-      return;
-    }
-    printOvertimeRecordsList(filteredRecords, 'Overtime Forms by Date');
-  }
-
   function printSelectedOvertimeRecords() {
     const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
-      .map(input => overtimeRecords.find(record => String(record.id).trim().toLowerCase() === String(input.value).trim().toLowerCase()))
+      .map(input => overtimeRecords.find(record => String(record.id) === input.value))
       .filter(Boolean);
-
     if (!selected.length) {
       toast('Check at least one overtime record to print.', 'warning');
       return;
     }
-
-    printOvertimeRecordsList(selected, 'Selected Overtime Forms');
-  }
-
-  function invalidateOvertimeRecordsCache() {
-    const prefix = `${LOCAL_SB_CACHE_KEY}:GET:overtime_submissions?`;
-    for (const key of Array.from(MEMORY_SB_CACHE.keys())) {
-      if (key.startsWith(prefix)) MEMORY_SB_CACHE.delete(key);
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast('Please allow pop-ups to print the overtime forms.', 'warning');
+      return;
     }
-  }
-
-  async function deleteOvertimeRecordFromDatabase(id) {
-    const recordPath = `overtime_submissions?id=eq.${encodeURIComponent(String(id))}`;
-    const response = await fetch(`${SUPABASE_URL}/rest/v1/${recordPath}`, {
-      method: 'DELETE',
-      headers: { ...HEADERS, 'Prefer': 'return=minimal' }
-    });
-    if (!response.ok) throw new Error(await response.text());
-    invalidateOvertimeRecordsCache();
-    const verifyResponse = await fetch(`${SUPABASE_URL}/rest/v1/${recordPath}&select=id`, {
-      headers: { ...HEADERS, 'Cache-Control': 'no-cache' },
-      cache: 'no-store'
-    });
-    if (!verifyResponse.ok) throw new Error(await verifyResponse.text());
-    const remaining = await verifyResponse.json();
-    if (Array.isArray(remaining) && remaining.length > 0) {
-      throw new Error('Delete was not permitted. Run the DELETE policy in overtime-submissions.sql.');
-    }
+    const pages = selected.map(record => {
+      const html = buildOvertimeDocumentHtml(record);
+      const bodyStart = html.indexOf('<body>') + '<body>'.length;
+      const bodyEnd = html.lastIndexOf('</body>');
+      return html.slice(bodyStart, bodyEnd);
+    }).join('<div style="page-break-before:always;"></div>');
+    printWindow.document.open();
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${pages}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 350);
   }
 
   async function deleteOvertimeRecord(id) {
@@ -6096,7 +5763,15 @@
     }
     if (!id || !confirm('Delete this overtime record permanently?')) return;
     try {
-      await deleteOvertimeRecordFromDatabase(id);
+      const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(id))}`, {
+        method: 'DELETE',
+        headers: { ...HEADERS, 'Prefer': 'return=minimal' }
+      });
+      if (!response.ok) throw new Error(await response.text());
+      const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(id))}&select=id`);
+      if (Array.isArray(remaining) && remaining.length > 0) {
+        throw new Error('Database refused the delete. Add a DELETE policy for the anon role on overtime_submissions.');
+      }
       toast('Overtime record deleted.', 'success');
       await loadOvertimeRecords();
     } catch (error) {
@@ -6146,7 +5821,15 @@
       let deleted = 0;
       for (const record of records) {
         try {
-          await deleteOvertimeRecordFromDatabase(record.id);
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}`, {
+            method: 'DELETE',
+            headers: { ...HEADERS, 'Prefer': 'return=minimal' }
+          });
+          if (!response.ok) throw new Error(await response.text());
+          const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}&select=id`);
+          if (Array.isArray(remaining) && remaining.length > 0) {
+            throw new Error('Database refused the delete policy');
+          }
           deleted++;
         } catch (error) {
           console.warn('Failed to delete exported overtime record', record.id, error);
@@ -6179,7 +5862,7 @@
         const filedBy = record.submitted_by || 'N/A';
         const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
         const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-info" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick='deleteOvertimeRecord(${JSON.stringify(String(record.id))})'>Delete</button></td></tr>`;
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
