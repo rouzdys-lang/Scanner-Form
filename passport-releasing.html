@@ -6026,15 +6026,19 @@
     }
 
     const documentHtml = buildOvertimePrintDocument(list, title);
+    let hasPrinted = false;
+    const printWhenReady = () => {
+      if (hasPrinted) return;
+      hasPrinted = true;
+      setTimeout(() => printWindow.print(), 350);
+    };
+    printWindow.addEventListener('load', printWhenReady, { once: true });
     printWindow.document.open();
     printWindow.document.write(documentHtml);
     printWindow.document.close();
     printWindow.focus();
-    const printWhenReady = () => setTimeout(() => printWindow.print(), 350);
     if (printWindow.document.readyState === 'complete') {
       printWhenReady();
-    } else {
-      printWindow.addEventListener('load', printWhenReady, { once: true });
     }
   }
 
