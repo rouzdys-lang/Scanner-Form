@@ -2585,7 +2585,7 @@
     rows.forEach((row, index) => {
       const overtimeDate = parseOvertimeDate(row.date);
       const hours = Number(row.auth);
-      if (!overtimeDate || parseOvertimeDate(accomplishedDate) > overtimeDate) throw new Error(`Date accomplished for row ${index + 1} cannot be after the overtime date.`);
+      if (!overtimeDate || overtimeDate > parseOvertimeDate(accomplishedDate)) throw new Error(`Overtime date for row ${index + 1} cannot be after the accomplished date.`);
       if (!Number.isFinite(hours) || hours < 1 || hours > 8) throw new Error(`Hours for row ${index + 1} must be between 1 and 8.`);
     });
     data.dateSubmitted = accomplishedDate;
