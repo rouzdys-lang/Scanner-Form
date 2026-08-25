@@ -638,6 +638,8 @@
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
+      <button class="btn btn-muted" onclick="previewSelectedOvertimeRecords()">Preview Checked</button>
+      <button class="btn btn-muted" onclick="printAllOvertimeRecords()">Print All</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
@@ -2566,6 +2568,26 @@
     return data;
   }
 
+  function validateOvertimeAuthorization(data) {
+    const accomplishedDate = data.dateAccomplished || '';
+    if (!data.name) throw new Error('Employee name is required.');
+    if (!accomplishedDate || !parseOvertimeDate(accomplishedDate)) throw new Error('Date form accomplished is required.');
+    if (!String(data.empSignature || '').trim()) throw new Error('Employee signature is required.');
+    const rows = Array.isArray(data.rows) ? data.rows.filter(row => row.date || row.auth || row.reason) : [];
+    if (!rows.length) throw new Error('At least one overtime date is required.');
+    rows.forEach((row, index) => {
+      const overtimeDate = parseOvertimeDate(row.date);
+      const hours = Number(row.auth);
+      if (!overtimeDate || overtimeDate > parseOvertimeDate(accomplishedDate)) throw new Error(`Overtime date for row ${index + 1} cannot be after the accomplished date.`);
+      if (!Number.isFinite(hours) || hours < 1 || hours > 8) throw new Error(`Hours for row ${index + 1} must be between 1 and 8.`);
+    });
+    data.dateSubmitted = accomplishedDate;
+    data.submittedDate = accomplishedDate;
+    data.total = rows.reduce((sum, row) => sum + Number(row.auth || 0), 0);
+    data.totalHours = data.total;
+    return data;
+  }
+
   function removeDuplicateOvertimeApprovalLabel() {
     // Disabled - let the form display naturally
   }
@@ -2644,11 +2666,14 @@
   setInterval(updateOvertimeFormHeader, 500);
 
   window.addEventListener('message', async function(event){
-    const frame = document.getElementById('overtimeFrame');
+    const renderedFrame = document.getElementById('overtimeFrame');
+    const authorizationFrame = document.getElementById('overtimeAuthorizationFrame');
+    const frame = event.source === authorizationFrame?.contentWindow ? authorizationFrame : renderedFrame;
     if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
     try{
       const data = { ...(event.data.data || {}) };
-      validateOvertimeSubmission(data);
+      if (frame === authorizationFrame) validateOvertimeAuthorization(data);
+      else validateOvertimeSubmission(data);
       await sbFetch('overtime_submissions', {
         method: 'POST',
         body: JSON.stringify({
@@ -2660,7 +2685,7 @@
         })
       });
       frame.contentWindow.postMessage({ type: 'overtime-reset' }, '*');
-      setTimeout(() => { frame.src = frame.src; }, 50);
+      if (frame === renderedFrame) setTimeout(() => { frame.src = frame.src; }, 50);
       frame.contentWindow.postMessage({type:'overtime-save-result', ok:true}, '*');
       toast('Overtime form saved successfully.', 'success');
     } catch(error){
@@ -5731,6 +5756,10 @@
     setTimeout(() => printWindow.print(), 350);
   }
 
+  function previewOvertimeDocument(record) {
+    openOvertimePreview([record]);
+  }
+
   function toggleAllOvertimeRecords(checked) {
     document.querySelectorAll('.overtime-record-check').forEach(input => {
       input.checked = checked;
@@ -5783,6 +5812,53 @@
     setTimeout(() => printWindow.print(), 350);
   }
 
+  function getOvertimeRecordsForPrint(records) {
+    return records.map(record => {
+      const html = buildOvertimeDocumentHtml(record);
+      const bodyStart = html.indexOf('<body>') + '<body>'.length;
+      const bodyEnd = html.lastIndexOf('</body>');
+      return html.slice(bodyStart, bodyEnd);
+    }).join('<div style="page-break-before:always;"></div>');
+  }
+
+  function openOvertimePreview(records) {
+    if (!records.length) {
+      toast('Select at least one overtime record to preview.', 'warning');
+      return;
+    }
+    const previewWindow = window.open('', '_blank');
+    if (!previewWindow) {
+      toast('Please allow pop-ups to preview the overtime forms.', 'warning');
+      return;
+    }
+    previewWindow.document.open();
+    previewWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Preview</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(records)}</body></html>`);
+    previewWindow.document.close();
+  }
+
+  function previewSelectedOvertimeRecords() {
+    const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
+      .map(input => overtimeRecords.find(record => String(record.id) === input.value)).filter(Boolean);
+    openOvertimePreview(selected);
+  }
+
+  function printAllOvertimeRecords() {
+    if (!overtimeRecords.length) {
+      toast('No overtime records to print.', 'warning');
+      return;
+    }
+    const printWindow = window.open('', '_blank');
+    if (!printWindow) {
+      toast('Please allow pop-ups to print the overtime forms.', 'warning');
+      return;
+    }
+    printWindow.document.open();
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(overtimeRecords)}</body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 350);
+  }
+
   async function deleteOvertimeRecord(id) {
     if (!canManageOvertimeRecords() || !String(id || '').trim()) {
       toast('Only HR or supervisor can delete overtime records.', 'error');
@@ -5792,12 +5868,12 @@
     try {
       const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
-        headers: { ...HEADERS, 'Prefer': 'return=minimal' }
+        headers: { ...HEADERS, 'Prefer': 'return=representation' }
       });
       if (!response.ok) throw new Error(await response.text());
-      const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(id))}&select=id`);
-      if (Array.isArray(remaining) && remaining.length > 0) {
-        throw new Error('Database refused the delete. Add a DELETE policy for the anon role on overtime_submissions.');
+      const deleted = await response.json().catch(() => []);
+      if (!Array.isArray(deleted) || deleted.length === 0) {
+        throw new Error('No record was deleted. Check the Supabase DELETE policy.');
       }
       toast('Overtime record deleted.', 'success');
       await loadOvertimeRecords();
@@ -5889,7 +5965,7 @@
         const filedBy = record.submitted_by || 'N/A';
         const workDate = data.dateAccomplished || data.accomplishedDate || (Array.isArray(data.rows) && data.rows[0] ? data.rows[0].date : '');
         const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
-        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${escapeOvertimeText(record.id)}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${escapeOvertimeText(record.id)}')">Delete</button></td></tr>`;
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
