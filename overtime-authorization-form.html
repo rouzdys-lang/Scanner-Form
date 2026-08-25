@@ -166,13 +166,10 @@
       function syncAuthorizationFields() {
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
-        const enteredDates = overtimeDates.map(input => input.value).filter(Boolean).sort();
-        accomplishedInput.max = enteredDates[0] || '';
-        if (enteredDates[0] && accomplished && accomplished > enteredDates[0]) {
-          accomplishedInput.value = enteredDates[0];
-          submittedInput.value = enteredDates[0];
-        }
-        overtimeDates.forEach(input => { input.min = accomplishedInput.value || ''; });
+        overtimeDates.forEach(input => { input.max = accomplished || ''; });
+        overtimeDates.forEach(input => {
+          if (accomplished && input.value && input.value > accomplished) input.value = accomplished;
+        });
         employeeSignatureNameInput.value = employeeNameInput.value;
         if (signatureMode === 'type') setSignatureMode('type');
         const total = hourInputs.reduce((sum, input) => {
