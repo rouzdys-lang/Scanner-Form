@@ -621,6 +621,8 @@
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap;">
       <div class="logo" style="font-size:16px;">Overtime <span>Records</span></div>
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">From <input type="date" id="overtimeDateFrom" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" onchange="loadOvertimeRecords()"></label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);">To <input type="date" id="overtimeDateTo" class="form-control" style="width:145px;padding:7px 9px;font-size:11px;" onchange="loadOvertimeRecords()"></label>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
@@ -5852,7 +5854,17 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
+      const dateFrom = document.getElementById('overtimeDateFrom')?.value || '';
+      const dateTo = document.getElementById('overtimeDateTo')?.value || '';
+      if (dateFrom && dateTo && dateFrom > dateTo) {
+        body.innerHTML = '<tr><td colspan="7">The start date cannot be after the end date.</td></tr>';
+        document.getElementById('overtimeRecordCount').textContent = '';
+        return;
+      }
+      let query = 'overtime_submissions?select=*&order=created_at.desc&limit=500';
+      if (dateFrom) query += `&created_at=gte.${encodeURIComponent(`${dateFrom}T00:00:00.000Z`)}`;
+      if (dateTo) query += `&created_at=lte.${encodeURIComponent(`${dateTo}T23:59:59.999Z`)}`;
+      const records = await sbFetch(query);
       overtimeRecords = records;
       const selectAll = document.getElementById('overtimeSelectAll');
       if (selectAll) {
