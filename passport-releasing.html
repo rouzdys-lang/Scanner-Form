@@ -125,15 +125,15 @@
     .overtime-auth-row.three { grid-template-columns: 1fr 1fr 1fr; }
     .overtime-auth-row.two { grid-template-columns: 1fr 1fr; }
     .overtime-auth-field { min-width: 0; }
-    .overtime-auth-field label { display: block; min-height: 29px; padding: 0 7px 7px; font-weight: 700; font-size: 14px; line-height: 1.25; text-transform: uppercase; }
-    .overtime-auth-field input, .overtime-auth-field textarea { width: 100%; height: 30px; border: 1px solid #000; border-radius: 0; background: #fff; color: #000; font: 12px Arial, sans-serif; padding: 3px 6px; }
+    .overtime-auth-field label { display: block; min-height: 29px; padding: 0 7px 7px; font-weight: 700; font-size: 10.5px; line-height: 1.25; text-transform: uppercase; }
+    .overtime-auth-field input, .overtime-auth-field textarea { width: 100%; height: 30px; border: 1px solid #000; border-radius: 0; background: #fff; color: #000; font: 13px Arial, sans-serif; padding: 3px 6px; }
     .overtime-auth-field textarea { height: 30px; resize: none; }
-    .overtime-auth-section-title { margin: 0 0 3px; font-size: 14px; font-weight: 700; text-transform: uppercase; }
+    .overtime-auth-section-title { margin: 0 0 3px; font-size: 12px; font-weight: 700; text-transform: uppercase; }
     .overtime-auth-table { width: 100%; border-collapse: collapse; table-layout: fixed; margin-bottom: 18px; }
     .overtime-auth-table th, .overtime-auth-table td { height: 29px; border: 1px solid #000; padding: 3px 6px; font-weight: 400; text-align: center; }
-    .overtime-auth-table th { height: 30px; font-size: 13px; text-transform: uppercase; }
+    .overtime-auth-table th { height: 30px; font-size: 11px; text-transform: uppercase; }
     .overtime-auth-table td { padding: 0; }
-    .overtime-auth-table input { width: 100%; height: 28px; border: 0; padding: 3px 5px; text-align: center; font: 12px Arial, sans-serif; }
+    .overtime-auth-table input { width: 100%; height: 28px; border: 0; padding: 3px 5px; text-align: center; font: 13px Arial, sans-serif; }
     .overtime-auth-add-row { display: block; margin: -10px 0 12px; border: 1px solid #000; border-radius: 3px; background: #fff; color: #000; padding: 4px 9px; font: 12px Arial, sans-serif; cursor: pointer; }
     .overtime-auth-add-row:hover { background: #000; color: #fff; }
     .overtime-auth-total { display: grid; grid-template-columns: 1fr 1fr; width: 67%; margin-bottom: 29px; }
@@ -144,7 +144,7 @@
     .overtime-auth-signatures input { height: 36px; }
     @media (max-width: 700px) {
       .overtime-authorization { padding: 10px 4px 8px; }
-      .overtime-auth-field label { font-size: 11px; }
+      .overtime-auth-field label { font-size: 10.5px; }
       .overtime-auth-total { width: 72%; }
     }
     @media print {
@@ -2713,6 +2713,16 @@
     if (totalInput) totalInput.value = total ? String(total) : '';
   }
 
+  function resizeOvertimeAuthorizationText(container = document.querySelector('.overtime-authorization')) {
+    if (!container) return;
+    container.querySelectorAll('input[type="text"], input[type="email"], input[type="number"], input[type="date"]').forEach(input => {
+      const valueLength = String(input.value || '').length;
+      const availableWidth = Math.max(70, input.clientWidth - 12);
+      const fittedSize = valueLength ? Math.floor(availableWidth / (valueLength * 0.62)) : 13;
+      input.style.fontSize = `${Math.max(8, Math.min(13, fittedSize))}px`;
+    });
+  }
+
   function syncOvertimeAuthorizationForm() {
     try {
       const frame = document.getElementById('overtimeFrame');
@@ -2747,6 +2757,7 @@
         tbody.innerHTML = (rows.length ? rows : [{}, {}]).map((row, index) => `<tr><td><input type="date" aria-label="Overtime date ${index + 1}" value="${row.date}"></td><td><input type="number" aria-label="Overtime hours ${index + 1}" value="${row.auth}"></td><td><input type="text" aria-label="Overtime reason ${index + 1}" value="${escapeOvertimeText(row.reason)}"></td></tr>`).join('');
       }
       updateOvertimeAuthorizationTotal();
+      resizeOvertimeAuthorizationText();
     } catch (e) {}
   }
 
@@ -2778,6 +2789,7 @@
         });
         doc.getElementById('f-justification').value = reason;
         updateOvertimeAuthorizationTotal();
+        resizeOvertimeAuthorizationText();
       }
     } catch (e) {}
   }
@@ -2796,6 +2808,8 @@
     doc?.addEventListener('change', syncOvertimeAuthorizationForm);
     document.querySelector('.overtime-authorization')?.addEventListener('input', syncRenderedOvertimeFormFromAuthorization);
     document.querySelector('.overtime-authorization')?.addEventListener('change', syncRenderedOvertimeFormFromAuthorization);
+    document.querySelector('.overtime-authorization')?.addEventListener('input', event => resizeOvertimeAuthorizationText(event.currentTarget));
+    document.querySelector('.overtime-authorization')?.addEventListener('change', event => resizeOvertimeAuthorizationText(event.currentTarget));
     syncOvertimeAuthorizationForm();
   });
   setInterval(updateOvertimeFormHeader, 500);
@@ -5873,13 +5887,15 @@
     const authorizationDate = getOvertimeAuthorizationDate(rows);
     const anticipated = rows.reduce((total, row) => total + (Number(row?.auth) || 0), 0);
     const reason = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
+    const contentLength = rows.length * 8 + String(data.name || '').length + String(data.employeeId || '').length + String(data.department || '').length + String(data.justification || '').length;
+    const authorizationScale = Math.max(0.72, Math.min(1, 1 - Math.max(0, contentLength - 100) * 0.0012));
     const authRows = (rows.length ? rows : [{}]).map(row => `<tr><td>${escapeOvertimeText(row.date || '')}</td><td>${escapeOvertimeText(row.auth || '')}</td><td>${reason}</td></tr>`).join('');
-    const authorization = `<section class="authorization"><div class="auth-heading">${sealSrc ? `<img src="${sealSrc}" alt="DFAMPC seal">` : ''}<h2>OVERTIME AUTHORIZATION FORM</h2></div><table class="auth-fields"><tr><th>EMPLOYEE NAME</th><th>EMPLOYEE ID</th><th>EMAIL ADDRESS</th><th>DATE FORM<br>ACCOMPLISHED</th></tr><tr><td>${escapeOvertimeText(data.name)}</td><td>${escapeOvertimeText(data.employeeId)}</td><td>${escapeOvertimeText(data.email || data.emailAddress || '')}</td><td>${escapeOvertimeText(authorizationDate)}</td></tr><tr><th colspan="2">IMMEDIATE SUPERVISOR</th><th colspan="2">CONSULAR OFFICE</th></tr><tr><td colspan="2">RONEL JC RUBIO</td><td colspan="2">${escapeOvertimeText(data.department || '')}</td></tr></table><h3>DATE(S) OF OVERTIME WORK</h3><table class="auth-table"><tr><th>DATE</th><th>HOURS</th><th>REASON</th></tr>${authRows}</table><table class="auth-total"><tr><th>ANTICIPATED NUMBER<br>OF OVERTIME HOURS</th><td>${anticipated || ''}</td></tr></table><table class="auth-sign"><tr><th>SUPERVISOR</th><th>SIGNATURE</th><th>DATE OF APPROVAL</th></tr><tr><td>RONEL JC RUBIO</td><td></td><td>${escapeOvertimeText(authorizationDate)}</td></tr></table></section>`;
+    const authorization = `<section class="authorization"><div class="auth-heading">${sealSrc ? `<img src="${sealSrc}" alt="DFAMPC seal">` : ''}<h2>OVERTIME AUTHORIZATION FORM</h2></div><table class="auth-fields"><tr><th>EMPLOYEE NAME</th><th>EMPLOYEE ID</th><th>DATE FORM<br>ACCOMPLISHED</th></tr><tr><td>${escapeOvertimeText(data.name)}</td><td>${escapeOvertimeText(data.employeeId)}</td><td>${escapeOvertimeText(authorizationDate)}</td></tr><tr><th colspan="2">IMMEDIATE SUPERVISOR</th><th>CONSULAR OFFICE</th></tr><tr><td colspan="2">RONEL JC RUBIO</td><td>${escapeOvertimeText(data.department || '')}</td></tr></table><h3>DATE(S) OF OVERTIME WORK</h3><table class="auth-table"><tr><th>DATE</th><th>HOURS</th><th>REASON</th></tr>${authRows}</table><table class="auth-total"><tr><th>ANTICIPATED NUMBER<br>OF OVERTIME HOURS</th><td>${anticipated || ''}</td></tr></table><table class="auth-sign"><tr><th>SUPERVISOR</th><th>SIGNATURE</th><th>DATE OF APPROVAL</th></tr><tr><td>RONEL JC RUBIO</td><td></td><td>${escapeOvertimeText(authorizationDate)}</td></tr></table></section>`;
     const renderedHtml = buildOvertimeDocumentHtml(record);
     const bodyStart = renderedHtml.indexOf('<body>');
     const bodyEnd = renderedHtml.lastIndexOf('</body>');
     const renderedBody = (bodyStart >= 0 && bodyEnd > bodyStart ? renderedHtml.slice(bodyStart + 6, bodyEnd) : '') + '<style>.rendered-form{zoom:.6;border-top:2px solid #000;padding-top:.08in}.rendered-form>table:first-child{display:none}.authorization .auth-fields tr:first-child th:nth-child(3),.authorization .auth-fields tr:nth-child(2) td:nth-child(3){display:none}</style><scr' + 'ipt>window.addEventListener("load",function(){requestAnimationFrame(function(){document.querySelectorAll(".rendered-form").forEach(function(form){var authorization=form.previousElementSibling;var available=10.6*96;var used=authorization.getBoundingClientRect().height+form.scrollHeight;var scale=Math.min(0.9,Math.max(0.35,(available-8)/used));form.style.zoom=scale.toFixed(3);});});});</scr' + 'ipt>';
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization and Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.2in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#000;margin:0}.authorization{height:3.45in;overflow:hidden;margin:0 0 .04in;padding:.02in .08in}.authorization h2{margin:0 0 .12in;color:#00f;font-size:10pt;line-height:1}.authorization table{width:100%;border-collapse:collapse;table-layout:fixed}.authorization th,.authorization td{border:1px solid #000;padding:2px 4px;height:.2in;font-size:6.5pt;line-height:1.02;text-transform:uppercase}.authorization th{font-weight:700;border:0;text-align:left;padding:0 3px 2px}.authorization .auth-fields{margin-bottom:.12in}.authorization .auth-fields tr:nth-child(3) th{padding-top:.08in}.authorization h3{font-size:7.5pt;margin:0 0 1px;text-transform:uppercase}.authorization .auth-table{margin-bottom:.07in}.authorization .auth-table th{border:1px solid #000;text-align:center;padding:2px}.authorization .auth-table td{text-align:center}.authorization .auth-total{width:67%;margin-bottom:.1in}.authorization .auth-total th,.authorization .auth-total td{border:1px solid #000;height:.34in;font-size:7.5pt;text-align:center;font-weight:700}.authorization .auth-total td{background:#d9d9d9}.authorization .auth-sign th{text-align:left}.authorization .auth-sign td{height:.26in}.rendered-form{zoom:.5}</style></head><body>${authorization}<div class="rendered-form">${renderedBody}</div></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization and Rendered Overtime</title><style>@page{size:8.5in 11in;margin:.2in}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#000;margin:0}.authorization{height:3.45in;overflow:hidden;margin:0 0 .04in;padding:.02in .08in;zoom:${authorizationScale.toFixed(3)}}.auth-heading{display:flex;align-items:center;gap:10px;margin-bottom:.12in}.auth-heading img{width:52px;height:52px;object-fit:contain;flex:0 0 auto}.auth-heading h2{margin:0;color:#00f;font-size:10pt;line-height:1}.authorization table{width:100%;border-collapse:collapse;table-layout:fixed}.authorization th,.authorization td{border:1px solid #000;padding:2px 4px;height:.2in;font-size:6.5pt;line-height:1.02;text-transform:uppercase}.authorization th{font-weight:700;border:0;text-align:left;padding:0 3px 2px}.authorization .auth-fields{margin-bottom:.12in}.authorization .auth-fields tr:nth-child(3) th{padding-top:.08in}.authorization h3{font-size:7.5pt;margin:0 0 1px;text-transform:uppercase}.authorization .auth-table{margin-bottom:.07in}.authorization .auth-table th{border:1px solid #000;text-align:center;padding:2px}.authorization .auth-table td{text-align:center}.authorization .auth-total{width:67%;margin-bottom:.1in}.authorization .auth-total th,.authorization .auth-total td{border:1px solid #000;height:.34in;font-size:7.5pt;text-align:center;font-weight:700}.authorization .auth-total td{background:#d9d9d9}.authorization .auth-sign th{text-align:left}.authorization .auth-sign td{height:.26in}.rendered-form{zoom:.6}</style></head><body>${authorization}<div class="rendered-form">${renderedBody}</div></body></html>`;
   }
 
   function downloadOvertimeDocument(record) {
