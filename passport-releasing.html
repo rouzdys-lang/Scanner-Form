@@ -622,6 +622,7 @@
       <button class="btn btn-muted" onclick="loadOvertimeRecords()">Refresh</button>
       <label style="display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted);cursor:pointer;"><input type="checkbox" id="overtimeSelectAll" onchange="toggleAllOvertimeRecords(this.checked)"> Check all</label>
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print Checked</button>
+      <button class="btn btn-secondary" onclick="printAllOvertimeRecords()">Print All</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
@@ -5741,30 +5742,60 @@
     });
   }
 
-  function printSelectedOvertimeRecords() {
-    const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
-      .map(input => overtimeRecords.find(record => String(record.id).toLowerCase() === input.value.toLowerCase()))
-      .filter(Boolean);
-    if (!selected.length) {
-      toast('Check at least one overtime record to print.', 'warning');
+  function buildOvertimePrintDocument(records, title = 'Overtime Forms') {
+    const list = Array.isArray(records) ? records.filter(Boolean) : [];
+    if (!list.length) return '';
+    const pages = list.map(record => {
+      const html = buildOvertimeDocumentHtml(record);
+      const bodyStart = html.indexOf('<body>');
+      const bodyEnd = html.lastIndexOf('</body>');
+      if (bodyStart === -1 || bodyEnd === -1 || bodyEnd <= bodyStart) return '';
+      return html.slice(bodyStart + '<body>'.length, bodyEnd);
+    }).join('<div style="page-break-before:always;"></div>');
+
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>${title}</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${pages}</body></html>`;
+  }
+
+  function printOvertimeRecordsList(records, title = 'Overtime Forms') {
+    const list = Array.isArray(records) ? records.filter(Boolean) : [];
+    if (!list.length) {
+      toast('No overtime records available to print.', 'warning');
       return;
     }
-    const printWindow = window.open('', '_blank');
+
+    const printWindow = window.open('', '_blank', 'noopener,noreferrer');
     if (!printWindow) {
       toast('Please allow pop-ups to print the overtime forms.', 'warning');
       return;
     }
-    const pages = selected.map(record => {
-      const html = buildOvertimeDocumentHtml(record);
-      const bodyStart = html.indexOf('<body>') + '<body>'.length;
-      const bodyEnd = html.lastIndexOf('</body>');
-      return html.slice(bodyStart, bodyEnd);
-    }).join('<div style="page-break-before:always;"></div>');
+
+    const documentHtml = buildOvertimePrintDocument(list, title);
     printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body>${pages}</body></html>`);
+    printWindow.document.write(documentHtml);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 350);
+  }
+
+  function printAllOvertimeRecords() {
+    if (!overtimeRecords.length) {
+      toast('There are no overtime records to print.', 'warning');
+      return;
+    }
+    printOvertimeRecordsList(overtimeRecords, 'All Overtime Forms');
+  }
+
+  function printSelectedOvertimeRecords() {
+    const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
+      .map(input => overtimeRecords.find(record => String(record.id).trim().toLowerCase() === String(input.value).trim().toLowerCase()))
+      .filter(Boolean);
+
+    if (!selected.length) {
+      toast('Check at least one overtime record to print.', 'warning');
+      return;
+    }
+
+    printOvertimeRecordsList(selected, 'Selected Overtime Forms');
   }
 
   async function deleteOvertimeRecord(id) {
