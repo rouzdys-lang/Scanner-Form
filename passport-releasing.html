@@ -5762,6 +5762,29 @@
     setTimeout(() => printWindow.print(), 350);
   }
 
+  function getOvertimeRecordDateKeys(record) {
+    const data = record?.form_data || {};
+    const values = [
+      data.dateAccomplished,
+      data.accomplishedDate,
+      data.dateSubmitted,
+      data.submittedDate,
+      ...(Array.isArray(data.rows) ? data.rows.map(row => row?.date) : [])
+    ];
+    return values.map(value => {
+      const text = String(value || '').trim();
+      if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+      const parsed = new Date(text);
+      if (Number.isNaN(parsed.getTime())) return '';
+      return `${parsed.getFullYear()}-${String(parsed.getMonth() + 1).padStart(2, '0')}-${String(parsed.getDate()).padStart(2, '0')}`;
+    }).filter(Boolean);
+  }
+
+  function overtimeRecordMatchesDateRange(record, dateFrom, dateTo) {
+    const dates = getOvertimeRecordDateKeys(record);
+    return dates.some(date => (!dateFrom || date >= dateFrom) && (!dateTo || date <= dateTo));
+  }
+
   async function deleteOvertimeRecord(id) {
     if (!canManageOvertimeRecords() || !String(id || '').trim()) {
       toast('Only HR or supervisor can delete overtime records.', 'error');
@@ -5861,10 +5884,8 @@
         document.getElementById('overtimeRecordCount').textContent = '';
         return;
       }
-      let query = 'overtime_submissions?select=*&order=created_at.desc&limit=500';
-      if (dateFrom) query += `&created_at=gte.${encodeURIComponent(`${dateFrom}T00:00:00.000Z`)}`;
-      if (dateTo) query += `&created_at=lte.${encodeURIComponent(`${dateTo}T23:59:59.999Z`)}`;
-      const records = await sbFetch(query);
+      const allRecords = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=5000');
+      const records = (allRecords || []).filter(record => overtimeRecordMatchesDateRange(record, dateFrom, dateTo));
       overtimeRecords = records;
       const selectAll = document.getElementById('overtimeSelectAll');
       if (selectAll) {
