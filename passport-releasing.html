@@ -2611,6 +2611,9 @@
         officeInput.value = fullName;
         officeInput.dispatchEvent(new Event('input', { bubbles: true }));
         officeInput.dispatchEvent(new Event('change', { bubbles: true }));
+        if (frameId === 'overtimeAuthorizationFrame') {
+          document.getElementById(frameId)?.contentWindow?.postMessage({ type: 'overtime-user-context', fullName }, '*');
+        }
       });
     } catch (e) {}
   }
