@@ -5743,7 +5743,7 @@
 
   function printSelectedOvertimeRecords() {
     const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
-      .map(input => overtimeRecords.find(record => String(record.id) === input.value))
+      .map(input => overtimeRecords.find(record => String(record.id).toLowerCase() === input.value.toLowerCase()))
       .filter(Boolean);
     if (!selected.length) {
       toast('Check at least one overtime record to print.', 'warning');
