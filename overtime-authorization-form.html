@@ -80,13 +80,14 @@
     <div class="section-title">Date(s) of Overtime Work</div>
     <table>
       <thead><tr><th>Date</th><th>Hours</th><th>Reason</th></tr></thead>
-      <tbody>
+      <tbody id="overtimeWorkRows">
         <tr><td><input type="date" name="date1"></td><td><input name="hours1" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason1" oninput="this.value = this.value.toUpperCase()"></td></tr>
         <tr><td><input type="date" name="date2"></td><td><input name="hours2" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason2" oninput="this.value = this.value.toUpperCase()"></td></tr>
         <tr><td><input type="date" name="date3"></td><td><input name="hours3" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason3" oninput="this.value = this.value.toUpperCase()"></td></tr>
         <tr><td><input type="date" name="date4"></td><td><input name="hours4" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason4" oninput="this.value = this.value.toUpperCase()"></td></tr>
       </tbody>
     </table>
+    <button type="button" class="add-row-button" onclick="addOvertimeWorkRow()">+ Add Overtime Date</button>
     <div class="hours">
       <div class="field"><span class="label">Anticipated Number of Overtime Hours</span></div>
       <div class="field"><input name="anticipatedHours" inputmode="decimal" readonly></div>
@@ -140,9 +141,9 @@
       });
       const accomplishedInput = document.querySelector('[name="dateAccomplished"]');
       const submittedInput = document.querySelector('[name="dateSubmitted"]');
-      const overtimeDates = [...document.querySelectorAll('input[type="date"][name^="date"]')].filter(input => input !== accomplishedInput && input !== submittedInput);
-      const hourInputs = [...document.querySelectorAll('input[name^="hours"]')];
-      const reasonInputs = [...document.querySelectorAll('input[name^="reason"]')];
+      let overtimeDates = [];
+      let hourInputs = [];
+      let reasonInputs = [];
       const anticipatedInput = document.querySelector('[name="anticipatedHours"]');
       const justificationInput = document.querySelector('[name="justification"]');
       const employeeNameInput = document.querySelector('[name="employeeName"]');
@@ -164,6 +165,7 @@
         const start = input.selectionStart;
         input.value = input.value.toUpperCase();
         if (start !== null) input.setSelectionRange(start, start);
+        syncAuthorizationFields();
       }, true);
 
       function resizeSignatureCanvas() {
@@ -207,6 +209,9 @@
       resizeSignatureCanvas();
 
       function syncAuthorizationFields() {
+        overtimeDates = [...document.querySelectorAll('input[type="date"][name^="date"]')].filter(input => input !== accomplishedInput && input !== submittedInput);
+        hourInputs = [...document.querySelectorAll('input[name^="hours"]')];
+        reasonInputs = [...document.querySelectorAll('input[name^="reason"]')];
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
         overtimeDates.forEach(input => { input.min = accomplished || ''; });
@@ -221,6 +226,16 @@
         }, 0);
         anticipatedInput.value = total ? String(Number(total.toFixed(2))) : '';
         justificationInput.value = reasonInputs.map(input => input.value.trim()).filter(Boolean).join('; ');
+      }
+
+      function addOvertimeWorkRow() {
+        const rows = document.getElementById('overtimeWorkRows');
+        if (!rows) return;
+        const rowNumber = rows.querySelectorAll('tr').length + 1;
+        const row = document.createElement('tr');
+        row.innerHTML = `<td><input type="date" name="date${rowNumber}"></td><td><input name="hours${rowNumber}"></td><td><input name="reason${rowNumber}"></td>`;
+        rows.appendChild(row);
+        syncAuthorizationFields();
       }
 
       accomplishedInput.addEventListener('input', syncAuthorizationFields);
