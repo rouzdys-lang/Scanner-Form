@@ -69,22 +69,22 @@
     </div>
     <h1>OVERTIME AUTHORIZATION FORM</h1>
     <div class="grid grid-three-top">
-      <div class="field"><span class="label">Employee Name</span><input name="employeeName"></div>
-      <div class="field"><span class="label">Employee ID</span><input name="employeeId"></div>
+      <div class="field"><span class="label">Employee Name</span><input name="employeeName" oninput="this.value = this.value.toUpperCase()"></div>
+      <div class="field"><span class="label">Employee ID</span><input name="employeeId" oninput="this.value = this.value.toUpperCase()"></div>
       <div class="field"><span class="label">Date Form Accomplished</span><input type="date" name="dateAccomplished"></div>
     </div>
     <div class="grid grid-two" style="margin-top: 26px;">
-      <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor" value="RONEL JC RUBIO"></div>
-      <div class="field"><span class="label">Consular Office</span><input name="department" value=""></div>
+      <div class="field"><span class="label">Immediate Supervisor</span><input name="supervisor" value="RONEL JC RUBIO" oninput="this.value = this.value.toUpperCase()"></div>
+      <div class="field"><span class="label">Consular Office</span><input name="department" value="" oninput="this.value = this.value.toUpperCase()"></div>
     </div>
     <div class="section-title">Date(s) of Overtime Work</div>
     <table>
       <thead><tr><th>Date</th><th>Hours</th><th>Reason</th></tr></thead>
       <tbody>
-        <tr><td><input type="date" name="date1"></td><td><input name="hours1"></td><td><input name="reason1"></td></tr>
-        <tr><td><input type="date" name="date2"></td><td><input name="hours2"></td><td><input name="reason2"></td></tr>
-        <tr><td><input type="date" name="date3"></td><td><input name="hours3"></td><td><input name="reason3"></td></tr>
-        <tr><td><input type="date" name="date4"></td><td><input name="hours4"></td><td><input name="reason4"></td></tr>
+        <tr><td><input type="date" name="date1"></td><td><input name="hours1" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason1" oninput="this.value = this.value.toUpperCase()"></td></tr>
+        <tr><td><input type="date" name="date2"></td><td><input name="hours2" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason2" oninput="this.value = this.value.toUpperCase()"></td></tr>
+        <tr><td><input type="date" name="date3"></td><td><input name="hours3" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason3" oninput="this.value = this.value.toUpperCase()"></td></tr>
+        <tr><td><input type="date" name="date4"></td><td><input name="hours4" oninput="this.value = this.value.toUpperCase()"></td><td><input name="reason4" oninput="this.value = this.value.toUpperCase()"></td></tr>
       </tbody>
     </table>
     <div class="hours">
@@ -104,20 +104,20 @@
         <button type="button" class="sig-tab" data-mode="draw" onclick="setSignatureMode('draw')">Draw signature</button>
         <button type="button" class="sig-tab" data-mode="upload" onclick="setSignatureMode('upload')">Attach image</button>
       </div>
-      <div class="sig-panel" id="sig-panel-type"><input id="typedSignature" type="text" placeholder="Type your name as your signature"></div>
+      <div class="sig-panel" id="sig-panel-type"><input id="typedSignature" type="text" placeholder="Type your name as your signature" oninput="this.value = this.value.toUpperCase()"></div>
       <div class="sig-panel" id="sig-panel-draw" style="display:none;"><canvas id="sig-canvas" width="600" height="140" aria-label="Employee signature"></canvas><div class="sig-tools"><button type="button" class="signature-clear" onclick="clearSigCanvas()">Clear drawing</button></div></div>
       <div class="sig-panel" id="sig-panel-upload" style="display:none;"><input type="file" id="signatureFile" accept="image/*" onchange="handleSigUpload(event)"><div id="sig-upload-preview" class="sig-preview"></div></div>
       <input name="employeeSignature" type="hidden">
     </div>
     <div class="section-title" style="text-decoration: underline;">Approval</div>
     <div class="grid grid-three">
-      <div class="field"><span class="label">Supervisor</span><input name="approvalSupervisor" value="RONEL JC RUBIO"></div>
-      <div class="field"><span class="label">Signature</span><input name="approvalSignature"></div>
+      <div class="field"><span class="label">Supervisor</span><input name="approvalSupervisor" value="RONEL JC RUBIO" oninput="this.value = this.value.toUpperCase()"></div>
+      <div class="field"><span class="label">Signature</span><input name="approvalSignature" oninput="this.value = this.value.toUpperCase()"></div>
       <div class="field"><span class="label">Date of Approval</span><input type="date" name="approvalDate"></div>
     </div>
     <div class="grid grid-three">
-      <div class="field"><span class="label">ACOO COH HR Officer/HR Assistant</span><input name="hrOfficer"></div>
-      <div class="field"><span class="label">Signature</span><input name="hrSignature"></div>
+      <div class="field"><span class="label">ACOO COH HR Officer/HR Assistant</span><input name="hrOfficer" oninput="this.value = this.value.toUpperCase()"></div>
+      <div class="field"><span class="label">Signature</span><input name="hrSignature" oninput="this.value = this.value.toUpperCase()"></div>
       <div class="field"><span class="label">Date of Approval</span><input type="date" name="approvalDepartment"></div>
     </div>
     <div class="footer-note">Note: This form must be accomplished before rendering an actual overtime; no authorization means no payment of overtime.</div>
