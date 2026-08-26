@@ -157,6 +157,15 @@
       let signatureImageData = '';
       let drawingSignature = false;
 
+      document.addEventListener('input', event => {
+        const input = event.target;
+        if (!(input instanceof HTMLInputElement || input instanceof HTMLTextAreaElement)) return;
+        if (['date', 'file', 'hidden', 'password'].includes(input.type)) return;
+        const start = input.selectionStart;
+        input.value = input.value.toUpperCase();
+        if (start !== null) input.setSelectionRange(start, start);
+      }, true);
+
       function resizeSignatureCanvas() {
         const ratio = window.devicePixelRatio || 1;
         const bounds = signatureCanvas.getBoundingClientRect();
