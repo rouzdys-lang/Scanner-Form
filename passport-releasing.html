@@ -5874,21 +5874,24 @@
       toast('Please allow pop-ups to print the overtime forms.', 'warning');
       return;
     }
+    const printContent = getOvertimeRecordsForPrint(selected);
     printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(selected)}</body></html>`);
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 350);
   }
 
   function getOvertimeRecordsForPrint(records) {
-    return records.map(record => {
+    const styles = [];
+    const pages = records.map(record => {
       const html = overtimeRecordDocumentHtml(record);
-      const styles = [...html.matchAll(/<style[^>]*>[\s\S]*?<\/style>/gi)].map(match => match[0]).join('');
+      styles.push(...[...html.matchAll(/<style[^>]*>[\s\S]*?<\/style>/gi)].map(match => match[0]));
       const bodyStart = html.indexOf('<body>') + '<body>'.length;
       const bodyEnd = html.lastIndexOf('</body>');
-      return `${styles}<section class="overtime-print-page">${html.slice(bodyStart, bodyEnd)}</section>`;
+      return `<section class="overtime-print-page">${html.slice(bodyStart, bodyEnd)}</section>`;
     }).join('');
+    return { styles: styles.join(''), pages };
   }
 
   function openOvertimePreview(records) {
@@ -5901,8 +5904,9 @@
       toast('Please allow pop-ups to preview the overtime forms.', 'warning');
       return;
     }
+    const previewContent = getOvertimeRecordsForPrint(records);
     previewWindow.document.open();
-    previewWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Preview</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(records)}</body></html>`);
+    previewWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Preview</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${previewContent.styles}</head><body>${previewContent.pages}</body></html>`);
     previewWindow.document.close();
   }
 
@@ -5925,8 +5929,9 @@
       toast('Please allow pop-ups to print the overtime forms.', 'warning');
       return;
     }
+    const printContent = getOvertimeRecordsForPrint(recordsToPrint);
     printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style></head><body>${getOvertimeRecordsForPrint(recordsToPrint)}</body></html>`);
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
     setTimeout(() => printWindow.print(), 350);
