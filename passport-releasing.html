@@ -2666,6 +2666,29 @@
     } catch(e) {}
   }
 
+  function injectOvertimeAuthorizationInputNormalization() {
+    const frame = document.getElementById('overtimeAuthorizationFrame');
+    try {
+      const doc = frame?.contentDocument || frame?.contentWindow?.document;
+      if (!doc) return;
+      if (!doc.getElementById('authorization-uppercase-style')) {
+        const style = doc.createElement('style');
+        style.id = 'authorization-uppercase-style';
+        style.textContent = 'input:not([type="date"]):not([type="file"]):not([type="hidden"]):not([type="password"]), textarea { text-transform: uppercase !important; }';
+        doc.head.appendChild(style);
+      }
+      doc.querySelectorAll('input:not([type="date"]):not([type="file"]):not([type="hidden"]):not([type="password"]), textarea').forEach(input => {
+        if (input.dataset.uppercaseAttached) return;
+        input.dataset.uppercaseAttached = 'true';
+        input.addEventListener('input', () => {
+          const start = input.selectionStart;
+          input.value = input.value.toUpperCase();
+          if (start !== null) input.setSelectionRange(start, start);
+        });
+      });
+    } catch(e) {}
+  }
+
   document.getElementById('overtimeFrame')?.addEventListener('load', () => {
     removeDuplicateOvertimeApprovalLabel();
     populateOvertimeConsularOffice();
@@ -2676,7 +2699,10 @@
     setTimeout(populateOvertimeConsularOffice, 100);
     setTimeout(injectOvertimeFormStyles, 100);
   });
-  document.getElementById('overtimeAuthorizationFrame')?.addEventListener('load', populateOvertimeConsularOffice);
+  document.getElementById('overtimeAuthorizationFrame')?.addEventListener('load', () => {
+    populateOvertimeConsularOffice();
+    injectOvertimeAuthorizationInputNormalization();
+  });
   setInterval(updateOvertimeFormHeader, 500);
 
   window.addEventListener('message', async function(event){
