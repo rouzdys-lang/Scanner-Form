@@ -6071,7 +6071,7 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const records = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=500');
+      const records = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,form_data&order=created_at.desc&limit=100');
       overtimeRecords = records;
       const visibleRecords = getVisibleOvertimeRecords();
       const selectAll = document.getElementById('overtimeSelectAll');
