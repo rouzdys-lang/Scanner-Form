@@ -160,9 +160,10 @@
       function resizeSignatureCanvas() {
         const ratio = window.devicePixelRatio || 1;
         const bounds = signatureCanvas.getBoundingClientRect();
+        if (!bounds.width || !bounds.height) return;
         signatureCanvas.width = Math.max(1, Math.round(bounds.width * ratio));
         signatureCanvas.height = Math.max(1, Math.round(bounds.height * ratio));
-        signatureContext.scale(ratio, ratio);
+        signatureContext.setTransform(ratio, 0, 0, ratio, 0, 0);
         signatureContext.strokeStyle = '#222';
         signatureContext.lineWidth = 1.5;
         signatureContext.lineCap = 'round';
@@ -178,10 +179,11 @@
         signatureMode = mode;
         document.querySelectorAll('.sig-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
         document.querySelectorAll('.sig-panel').forEach(panel => { panel.style.display = panel.id === `sig-panel-${mode}` ? '' : 'none'; });
+        if (mode === 'draw') resizeSignatureCanvas();
         updateSignatureValue();
       }
-      signatureCanvas.addEventListener('pointerdown', event => { drawingSignature = true; signatureCanvas.classList.add('drawing'); signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); });
-      signatureCanvas.addEventListener('pointermove', event => { if (!drawingSignature) return; const point = signaturePoint(event); signatureContext.lineTo(point.x, point.y); signatureContext.stroke(); updateSignatureValue(); });
+      signatureCanvas.addEventListener('pointerdown', event => { event.preventDefault(); drawingSignature = true; signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); signatureContext.arc(point.x, point.y, Math.max(1.5, signatureContext.lineWidth / 2), 0, Math.PI * 2); signatureContext.fillStyle = '#222'; signatureContext.fill(); updateSignatureValue(); });
+      signatureCanvas.addEventListener('pointermove', event => { if (!drawingSignature) return; event.preventDefault(); const point = signaturePoint(event); signatureContext.lineTo(point.x, point.y); signatureContext.stroke(); updateSignatureValue(); });
       signatureCanvas.addEventListener('pointerup', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
       signatureCanvas.addEventListener('pointercancel', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
       typedSignature.addEventListener('input', updateSignatureValue);
