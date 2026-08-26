@@ -5762,6 +5762,7 @@
     const rowHtml = (rows.length ? rows : [{}]).map(row => `<tr><td>${esc(row.date)}</td><td>${esc(row.auth)}</td><td>${esc(row.reason)}</td></tr>`).join('');
     let employeeSignatureField = true;
     const field = (label, value, width) => {
+      if (label === 'ACOO COH HR Officer/HR Assistant') label = 'HR DEPARTMENT';
       const isEmployeeSignature = label === 'Signature' && employeeSignatureField;
       if (isEmployeeSignature) employeeSignatureField = false;
       const content = isEmployeeSignature && image
