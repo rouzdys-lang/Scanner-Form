@@ -29,6 +29,16 @@
     .hours .field:last-child { background: #ddd; color: #e11; font-size: 16px; font-weight: 700; }
     .note { margin: 14px 0 7px; }
     .signature-field { min-height: 92px; }
+    .sig-field { margin-top: 14px; }
+    .sig-tabs { display: flex; gap: 6px; margin-bottom: 8px; }
+    .sig-tab { font: 600 11px Arial, sans-serif; color: #111; background: #fff; border: 1px solid #222; border-radius: 3px; padding: 5px 10px; cursor: pointer; }
+    .sig-tab.active { background: #111; color: #fff; }
+    .sig-panel { margin-top: 2px; }
+    #sig-canvas { display: block; width: 100%; max-width: 600px; height: 140px; border: 1px solid #222; background: #fff; touch-action: none; cursor: crosshair; }
+    .sig-tools { margin-top: 6px; }
+    .signature-clear { border: 1px solid #222; padding: 3px 8px; background: #fff; color: #111; font: 700 10px Arial, sans-serif; cursor: pointer; }
+    .sig-preview { margin-top: 8px; }
+    .sig-preview img { max-height: 80px; max-width: 100%; border: 1px solid #222; background: #fff; padding: 4px; }
     .footer-note { margin-top: 4px; }
     .form-number { margin-top: 28px; text-align: right; font-weight: 700; font-style: italic; }
     .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 18px; }
@@ -83,10 +93,21 @@
     </div>
     <div class="note">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</div>
     <div class="field"><textarea name="justification" readonly></textarea></div>
-    <div class="grid grid-three" style="margin-top: 26px;">
+    <div class="grid grid-two" style="margin-top: 26px;">
       <div class="field signature-field"><span class="label">Employee Name</span><input name="employeeSignatureName" readonly></div>
-      <div class="field signature-field"><span class="label">Employee Signature</span><canvas class="signature-canvas" id="signatureCanvas" aria-label="Employee signature"></canvas><div class="signature-typed" id="typedSignature" contenteditable="true" role="textbox" aria-label="Typed employee signature"></div><div class="signature-tools"><button type="button" onclick="setSignatureMode('type')">Type</button><button type="button" onclick="setSignatureMode('draw')">Draw signature</button><button type="button" onclick="document.getElementById('signatureFile').click()">Attach image</button><input type="file" id="signatureFile" accept="image/*" hidden></div><input name="employeeSignature" type="hidden"></div>
       <div class="field signature-field"><span class="label">Date Form Submitted</span><input type="date" name="dateSubmitted"></div>
+    </div>
+    <div class="field sig-field">
+      <span class="label">Employee Signature</span>
+      <div class="sig-tabs">
+        <button type="button" class="sig-tab active" data-mode="type" onclick="setSignatureMode('type')">Type</button>
+        <button type="button" class="sig-tab" data-mode="draw" onclick="setSignatureMode('draw')">Draw signature</button>
+        <button type="button" class="sig-tab" data-mode="upload" onclick="setSignatureMode('upload')">Attach image</button>
+      </div>
+      <div class="sig-panel" id="sig-panel-type"><input id="typedSignature" type="text" placeholder="Type your name as your signature"></div>
+      <div class="sig-panel" id="sig-panel-draw" style="display:none;"><canvas id="sig-canvas" width="600" height="140" aria-label="Employee signature"></canvas><div class="sig-tools"><button type="button" class="signature-clear" onclick="clearSigCanvas()">Clear drawing</button></div></div>
+      <div class="sig-panel" id="sig-panel-upload" style="display:none;"><input type="file" id="signatureFile" accept="image/*" onchange="handleSigUpload(event)"><div id="sig-upload-preview" class="sig-preview"></div></div>
+      <input name="employeeSignature" type="hidden">
     </div>
     <div class="section-title" style="text-decoration: underline;">Approval</div>
     <div class="grid grid-three">
@@ -127,9 +148,13 @@
       const employeeNameInput = document.querySelector('[name="employeeName"]');
       const employeeSignatureNameInput = document.querySelector('[name="employeeSignatureName"]');
       const signatureInput = document.querySelector('[name="employeeSignature"]');
-      const signatureCanvas = document.getElementById('signatureCanvas');
+      const signatureCanvas = document.getElementById('sig-canvas');
       const signatureContext = signatureCanvas.getContext('2d');
-      let signatureMode = 'draw';
+      const typedSignature = document.getElementById('typedSignature');
+      const signatureFile = document.getElementById('signatureFile');
+      const signaturePreview = document.getElementById('sig-upload-preview');
+      let signatureMode = 'type';
+      let signatureImageData = '';
       let drawingSignature = false;
 
       function resizeSignatureCanvas() {
@@ -147,35 +172,28 @@
         return { x: event.clientX - bounds.left, y: event.clientY - bounds.top };
       }
       function updateSignatureValue() {
-        signatureInput.value = signatureMode === 'type' ? document.getElementById('typedSignature').textContent.trim() : signatureCanvas.toDataURL('image/png');
+        signatureInput.value = signatureMode === 'type' ? typedSignature.value.trim() : signatureMode === 'upload' ? signatureImageData : signatureCanvas.toDataURL('image/png');
       }
       function setSignatureMode(mode) {
-        const previousMode = signatureMode;
         signatureMode = mode;
-        const typed = document.getElementById('typedSignature');
-        typed.style.display = mode === 'type' ? 'flex' : 'none';
-        signatureCanvas.style.display = mode === 'type' ? 'none' : 'block';
-        if (mode === 'type' && previousMode !== 'type') {
-          const name = employeeNameInput.value.trim();
-          typed.textContent = name;
-          updateSignatureValue();
-        }
+        document.querySelectorAll('.sig-tab').forEach(tab => tab.classList.toggle('active', tab.dataset.mode === mode));
+        document.querySelectorAll('.sig-panel').forEach(panel => { panel.style.display = panel.id === `sig-panel-${mode}` ? '' : 'none'; });
+        updateSignatureValue();
       }
       signatureCanvas.addEventListener('pointerdown', event => { drawingSignature = true; signatureCanvas.classList.add('drawing'); signatureCanvas.setPointerCapture(event.pointerId); const point = signaturePoint(event); signatureContext.beginPath(); signatureContext.moveTo(point.x, point.y); });
       signatureCanvas.addEventListener('pointermove', event => { if (!drawingSignature) return; const point = signaturePoint(event); signatureContext.lineTo(point.x, point.y); signatureContext.stroke(); updateSignatureValue(); });
       signatureCanvas.addEventListener('pointerup', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
       signatureCanvas.addEventListener('pointercancel', () => { drawingSignature = false; signatureCanvas.classList.remove('drawing'); updateSignatureValue(); });
-      document.getElementById('typedSignature').addEventListener('input', updateSignatureValue);
-      document.getElementById('signatureFile').addEventListener('change', event => { const file = event.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = () => { signatureInput.value = reader.result; signatureMode = 'image'; }; reader.readAsDataURL(file); });
+      typedSignature.addEventListener('input', updateSignatureValue);
       window.addEventListener('resize', resizeSignatureCanvas);
       resizeSignatureCanvas();
 
       function syncAuthorizationFields() {
         const accomplished = accomplishedInput.value;
         submittedInput.value = accomplished;
-        overtimeDates.forEach(input => { input.max = accomplished || ''; });
+        overtimeDates.forEach(input => { input.min = accomplished || ''; });
         overtimeDates.forEach(input => {
-          if (accomplished && input.value && input.value > accomplished) input.value = accomplished;
+          if (accomplished && input.value && input.value < accomplished) input.value = accomplished;
         });
         employeeSignatureNameInput.value = employeeNameInput.value;
         if (signatureMode === 'type') setSignatureMode('type');
@@ -229,9 +247,30 @@
         document.querySelectorAll('input:not([name="supervisor"]):not([name="department"]):not([name="employeeSignature"]), textarea').forEach(input => { input.value = ''; });
         signatureInput.value = '';
         signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
-        document.getElementById('typedSignature').textContent = '';
+        typedSignature.value = '';
+        signatureImageData = '';
+        signaturePreview.innerHTML = '';
+        signatureFile.value = '';
+        setSignatureMode('type');
         syncAuthorizationFields();
       }
+
+      function clearSigCanvas() {
+        signatureContext.clearRect(0, 0, signatureCanvas.width, signatureCanvas.height);
+        updateSignatureValue();
+      }
+      function handleSigUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          signatureImageData = reader.result;
+          signaturePreview.innerHTML = `<img src="${signatureImageData}" alt="Signature preview">`;
+          setSignatureMode('upload');
+        };
+        reader.readAsDataURL(file);
+      }
+      setSignatureMode('type');
 
       window.addEventListener('message', event => {
         if (event.data?.type === 'overtime-reset') clearAuthorizationForm();
