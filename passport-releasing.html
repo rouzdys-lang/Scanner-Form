@@ -629,7 +629,7 @@
       <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
     </div>
     <div id="overtime-form-authorization" class="overtime-form-panel">
-      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260826-signature-fix" title="Overtime Authorization form"></iframe>
+      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260826-signature-fix-2" title="Overtime Authorization form"></iframe>
     </div>
     <div id="overtime-form-rendered" class="overtime-form-panel active">
       <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
@@ -5823,11 +5823,12 @@
       toast('Please allow pop-ups to print the overtime form.', 'warning');
       return;
     }
+    const printContent = getOvertimeRecordsForPrint([record]);
     printWindow.document.open();
-    printWindow.document.write(overtimeRecordDocumentHtml(record));
+    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Form</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => printWindow.print(), 350);
+    printOvertimeWindowWhenReady(printWindow);
   }
 
   function previewOvertimeDocument(record) {
@@ -5879,7 +5880,7 @@
     printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => printWindow.print(), 350);
+    printOvertimeWindowWhenReady(printWindow);
   }
 
   function getOvertimeRecordsForPrint(records) {
@@ -5892,6 +5893,18 @@
       return `<section class="overtime-print-page">${html.slice(bodyStart, bodyEnd)}</section>`;
     }).join('');
     return { styles: styles.join(''), pages };
+  }
+
+  function printOvertimeWindowWhenReady(printWindow) {
+    const images = [...printWindow.document.images];
+    const waitForImages = Promise.all(images.map(image => image.complete
+      ? Promise.resolve()
+      : new Promise(resolve => {
+        image.addEventListener('load', resolve, { once: true });
+        image.addEventListener('error', resolve, { once: true });
+      })));
+    Promise.all([waitForImages, printWindow.document.fonts?.ready || Promise.resolve()])
+      .then(() => setTimeout(() => printWindow.print(), 80));
   }
 
   function openOvertimePreview(records) {
@@ -5934,7 +5947,7 @@
     printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
     printWindow.document.close();
     printWindow.focus();
-    setTimeout(() => printWindow.print(), 350);
+    printOvertimeWindowWhenReady(printWindow);
   }
 
   async function deleteOvertimeRecord(id) {
