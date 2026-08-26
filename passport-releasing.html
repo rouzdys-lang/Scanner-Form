@@ -1499,6 +1499,16 @@
     invalidateSbCacheForPath('entries');
   }
 
+  async function fetchWithTimeout(url, options, timeoutMs = 20000) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      return await fetch(url, { ...options, signal: controller.signal });
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+
   async function sbFetch(path, opts = {}) {
     const method = opts.method ? opts.method.toUpperCase() : 'GET';
     // DELETE needs 'return=minimal', POST/PATCH needs 'return=representation', GET needs nothing special
@@ -1508,13 +1518,13 @@
     const headers = { ...HEADERS, ...(prefer ? { 'Prefer': prefer } : {}) };
 
     if (method !== 'GET') {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
       if (!r.ok) { const e = await r.text(); throw new Error(e); }
       return r.status === 204 ? null : r.json();
     }
 
     try {
-      const r = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
       if (!r.ok) { const e = await r.text(); throw new Error(e); }
       const data = r.status === 204 ? null : await r.json();
       saveSbCache(path, method, data);
@@ -5540,7 +5550,7 @@
       // Hash password client-side (simple SHA-256 hex)
       const hashHex = await hashPassword(password);
 
-      const res = await sbFetch(`app_users?username=ilike.${encodeURIComponent(username)}&select=*&limit=1`);
+      const res = await sbFetch(`app_users?username=ilike.${encodeURIComponent(username)}&select=id,username,full_name,role,status,password_hash,password&limit=1`);
       if (!res || res.length === 0) {
         errEl.textContent = '✖ Invalid username or account is inactive.';
         btn.textContent='Sign In'; btn.disabled=false; return;
