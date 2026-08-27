@@ -1511,6 +1511,9 @@
 
   async function sbFetch(path, opts = {}) {
     const method = opts.method ? opts.method.toUpperCase() : 'GET';
+    const timeoutMs = opts.timeoutMs || 20000;
+    const requestOpts = { ...opts };
+    delete requestOpts.timeoutMs;
     // DELETE needs 'return=minimal', POST/PATCH needs 'return=representation', GET needs nothing special
     const prefer = method === 'DELETE' ? 'return=minimal'
                 : method === 'POST' || method === 'PATCH' ? 'return=representation'
@@ -1518,13 +1521,13 @@
     const headers = { ...HEADERS, ...(prefer ? { 'Prefer': prefer } : {}) };
 
     if (method !== 'GET') {
-      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...requestOpts }, timeoutMs);
       if (!r.ok) { const e = await r.text(); throw new Error(e); }
       return r.status === 204 ? null : r.json();
     }
 
     try {
-      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...opts });
+      const r = await fetchWithTimeout(`${SUPABASE_URL}/rest/v1/${path}`, { headers, ...requestOpts }, timeoutMs);
       if (!r.ok) { const e = await r.text(); throw new Error(e); }
       const data = r.status === 204 ? null : await r.json();
       saveSbCache(path, method, data);
@@ -1672,11 +1675,8 @@
   }
 
   async function fetchDorEntriesFromSupabase() {
-    // Attempt to read minimal fields. Adjust column names if your Supabase schema differs.
     try {
-      // Request all columns so we can diagnose field names in different schemas.
-      // Use dor_from as the trigger field (we want DOR From to control notifications)
-      const path = `entries?select=*&dor_from=not.is.null`;
+      const path = `entries?select=id,tracking_number,last_name,first_name,dor_from,status&dor_from=not.is.null&limit=500`;
       const data = await sbFetch(path);
       if (!Array.isArray(data)) return [];
       // Normalize fields to our expected shape
@@ -1773,6 +1773,7 @@
   }
 
   async function checkDorTriggers() {
+    if (!currentUser) return;
     const entriesOrPromise = loadDorEntries();
     const entries = (entriesOrPromise && typeof entriesOrPromise.then === 'function') ? await entriesOrPromise : entriesOrPromise;
     console.debug('[DOR] loaded entries', entries);
@@ -5457,6 +5458,14 @@
     return String(role || 'user').trim().toLowerCase().replace(/[\s-]+/g, '_');
   }
 
+  function isSchemaCacheError(error) {
+    return /PGRST002|schema cache|statement timeout/i.test(String(error?.message || error || ''));
+  }
+
+  function waitForRetry(delayMs) {
+    return new Promise(resolve => setTimeout(resolve, delayMs));
+  }
+
   async function hashPassword(password) {
     const data = new TextEncoder().encode(password);
     if (window.crypto && crypto.subtle && typeof crypto.subtle.digest === 'function') {
@@ -5554,7 +5563,18 @@
       // Hash password client-side (simple SHA-256 hex)
       const hashHex = await hashPassword(password);
 
-      const res = await sbFetch(`app_users?username=ilike.${encodeURIComponent(username)}&select=id,username,full_name,role,status,password_hash,allowed_databases&limit=1`);
+      const loginPath = `app_users?username=ilike.${encodeURIComponent(username)}&select=id,username,full_name,role,status,password_hash&limit=1`;
+      let res;
+      for (let attempt = 1; attempt <= 3; attempt++) {
+        try {
+          res = await sbFetch(loginPath, { timeoutMs: 8000 });
+          break;
+        } catch (loginError) {
+          if (!isSchemaCacheError(loginError) || attempt === 3) throw loginError;
+          btn.textContent = `Retrying (${attempt}/2)...`;
+          await waitForRetry(1500);
+        }
+      }
       if (!res || res.length === 0) {
         errEl.textContent = '✖ Invalid username or account is inactive.';
         btn.textContent='Sign In'; btn.disabled=false; return;
@@ -5612,7 +5632,8 @@
       document.getElementById('scanInput').focus();
       loadScanSession().catch(e => console.warn('Session load failed:', e.message));
     } catch(e) {
-      errEl.textContent = '✖ Connection error: ' + e.message;
+      const message = e.name === 'AbortError' ? 'Supabase server timed out. Please try again later.' : e.message;
+      errEl.textContent = '✖ Connection error: ' + message;
       btn.textContent='Sign In'; btn.disabled=false;
     }
   }
