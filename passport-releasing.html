@@ -6106,7 +6106,7 @@
     }
   }
 
-  async function loadOvertimeRecords() {
+  async function loadOvertimeRecordsLegacy() {
     if (!canManageOvertimeRecords()) return;
     const body = document.getElementById('overtimeRecordsBody');
     if (!body) return;
@@ -6145,6 +6145,39 @@
       }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
     } catch (error) {
       document.getElementById('overtimeRecordCount').textContent = '';
+      body.innerHTML = `<tr><td colspan="7">Could not load overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
+    }
+  }
+
+  // Use a plain row query here; extracting JSON fields in JavaScript avoids malformed PostgREST projections.
+  async function loadOvertimeRecords() {
+    if (!canManageOvertimeRecords()) return;
+    const body = document.getElementById('overtimeRecordsBody');
+    if (!body) return;
+    body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
+    try {
+      const response = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=100');
+      const records = Array.isArray(response) ? response : [];
+      records.forEach(record => {
+        const data = record.form_data && typeof record.form_data === 'object' ? record.form_data : {};
+        record.form_data = { ...data, rows: Array.isArray(data.rows) ? data.rows : [] };
+      });
+      overtimeRecords = records;
+      const visibleRecords = getVisibleOvertimeRecords();
+      const count = document.getElementById('overtimeRecordCount');
+      if (count) count.textContent = `${visibleRecords.length} ${overtimeRecordType} record${visibleRecords.length === 1 ? '' : 's'}`;
+      body.innerHTML = visibleRecords.length ? visibleRecords.map(record => {
+        const data = record.form_data || {};
+        const employeeName = data.name || data.employeeName || 'N/A';
+        const filedBy = record.submitted_by || 'N/A';
+        const workDate = data.dateAccomplished || data.accomplishedDate || (data.rows[0] ? data.rows[0].date : '');
+        const recordJson = JSON.stringify(record).replace(/'/g, '&#39;');
+        const recordTypeLabel = getOvertimeRecordType(record) === 'authorization' ? 'Authorization' : 'Rendered';
+        return `<tr><td><input type="checkbox" class="overtime-record-check" value="${encodeURIComponent(String(record.id))}" onchange="updateOvertimeSelectAllState()" aria-label="Select overtime record"></td><td>${escapeOvertimeText(new Date(record.created_at).toLocaleString())}</td><td>${escapeOvertimeText(employeeName)}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(workDate || 'N/A')}</td><td>${escapeOvertimeText(data.totalHours || data.total || 'N/A')}</td><td><span style="font-size:10px;color:var(--accent);font-weight:700;">${recordTypeLabel}</span> <button class="btn btn-primary" style="padding:5px 9px;font-size:10px;" onclick='printOvertimeDocument(${recordJson})'>Print Overtime</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='previewOvertimeDocument(${recordJson})'>Preview</button> <button class="btn btn-muted" style="padding:5px 9px;font-size:10px;" onclick='downloadOvertimeDocument(${recordJson})'>Download Word</button> <button class="btn btn-danger" style="padding:5px 9px;font-size:10px;" onclick="deleteOvertimeRecord('${encodeURIComponent(String(record.id))}')">Delete</button></td></tr>`;
+      }).join('') : '<tr><td colspan="7">No overtime submissions found.</td></tr>';
+    } catch (error) {
+      const count = document.getElementById('overtimeRecordCount');
+      if (count) count.textContent = '';
       body.innerHTML = `<tr><td colspan="7">Could not load overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
     }
   }
