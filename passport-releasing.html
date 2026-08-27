@@ -6164,7 +6164,23 @@
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
       const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&limit=25');
-      const records = Array.isArray(response) ? response : [];
+      let records = Array.isArray(response) ? response : [];
+      const authorizationResponse = await sbFetch('overtime_submissions?form_data-%3E%3EformType=eq.authorization&select=id,created_at,submitted_by,submitted_by_name,form_data&limit=500');
+      const authorizationRecords = Array.isArray(authorizationResponse) ? authorizationResponse : [];
+      const knownIds = new Set(records.map(record => String(record.id)));
+      records = records.concat(authorizationRecords.filter(record => !knownIds.has(String(record.id))).map(record => ({
+        ...record,
+        formType: 'authorization',
+        name: record.form_data?.name || record.form_data?.employeeName || '',
+        employeeName: record.form_data?.employeeName || '',
+        dateAccomplished: record.form_data?.dateAccomplished || '',
+        accomplishedDate: record.form_data?.accomplishedDate || '',
+        dateSubmitted: record.form_data?.dateSubmitted || '',
+        submittedDate: record.form_data?.submittedDate || '',
+        totalHours: record.form_data?.totalHours || '',
+        total: record.form_data?.total || '',
+        rows: record.form_data?.rows || []
+      })));
       records.sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
       records.forEach(record => {
         record.form_data = {
