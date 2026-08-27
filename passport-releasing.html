@@ -5453,6 +5453,10 @@
   let currentUser = null; // { id, username, full_name, role }
   let currentUsers = []; // Cached users for edit selection
 
+  function normalizeUserRole(role) {
+    return String(role || 'user').trim().toLowerCase().replace(/[\s-]+/g, '_');
+  }
+
   async function hashPassword(password) {
     const data = new TextEncoder().encode(password);
     if (window.crypto && crypto.subtle && typeof crypto.subtle.digest === 'function') {
@@ -5550,13 +5554,22 @@
       // Hash password client-side (simple SHA-256 hex)
       const hashHex = await hashPassword(password);
 
-      const res = await sbFetch(`app_users?username=ilike.${encodeURIComponent(username)}&select=id,username,full_name,role,status,password_hash,password&limit=1`);
+      const res = await sbFetch(`app_users?username=ilike.${encodeURIComponent(username)}&select=id,username,full_name,role,status,password_hash,allowed_databases&limit=1`);
       if (!res || res.length === 0) {
         errEl.textContent = '✖ Invalid username or account is inactive.';
         btn.textContent='Sign In'; btn.disabled=false; return;
       }
 
       const user = res[0];
+      let legacyPassword = '';
+      if (!user.password_hash) {
+        try {
+          const legacyUser = await sbFetch(`app_users?id=eq.${encodeURIComponent(String(user.id))}&select=password&limit=1`);
+          legacyPassword = String(legacyUser?.[0]?.password || '').trim();
+        } catch (legacyError) {
+          console.warn('Legacy password lookup failed:', legacyError.message);
+        }
+      }
       const status = String(user.status || '').trim().toLowerCase();
       if (status && status !== 'active') {
         errEl.textContent = '✖ Invalid username or account is inactive.';
@@ -5564,19 +5577,18 @@
       }
 
       const storedHash = String(user.password_hash || '').trim().toLowerCase();
-      const storedPassword = String(user.password || '').trim();
       const enteredHash = String(hashHex).trim().toLowerCase();
       const enteredPassword = String(password).trim();
       const matchesPassword = (
         (storedHash && (storedHash === enteredHash || storedHash === enteredPassword || storedHash === enteredPassword.toLowerCase()))
-        || (storedPassword && (storedPassword === enteredPassword || storedPassword === enteredHash))
+        || (legacyPassword && (legacyPassword === enteredPassword || legacyPassword === enteredHash))
       );
       if (!matchesPassword) {
         errEl.textContent = '✖ Incorrect password.';
         btn.textContent='Sign In'; btn.disabled=false; return;
       }
 
-      currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: user.role, allowed_databases: user.allowed_databases || '' };
+      currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: normalizeUserRole(user.role), allowed_databases: user.allowed_databases || '' };
       const userJson = JSON.stringify(currentUser);
       sessionStorage.setItem('dfampc_user', userJson);
       populateOvertimeConsularOffice();
@@ -6125,6 +6137,7 @@
     if (saved) {
       try {
         currentUser = JSON.parse(saved);
+        currentUser.role = normalizeUserRole(currentUser.role);
         sessionStorage.setItem('dfampc_user', saved);
         populateOvertimeConsularOffice();
         document.getElementById('loginScreen').style.display = 'none';
