@@ -6156,11 +6156,20 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const response = await sbFetch('overtime_submissions?select=*&order=created_at.desc&limit=100');
+      const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&order=created_at.desc&limit=100');
       const records = Array.isArray(response) ? response : [];
       records.forEach(record => {
-        const data = record.form_data && typeof record.form_data === 'object' ? record.form_data : {};
-        record.form_data = { ...data, rows: Array.isArray(data.rows) ? data.rows : [] };
+        record.form_data = {
+          name: record.name || record.employeeName || '',
+          employeeName: record.employeeName || '',
+          dateAccomplished: record.dateAccomplished || '',
+          accomplishedDate: record.accomplishedDate || '',
+          dateSubmitted: record.dateSubmitted || '',
+          submittedDate: record.submittedDate || '',
+          totalHours: record.totalHours || '',
+          total: record.total || '',
+          rows: Array.isArray(record.rows) ? record.rows : []
+        };
       });
       overtimeRecords = records;
       const visibleRecords = getVisibleOvertimeRecords();
