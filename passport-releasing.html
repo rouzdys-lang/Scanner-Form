@@ -2725,6 +2725,7 @@
       const data = { ...(event.data.data || {}) };
       if (frame === authorizationFrame) validateOvertimeAuthorization(data);
       else validateOvertimeSubmission(data);
+      data.formType = frame === authorizationFrame ? 'authorization' : 'rendered';
       await sbFetch('overtime_submissions', {
         method: 'POST',
         body: JSON.stringify({
@@ -5857,7 +5858,13 @@
   let overtimeRecordType = 'rendered';
 
   function getOvertimeRecordType(record) {
-    return record?.form_data?.formType === 'authorization' ? 'authorization' : 'rendered';
+    const data = record?.form_data || {};
+    if (data.formType === 'authorization') return 'authorization';
+    if (data.formType === 'rendered') return 'rendered';
+    const rows = Array.isArray(data.rows) ? data.rows : [];
+    return rows.some(row => row && row.reason) && !rows.some(row => row && row.actual)
+      ? 'authorization'
+      : 'rendered';
   }
 
   function getVisibleOvertimeRecords() {
@@ -6156,11 +6163,12 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&limit=25');
+      const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&limit=25');
       const records = Array.isArray(response) ? response : [];
       records.sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
       records.forEach(record => {
         record.form_data = {
+          formType: record.formType || 'rendered',
           name: record.name || record.employeeName || '',
           employeeName: record.employeeName || '',
           dateAccomplished: record.dateAccomplished || '',
