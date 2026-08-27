@@ -6090,12 +6090,11 @@
         return;
       }
       const allRecords = [];
-      const pageSize = 100;
-      for (let offset = 0; offset < 5000; offset += pageSize) {
-        const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,form_data&order=created_at.asc,id.asc&limit=${pageSize}&offset=${offset}`);
-        if (!Array.isArray(page) || page.length === 0) break;
-        allRecords.push(...page);
-        if (page.length < pageSize) break;
+      const selectedIdList = [...selectedIds];
+      for (let offset = 0; offset < selectedIdList.length; offset += 50) {
+        const ids = selectedIdList.slice(offset, offset + 50).map(id => `"${id.replace(/"/g, '')}"`).join(',');
+        const page = await sbFetch(`overtime_submissions?id=in.(${ids})&select=id,created_at,submitted_by,form_data`);
+        if (Array.isArray(page)) allRecords.push(...page);
       }
       const from = document.getElementById('overtimeDateFrom')?.value || '';
       const to = document.getElementById('overtimeDateTo')?.value || '';
@@ -6149,20 +6148,27 @@
       }
 
       let deleted = 0;
-      for (const record of records) {
+      const deleteIds = records.map(record => String(record.id));
+      for (let offset = 0; offset < deleteIds.length; offset += 50) {
+        const batchIds = deleteIds.slice(offset, offset + 50);
+        const ids = batchIds.map(id => `"${id.replace(/"/g, '')}"`).join(',');
         try {
-          const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}`, {
+          const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=in.(${ids})`, {
             method: 'DELETE',
             headers: { ...HEADERS, 'Prefer': 'return=minimal' }
           });
           if (!response.ok) throw new Error(await response.text());
-          const remaining = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}&select=id`);
-          if (Array.isArray(remaining) && remaining.length > 0) {
-            throw new Error('Database refused the delete policy');
-          }
-          deleted++;
+          const remainingResponse = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=in.(${ids})&select=id`, {
+            headers: { ...HEADERS, 'Cache-Control': 'no-cache' },
+            cache: 'no-store'
+          });
+          if (!remainingResponse.ok) throw new Error(await remainingResponse.text());
+          const remaining = await remainingResponse.json();
+          const remainingIds = new Set((Array.isArray(remaining) ? remaining : []).map(record => String(record.id)));
+          deleted += batchIds.filter(id => !remainingIds.has(id)).length;
+          if (remainingIds.size > 0) console.warn('Some exported overtime records were not deleted', [...remainingIds]);
         } catch (error) {
-          console.warn('Failed to delete exported overtime record', record.id, error);
+          console.warn('Failed to delete exported overtime batch', batchIds, error);
         }
       }
       toast(`Export completed. Deleted ${deleted} of ${records.length} overtime form(s).`, deleted === records.length ? 'success' : 'warning');
