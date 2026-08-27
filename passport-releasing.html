@@ -5608,7 +5608,7 @@
         btn.textContent='Sign In'; btn.disabled=false; return;
       }
 
-      currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: normalizeUserRole(user.role), allowed_databases: user.allowed_databases || '' };
+      currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: normalizeUserRole(user.role) };
       const userJson = JSON.stringify(currentUser);
       sessionStorage.setItem('dfampc_user', userJson);
       populateOvertimeConsularOffice();
