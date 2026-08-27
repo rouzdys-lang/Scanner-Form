@@ -6193,42 +6193,38 @@
     if (!body) return;
     body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
     try {
-      const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&limit=25');
-      let records = Array.isArray(response) ? response : [];
-      let authorizationRecords = [];
-      try {
-        const authorizationResponse = await sbFetch('overtime_submissions?form_data->>formType=eq.authorization&select=id,created_at,submitted_by,submitted_by_name,form_data&limit=500');
-        authorizationRecords = Array.isArray(authorizationResponse) ? authorizationResponse : [];
-      } catch (authorizationError) {
-        console.warn('Authorization records query failed; using records from the main list:', authorizationError.message);
+      const pageSize = 100;
+      const maxRecords = 5000;
+      const records = [];
+      for (let offset = 0; offset < maxRecords; offset += pageSize) {
+        const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Ejustification&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
+        if (!Array.isArray(page) || page.length === 0) break;
+        records.push(...page);
+        if (page.length < pageSize) break;
       }
-      const knownIds = new Set(records.map(record => String(record.id)));
-      records = records.concat(authorizationRecords.filter(record => !knownIds.has(String(record.id))).map(record => ({
-        ...record,
-        formType: 'authorization',
-        name: record.form_data?.name || record.form_data?.employeeName || '',
-        employeeName: record.form_data?.employeeName || '',
-        dateAccomplished: record.form_data?.dateAccomplished || '',
-        accomplishedDate: record.form_data?.accomplishedDate || '',
-        dateSubmitted: record.form_data?.dateSubmitted || '',
-        submittedDate: record.form_data?.submittedDate || '',
-        totalHours: record.form_data?.totalHours || '',
-        total: record.form_data?.total || '',
-        rows: record.form_data?.rows || []
-      })));
       records.sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
       records.forEach(record => {
+        const parseJson = value => {
+          if (typeof value !== 'string') return value;
+          try { return JSON.parse(value); } catch (e) { return value; }
+        };
+        const rows = parseJson(record.rows);
+        const inferredFormType = Array.isArray(rows) && rows.some(row => row && row.reason) && !rows.some(row => row && row.actual)
+          ? 'authorization'
+          : 'rendered';
         record.form_data = {
-          formType: record.formType || 'rendered',
+          formType: record.formType || inferredFormType,
           name: record.name || record.employeeName || '',
           employeeName: record.employeeName || '',
+          employeeId: record.employeeId || '',
           dateAccomplished: record.dateAccomplished || '',
           accomplishedDate: record.accomplishedDate || '',
           dateSubmitted: record.dateSubmitted || '',
           submittedDate: record.submittedDate || '',
           totalHours: record.totalHours || '',
           total: record.total || '',
-          rows: Array.isArray(record.rows) ? record.rows : []
+          justification: record.justification || '',
+          rows: Array.isArray(rows) ? rows : []
         };
       });
       overtimeRecords = records;
