@@ -651,7 +651,7 @@
       <button class="btn btn-primary" onclick="printSelectedOvertimeRecords()">Print All Checked</button>
       <button class="btn btn-muted" onclick="previewSelectedOvertimeRecords()">Preview Checked</button>
       <button class="btn btn-muted" onclick="printAllOvertimeRecords()">Print All</button>
-      <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
+      <button class="btn btn-success" onclick="exportOvertimeRecords()">Export Checked and Delete</button>
       <label class="btn btn-info" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">Upload Deleted Export <input type="file" id="overtimeImportFile" accept=".xlsx,.xls" style="display:none;" onchange="importOvertimeRecords(event)"></label>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
@@ -6084,6 +6084,11 @@
   async function exportOvertimeRecords() {
     if (!canManageOvertimeRecords()) return;
     try {
+      const selectedIds = new Set([...document.querySelectorAll('.overtime-record-check:checked')].map(input => decodeURIComponent(input.value)));
+      if (selectedIds.size === 0) {
+        toast('Check the overtime records you want to export first.', 'warning');
+        return;
+      }
       const allRecords = [];
       const pageSize = 100;
       for (let offset = 0; offset < 5000; offset += pageSize) {
@@ -6095,6 +6100,7 @@
       const from = document.getElementById('overtimeDateFrom')?.value || '';
       const to = document.getElementById('overtimeDateTo')?.value || '';
       const records = allRecords.filter(record => {
+        if (!selectedIds.has(String(record.id))) return false;
         if (getOvertimeRecordType(record) !== overtimeRecordType) return false;
         const data = record.form_data || {};
         const date = String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '').slice(0, 10);
@@ -6177,7 +6183,10 @@
       const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const values = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
-      const headerIndex = values.findIndex(row => row.some(cell => String(cell).trim().toLowerCase() === 'employee'));
+      const headerIndex = values.findIndex(row => {
+        const headers = row.map(cell => String(cell).trim().toLowerCase());
+        return headers.includes('employee') && headers.includes('form id') && headers.includes('form type');
+      });
       if (headerIndex < 0) throw new Error('This file is not an overtime export.');
       const headers = values[headerIndex].map(cell => String(cell).trim().toLowerCase());
       const indexOf = (...names) => names.map(name => headers.indexOf(name)).find(index => index >= 0) ?? -1;
