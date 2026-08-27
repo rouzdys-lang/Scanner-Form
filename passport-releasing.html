@@ -6139,8 +6139,12 @@
       });
 
       const dateFile = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-      const workbook = makeStyledWorkbook('DFAMPC - OVERTIME RECORDS', `Date: ${new Date().toLocaleDateString('en-US')}`, 'Total Forms', records.length, headers, rows, 'Overtime');
-      await downloadWorkbook(workbook, `DFAMPC-OVERTIME-RECORDS-${dateFile}.xlsx`);
+      const exportFilename = `DFAMPC-OVERTIME-RECORDS-${dateFile}.xlsx`;
+      const exportSheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+      exportSheet['!cols'] = headers.map(header => ({ wch: Math.max(14, Math.min(34, String(header).length + 4)) }));
+      const exportWorkbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(exportWorkbook, exportSheet, 'Overtime');
+      XLSX.writeFile(exportWorkbook, exportFilename);
 
       if (!confirm(`Exported ${records.length} overtime form(s). Permanently delete the exported list now?`)) {
         toast('Export completed. Records were kept.', 'info');
