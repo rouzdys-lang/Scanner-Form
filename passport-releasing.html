@@ -5576,17 +5576,15 @@
         btn.textContent='Sign In'; btn.disabled=false; return;
       }
 
-      // Update last_login
-      await sbFetch(`app_users?id=eq.${user.id}`, { method:'PATCH', body: JSON.stringify({ last_login: new Date().toISOString(), login_count: (user.login_count||0)+1 }) });
-
       currentUser = { id: user.id, username: user.username, full_name: user.full_name, role: user.role, allowed_databases: user.allowed_databases || '' };
       const userJson = JSON.stringify(currentUser);
       sessionStorage.setItem('dfampc_user', userJson);
       populateOvertimeConsularOffice();
       try { localStorage.removeItem('dfampc_user'); } catch (e) {}
 
-      // Log the login
-      await writeLog('LOGIN', `Logged in`, '');
+      // Keep nonessential backend work out of the login critical path.
+      sbFetch(`app_users?id=eq.${user.id}`, { method:'PATCH', body: JSON.stringify({ last_login: new Date().toISOString(), login_count: (user.login_count||0)+1 }) }).catch(e => console.warn('Last-login update failed:', e.message));
+      writeLog('LOGIN', `Logged in`, '').catch(e => console.warn('Login audit failed:', e.message));
 
       // Show app
       document.getElementById('loginScreen').style.display = 'none';
@@ -5597,10 +5595,10 @@
       updateDailySyncBadge();
       applyRoleUI();
       checkConn();
-      if (navigator.onLine) await syncOfflineDBCache();
+      if (navigator.onLine) syncOfflineDBCache().catch(e => console.warn('Initial sync failed:', e.message));
       setInterval(checkConn, 30000);
       document.getElementById('scanInput').focus();
-      await loadScanSession();
+      loadScanSession().catch(e => console.warn('Session load failed:', e.message));
     } catch(e) {
       errEl.textContent = '✖ Connection error: ' + e.message;
       btn.textContent='Sign In'; btn.disabled=false;
