@@ -5799,7 +5799,7 @@
     const esc = value => escapeOvertimeText(value || '');
     const signatureValue = data.empSignatureImage || data.empSignatureImageData || data.empSignature || '';
     const image = /^data:image\//i.test(String(signatureValue)) ? String(signatureValue) : '';
-    const logo = data.logo || document.getElementById('overtimeAuthorizationFrame')?.contentDocument?.querySelector('.department-logo')?.src || '';
+    const logo = data.logo || document.getElementById('overtimeAuthorizationFrame')?.contentDocument?.querySelector('.department-logo')?.src || (window.DFAMPC_LOGO_B64 ? `data:image/jpeg;base64,${window.DFAMPC_LOGO_B64}` : '');
     const signature = '';
     const rowHtml = (rows.length ? rows : [{}]).map(row => `<tr><td>${esc(row.date)}</td><td>${esc(row.auth)}</td><td>${esc(row.reason)}</td></tr>`).join('');
     let employeeSignatureField = true;
@@ -5812,7 +5812,7 @@
         : esc(isEmployeeSignature ? signatureValue : value);
       return `<div style="width:${width || 33.33}%;display:inline-block;box-sizing:border-box;vertical-align:top;border:1px solid #000;padding:5px 7px;min-height:66px"><b style="display:block;min-height:24px;line-height:12px">${esc(label)}</b><div style="min-height:28px;padding:7px 0;text-transform:uppercase">${content}</div></div>`;
     };
-    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization Form</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0;font-size:10pt}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #000;padding:7px;text-align:center}h1{text-align:center;font-size:15pt;margin:12px 0}.header{display:flex;align-items:center;gap:14px}.header img{width:70px;height:70px;object-fit:contain}.header b{font-size:11.5pt}.small{font-size:8.5pt}.section{font-weight:bold;text-transform:uppercase;margin-top:14px} .clear{clear:both}</style></head><body><div class="header"><img src="${logo}"><div><b>DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</b><div class="small">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</div></div></div><h1>OVERTIME AUTHORIZATION FORM</h1><div>${field('Employee Name', data.name)}${field('Employee ID', data.employeeId)}${field('Date Form Accomplished', data.dateAccomplished)}</div><div class="clear"></div><div>${field('Immediate Supervisor', data.supervisor, 50)}${field('Consular Office', data.department, 50)}</div><div class="clear"></div><div class="section">Date(s) of Overtime Work</div><table><tr><th>Date</th><th>Hours</th><th>Reason</th></tr>${rowHtml}</table><div>${field('Anticipated Number of Overtime Hours', data.total || data.totalHours, 60)} </div><div class="clear"></div><div class="section">Justification</div><div style="border:1px solid #000;min-height:55px;padding:8px;text-transform:uppercase">${esc(data.justification)}</div><div class="section">Employee Signature</div><div>${field('Employee Name', data.empSignName, 33.33)}${field('Signature', '', 33.33)}${field('Date Form Submitted', data.dateSubmitted, 33.33)}</div><div style="margin-top:-38px;margin-left:33.33%;height:35px">${signature}</div><div class="clear"></div><div class="section">Approval</div><div>${field('Supervisor', data.approvalSupervisor || 'RONEL JC RUBIO')}${field('Signature', data.approvalSignature)}${field('Date of Approval', data.approvalDate)}</div><div>${field('ACOO COH HR Officer/HR Assistant', data.hrOfficer)}${field('Signature', data.hrSignature)}${field('Date of Approval', data.approvalDepartment)}</div><div class="small" style="margin-top:8px">Note: This form must be accomplished before rendering an actual overtime; no authorization means no payment of overtime.</div><p style="text-align:right;font-style:italic">HR Form No. 2022-006</p></body></html>`;
+    return `<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Authorization Form</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0;font-size:10pt}table{width:100%;border-collapse:collapse;margin:10px 0}th,td{border:1px solid #000;padding:7px;text-align:center;vertical-align:top}h1{text-align:center;font-size:15pt;margin:12px 0}.header{display:flex;align-items:center;gap:14px}.header img{width:70px;height:70px;object-fit:contain}.header b{font-size:11.5pt}.small{font-size:8.5pt}.section{font-weight:bold;text-transform:uppercase;margin-top:14px}.clear{clear:both}.signature-image{display:block;max-height:35px;max-width:150px;width:auto;height:auto;object-fit:contain}</style></head><body><div class="header">${logo ? `<img src="${logo}" alt="DFAMPC seal">` : ''}<div><b>DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</b><div class="small">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</div></div></div><h1>OVERTIME AUTHORIZATION FORM</h1><div>${field('Employee Name', data.name || data.employeeName)}${field('Employee ID', data.employeeId || data.employeeID)}${field('Date Form Accomplished', data.dateAccomplished || data.accomplishedDate)}</div><div class="clear"></div><div>${field('Immediate Supervisor', data.supervisor || data.immediateSupervisor, 50)}${field('Consular Office', data.department || data.consularOffice, 50)}</div><div class="clear"></div><div class="section">Date(s) of Overtime Work</div><table><tr><th>Date</th><th>Hours</th><th>Reason</th></tr>${rowHtml}</table><div>${field('Anticipated Number of Overtime Hours', data.total || data.totalHours || data.anticipatedHours, 60)} </div><div class="clear"></div><div class="section">Justification</div><div style="border:1px solid #000;min-height:55px;padding:8px;text-transform:uppercase">${esc(data.justification)}</div><div class="section">Employee Signature</div><div>${field('Employee Name', data.empSignName || data.employeeSignatureName, 33.33)}${field('Signature', '', 33.33)}${field('Date Form Submitted', data.dateSubmitted || data.submittedDate, 33.33)}</div><div class="clear"></div><div class="section">Approval</div><div>${field('Supervisor', data.approvalSupervisor || data.approvalSupervisorName || 'RONEL JC RUBIO')}${field('Signature', data.approvalSignature)}${field('Date of Approval', data.approvalDate)}</div><div>${field('ACOO COH HR Officer/HR Assistant', data.hrOfficer || data.hrName)}${field('Signature', data.hrSignature)}${field('Date of Approval', data.approvalDepartment || data.hrDateApproval)}</div><div class="small" style="margin-top:8px">Note: This form must be accomplished before rendering an actual overtime; no authorization means no payment of overtime.</div><p style="text-align:right;font-style:italic">HR Form No. 2022-006</p></body></html>`;
   }
 
   function overtimeRecordDocumentHtml(record) {
@@ -5825,7 +5825,7 @@
     const data = record.form_data || {};
     const rows = Array.isArray(data.rows) ? data.rows : [];
     const iframe = document.getElementById('overtimeFrame');
-    const sealSrc = iframe?.contentDocument?.querySelector('.seal')?.src || '';
+    const sealSrc = iframe?.contentDocument?.querySelector('.seal')?.src || (window.DFAMPC_LOGO_B64 ? `data:image/jpeg;base64,${window.DFAMPC_LOGO_B64}` : '');
     const scale = rows.length <= 6 ? 1 : rows.length <= 9 ? 0.9 : rows.length <= 12 ? 0.8 : rows.length <= 16 ? 0.7 : 0.6;
     const size = { body:(11 * scale).toFixed(1), label:(9.5 * scale).toFixed(1), title:(15 * scale).toFixed(1), small:(8.5 * scale).toFixed(1), total:(13 * scale).toFixed(1), pad:Math.max(3, Math.round(8 * scale)), padSm:Math.max(2, Math.round(6 * scale)), gap:Math.max(6, Math.round(14 * scale)), justif:Math.max(24, Math.round(70 * scale)) };
     const value = text => text ? escapeOvertimeText(text) : '<span style="display:inline-block;min-width:140px;border:none;text-decoration:none;">&nbsp;</span>';
@@ -5837,7 +5837,7 @@
     const section = (text, underline) => `<p style="font:700 ${size.label + 1}pt Arial;margin:0 0 ${size.padSm}px;${underline ? 'text-decoration:underline;' : ''}">${escapeOvertimeText(text)}</p>`;
     const otRows = (rows.length ? rows : [{}]).map(row => `<tr><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.date)}</td><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.auth)}</td><td style="border:1px solid #000;padding:${size.pad}px 8px;text-align:center;font:${size.body}pt Arial;text-transform:uppercase;">${value(row.actual)}</td></tr>`).join('');
     const overtimeTable = `<table style="width:100%;border-collapse:collapse"><tr><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:34%">Date</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Authorized Hours</th><th style="border:1px solid #000;padding:${size.pad}px 6px;font:700 ${size.label}pt Arial;text-transform:uppercase;width:33%">Actual OT Hours Rendered</th></tr>${otRows}</table><table style="width:100%;border-collapse:collapse"><tr><td style="border:1px solid #000;border-right:none;padding:${size.pad}px 10px;text-align:center;font:700 ${size.label}pt Arial;text-transform:uppercase;width:70%">Total Actual Number of Overtime Hours Rendered</td><td style="border:1px solid #000;background:#e2e2e2;padding:${size.pad}px 10px;text-align:center;font:700 ${size.total}pt Arial;text-transform:uppercase;width:30%">${escapeOvertimeText(data.total || data.totalHours || '0')}</td></tr></table>`;
-    const signatureImage = data.empSignatureImage || data.empSignatureImageData || '';
+    const signatureImage = /^data:image\//i.test(String(data.empSignatureImage || data.empSignatureImageData || '')) ? (data.empSignatureImage || data.empSignatureImageData) : '';
     const justification = escapeOvertimeText(data.justification || '').replace(/\n/g, '<br>');
     const html = `<!DOCTYPE html><html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word"><head><meta charset="utf-8"><title>Actual Rendered Overtime</title><style>@page Section1{size:8.5in 11in;margin:.5in}div.Section1{page:Section1}body{font-family:Arial,sans-serif;color:#000;margin:0}table{border-collapse:collapse}</style></head><body><div class="Section1"><table style="width:100%;margin-bottom:${size.gap}px"><tr><td style="width:76px;padding-right:14px;vertical-align:middle">${sealSrc ? `<img src="${sealSrc}" width="70" height="70">` : ''}</td><td style="vertical-align:middle"><p style="margin:0;font:700 11.5pt Arial">DEPARTMENT OF FOREIGN AFFAIRS MULTI-PURPOSE COOPERATIVE (DFAMPC)</p><p style="margin:2px 0 0;font:${size.small}pt Arial;color:#444">7/F DFAMPC, DoubleDragon Tower, 76 DD Meridian Ave (EDSA Extension), Pasay City, Metro Manila &nbsp; Telephones: 834-4829; 834-4939 &nbsp; email: dfampc91@gmail.com</p></td></tr></table><p style="text-align:center;font:700 ${size.title}pt Arial;text-transform:uppercase;margin:0 0 ${size.gap}px">Actual Rendered Overtime</p>${fields([{label:'Employee Name',value:data.name,width:34},{label:'Employee ID',value:data.employeeId,width:33},{label:'Date Form Accomplished',value:data.dateAccomplished,width:33}])}${fields([{label:'Immediate Supervisor',value:data.supervisor,width:34},{label:'Consular Office',value:data.department,width:66}])}${section('Date(s) of Overtime Work',false)}${overtimeTable}<div style="margin:${size.gap}px 0 ${size.padSm}px"><p style="font:${size.small}pt Arial;margin:0 0 ${size.padSm}px">Please provide a justification as to why the work cannot be completed within normal working hours (40 hr/wk):</p><div style="border:1px solid #000;min-height:${size.justif}pt;padding:${size.pad}px 10px;font:${size.body}pt Arial;text-transform:uppercase">${justification || '&nbsp;'}</div></div>${fields([{label:'Employee Name',value:data.empSignName,width:34},{label:'Signature',value:data.empSignature,image:signatureImage,width:33},{label:'Date Form Submitted',value:data.dateSubmitted,width:33}])}${section('Approval',true)}${fields([{label:'Supervisor',value:data.appSupName,width:34},{label:'Signature',value:data.appSupSignature,width:33},{label:'Date of Approval',value:data.dateApproval,width:33}])}${fields([{label:'Operation Officer',value:data.opOffName,width:34},{label:'Signature',value:data.opOffSignature,width:33},{label:'Date of Approval',value:data.dateApprovalOp,width:33}])}${fields([{label:'HR Officer',value:data.hrName,width:34},{label:'Signature',value:data.hrSignature,width:33},{label:'Date of Approval',value:data.hrDateApproval,width:33}])}<p style="font:${size.small}pt Arial;font-style:italic;color:#333;margin:${size.padSm}px 0 2px">note : This form must be submitted together with the <i>Approved Overtime Authorization Form</i></p><p style="font:${size.small}pt Arial;color:#333;text-align:right;margin:2px 0 0">HR Form No. 2022-007</p></div></body></html>`;
     return html;
@@ -5892,18 +5892,30 @@
     loadOvertimeRecords();
   }
 
-  function printOvertimeDocument(record) {
+  async function getFullOvertimeRecord(record) {
+    if (!record?.id) return record;
+    const response = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(String(record.id))}&select=*`);
+    return Array.isArray(response) && response[0] ? response[0] : record;
+  }
+
+  async function printOvertimeDocument(record) {
     const printWindow = window.open('', '_blank');
     if (!printWindow) {
       toast('Please allow pop-ups to print the overtime form.', 'warning');
       return;
     }
-    const printContent = getOvertimeRecordsForPrint([record]);
-    printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Form</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printOvertimeWindowWhenReady(printWindow);
+    try {
+      const fullRecord = await getFullOvertimeRecord(record);
+      const printContent = getOvertimeRecordsForPrint([fullRecord]);
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Form</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printOvertimeWindowWhenReady(printWindow);
+    } catch (error) {
+      printWindow.close();
+      toast('Could not prepare overtime document: ' + error.message, 'error');
+    }
   }
 
   function previewOvertimeDocument(record) {
@@ -5936,7 +5948,7 @@
     });
   }
 
-  function printSelectedOvertimeRecords() {
+  async function printSelectedOvertimeRecords() {
     const visibleIds = new Set(getVisibleOvertimeRecords().map(record => String(record.id)));
     const selected = [...document.querySelectorAll('.overtime-record-check:checked')]
       .map(input => overtimeRecords.find(record => String(record.id) === decodeURIComponent(input.value)))
@@ -5950,12 +5962,18 @@
       toast('Please allow pop-ups to print the overtime forms.', 'warning');
       return;
     }
-    const printContent = getOvertimeRecordsForPrint(selected);
-    printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printOvertimeWindowWhenReady(printWindow);
+    try {
+      const fullRecords = await Promise.all(selected.map(getFullOvertimeRecord));
+      const printContent = getOvertimeRecordsForPrint(fullRecords);
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printOvertimeWindowWhenReady(printWindow);
+    } catch (error) {
+      printWindow.close();
+      toast('Could not prepare overtime documents: ' + error.message, 'error');
+    }
   }
 
   function getOvertimeRecordsForPrint(records) {
@@ -5982,7 +6000,7 @@
       .then(() => setTimeout(() => printWindow.print(), 80));
   }
 
-  function openOvertimePreview(records) {
+  async function openOvertimePreview(records) {
     if (!records.length) {
       toast('Select at least one overtime record to preview.', 'warning');
       return;
@@ -5992,10 +6010,16 @@
       toast('Please allow pop-ups to preview the overtime forms.', 'warning');
       return;
     }
-    const previewContent = getOvertimeRecordsForPrint(records);
-    previewWindow.document.open();
-    previewWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Preview</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${previewContent.styles}</head><body>${previewContent.pages}</body></html>`);
-    previewWindow.document.close();
+    try {
+      const fullRecords = await Promise.all(records.map(getFullOvertimeRecord));
+      const previewContent = getOvertimeRecordsForPrint(fullRecords);
+      previewWindow.document.open();
+      previewWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Overtime Preview</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${previewContent.styles}</head><body>${previewContent.pages}</body></html>`);
+      previewWindow.document.close();
+    } catch (error) {
+      previewWindow.close();
+      toast('Could not prepare overtime preview: ' + error.message, 'error');
+    }
   }
 
   function previewSelectedOvertimeRecords() {
@@ -6006,7 +6030,7 @@
     openOvertimePreview(filtered);
   }
 
-  function printAllOvertimeRecords() {
+  async function printAllOvertimeRecords() {
     const recordsToPrint = getVisibleOvertimeRecords();
     if (!recordsToPrint.length) {
       toast('No overtime records to print.', 'warning');
@@ -6017,12 +6041,18 @@
       toast('Please allow pop-ups to print the overtime forms.', 'warning');
       return;
     }
-    const printContent = getOvertimeRecordsForPrint(recordsToPrint);
-    printWindow.document.open();
-    printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
-    printWindow.document.close();
-    printWindow.focus();
-    printOvertimeWindowWhenReady(printWindow);
+    try {
+      const fullRecords = await Promise.all(recordsToPrint.map(getFullOvertimeRecord));
+      const printContent = getOvertimeRecordsForPrint(fullRecords);
+      printWindow.document.open();
+      printWindow.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>All ${overtimeRecordType} Overtime Forms</title><style>@page{size:8.5in 11in;margin:.5in}body{font-family:Arial,sans-serif;color:#000;margin:0}.overtime-print-page{page-break-after:always;break-after:page}.overtime-print-page:last-child{page-break-after:auto;break-after:auto}table{border-collapse:collapse}</style>${printContent.styles}</head><body>${printContent.pages}</body></html>`);
+      printWindow.document.close();
+      printWindow.focus();
+      printOvertimeWindowWhenReady(printWindow);
+    } catch (error) {
+      printWindow.close();
+      toast('Could not prepare overtime documents: ' + error.message, 'error');
+    }
   }
 
   async function deleteOvertimeRecord(id) {
@@ -6165,8 +6195,13 @@
     try {
       const response = await sbFetch('overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3Erows&limit=25');
       let records = Array.isArray(response) ? response : [];
-      const authorizationResponse = await sbFetch('overtime_submissions?form_data-%3E%3EformType=eq.authorization&select=id,created_at,submitted_by,submitted_by_name,form_data&limit=500');
-      const authorizationRecords = Array.isArray(authorizationResponse) ? authorizationResponse : [];
+      let authorizationRecords = [];
+      try {
+        const authorizationResponse = await sbFetch('overtime_submissions?form_data->>formType=eq.authorization&select=id,created_at,submitted_by,submitted_by_name,form_data&limit=500');
+        authorizationRecords = Array.isArray(authorizationResponse) ? authorizationResponse : [];
+      } catch (authorizationError) {
+        console.warn('Authorization records query failed; using records from the main list:', authorizationError.message);
+      }
       const knownIds = new Set(records.map(record => String(record.id)));
       records = records.concat(authorizationRecords.filter(record => !knownIds.has(String(record.id))).map(record => ({
         ...record,
