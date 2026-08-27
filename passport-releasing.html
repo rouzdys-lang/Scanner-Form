@@ -652,8 +652,10 @@
       <button class="btn btn-muted" onclick="previewSelectedOvertimeRecords()">Preview Checked</button>
       <button class="btn btn-muted" onclick="printAllOvertimeRecords()">Print All</button>
       <button class="btn btn-success" onclick="exportOvertimeRecords()">Export and Delete List</button>
+      <label class="btn btn-info" style="display:inline-flex;align-items:center;gap:6px;cursor:pointer;">Upload Deleted Export <input type="file" id="overtimeImportFile" accept=".xlsx,.xls" style="display:none;" onchange="importOvertimeRecords(event)"></label>
       <span id="overtimeRecordCount" style="color:var(--muted);font-size:11px;margin-left:auto;"></span>
     </div>
+    <div id="overtimeImportStatus" style="display:none;margin:-6px 0 12px;color:var(--muted);font-size:12px;"></div>
     <div class="table-wrap" style="max-height:calc(100vh - 200px);overflow-y:auto;">
       <table>
         <thead><tr><th><input type="checkbox" id="overtimeSelectAllHeader" onchange="toggleAllOvertimeRecords(this.checked)" aria-label="Check all overtime records"></th><th>Filed</th><th>Employee</th><th>Filed By</th><th>Work Date</th><th>Total Hours</th><th>Document</th></tr></thead>
@@ -6083,18 +6085,27 @@
     if (!canManageOvertimeRecords()) return;
     try {
       const allRecords = await sbFetch('overtime_submissions?select=*&order=created_at.asc&limit=5000');
-      const records = allRecords.filter(record => getOvertimeRecordType(record) === overtimeRecordType);
+      const from = document.getElementById('overtimeDateFrom')?.value || '';
+      const to = document.getElementById('overtimeDateTo')?.value || '';
+      const records = allRecords.filter(record => {
+        if (getOvertimeRecordType(record) !== overtimeRecordType) return false;
+        const data = record.form_data || {};
+        const date = String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '').slice(0, 10);
+        return (!from || date >= from) && (!to || date <= to);
+      });
       if (!records || records.length === 0) {
         toast('No overtime records to export.', 'warning');
         return;
       }
 
-      const headers = ['Filed', 'Employee', 'Employee ID', 'Filed By', 'Submitted/Accomplished Date', 'Overtime Date', 'Authorized Hours', 'Actual OT Hours', 'Total Hours', 'Department', 'Supervisor', 'Justification'];
+      const headers = ['Form ID', 'Form Type', 'Filed', 'Employee', 'Employee ID', 'Filed By', 'Submitted/Accomplished Date', 'Overtime Date', 'Authorized Hours', 'Actual OT Hours', 'Reason', 'Total Hours', 'Department', 'Supervisor', 'Justification', 'Employee Signature Name', 'Employee Signature', 'Supervisor Approval', 'Approval Signature', 'Approval Date', 'Operation Officer', 'Operation Signature', 'Operation Approval Date', 'HR Officer', 'HR Signature', 'HR Approval Date'];
       const rows = [];
       records.forEach(record => {
         const data = record.form_data || {};
         const overtimeRows = Array.isArray(data.rows) && data.rows.length ? data.rows : [{}];
         overtimeRows.forEach(row => rows.push([
+          record.id || '',
+          overtimeRecordType,
           record.created_at ? new Date(record.created_at).toLocaleString() : '',
           data.name || data.employeeName || '',
           data.employeeId || '',
@@ -6103,10 +6114,15 @@
           row.date || '',
           row.auth || '',
           row.actual || '',
+          row.reason || '',
           data.total || data.totalHours || '',
           data.department || '',
           data.supervisor || '',
-          data.justification || ''
+          data.justification || '',
+          data.empSignName || '', data.empSignature || '',
+          data.appSupName || data.approvalSupervisor || '', data.appSupSignature || data.approvalSignature || '', data.dateApproval || data.approvalDate || '',
+          data.opOffName || '', data.opOffSignature || '', data.dateApprovalOp || '',
+          data.hrName || data.hrOfficer || '', data.hrSignature || '', data.hrDateApproval || data.approvalDepartment || ''
         ]));
       });
 
@@ -6140,6 +6156,76 @@
       await loadOvertimeRecords();
     } catch (error) {
       toast('Overtime export failed: ' + error.message, 'error');
+    }
+  }
+
+  async function importOvertimeRecords(event) {
+    const file = event.target.files?.[0];
+    const status = document.getElementById('overtimeImportStatus');
+    const resetInput = () => { if (event.target) event.target.value = ''; };
+    if (!file || !status) return;
+    status.style.display = 'block';
+    status.textContent = 'Reading overtime export...';
+    try {
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: 'array', cellDates: true });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const values = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: '' });
+      const headerIndex = values.findIndex(row => row.some(cell => String(cell).trim().toLowerCase() === 'employee'));
+      if (headerIndex < 0) throw new Error('This file is not an overtime export.');
+      const headers = values[headerIndex].map(cell => String(cell).trim().toLowerCase());
+      const indexOf = (...names) => names.map(name => headers.indexOf(name)).find(index => index >= 0) ?? -1;
+      const index = {
+        id: indexOf('form id'), type: indexOf('form type'), employee: indexOf('employee'), employeeId: indexOf('employee id'),
+        filedBy: indexOf('filed by'), date: indexOf('submitted/accomplished date'), workDate: indexOf('overtime date'),
+        auth: indexOf('authorized hours'), actual: indexOf('actual ot hours'), total: indexOf('total hours'),
+        department: indexOf('department'), supervisor: indexOf('supervisor'), justification: indexOf('justification'), reason: indexOf('reason'),
+        empSignName: indexOf('employee signature name'), empSignature: indexOf('employee signature'), approvalSupervisor: indexOf('supervisor approval'), approvalSignature: indexOf('approval signature'), approvalDate: indexOf('approval date'),
+        opOffName: indexOf('operation officer'), opOffSignature: indexOf('operation signature'), opOffDate: indexOf('operation approval date'), hrName: indexOf('hr officer'), hrSignature: indexOf('hr signature'), hrDate: indexOf('hr approval date')
+      };
+      const get = (row, key) => index[key] >= 0 ? String(row[index[key]] ?? '').trim() : '';
+      const grouped = new Map();
+      values.slice(headerIndex + 1).forEach(row => {
+        if (!row.some(cell => String(cell).trim())) return;
+        const employee = get(row, 'employee');
+        const date = get(row, 'date');
+        if (!employee || !date) return;
+        const explicitType = get(row, 'type').toLowerCase();
+        const actual = get(row, 'actual');
+        const type = explicitType === 'authorization' || (!explicitType && !actual) ? 'authorization' : 'rendered';
+        const key = get(row, 'id') || `${type}|${employee}|${date}`;
+        if (!grouped.has(key)) grouped.set(key, { id: get(row, 'id') || `ot_import_${Date.now()}_${grouped.size}`, type, employee, employeeId: get(row, 'employeeId'), filedBy: get(row, 'filedBy'), date, department: get(row, 'department'), supervisor: get(row, 'supervisor'), justification: get(row, 'justification'), total: get(row, 'total'), empSignName: get(row, 'empSignName'), empSignature: get(row, 'empSignature'), approvalSupervisor: get(row, 'approvalSupervisor'), approvalSignature: get(row, 'approvalSignature'), approvalDate: get(row, 'approvalDate'), opOffName: get(row, 'opOffName'), opOffSignature: get(row, 'opOffSignature'), opOffDate: get(row, 'opOffDate'), hrName: get(row, 'hrName'), hrSignature: get(row, 'hrSignature'), hrDate: get(row, 'hrDate'), rows: [] });
+        const form = grouped.get(key);
+        const workDate = get(row, 'workDate');
+        if (workDate || get(row, 'auth') || actual || get(row, 'reason')) form.rows.push({ date: workDate, auth: get(row, 'auth'), ...(type === 'rendered' ? { actual } : { reason: get(row, 'reason') || get(row, 'justification') }) });
+      });
+      const submissions = [...grouped.values()].filter(form => form.rows.length).map(form => ({
+        id: form.id, submitted_by: form.filedBy, submitted_by_name: form.employee,
+        created_at: new Date().toISOString(), form_data: form.type === 'authorization'
+          ? { formType: 'authorization', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, approvalSupervisor: form.approvalSupervisor, approvalSignature: form.approvalSignature, approvalDate: form.approvalDate, hrOfficer: form.hrName, hrSignature: form.hrSignature, approvalDepartment: form.hrDate }
+          : { formType: 'rendered', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, appSupName: form.approvalSupervisor, appSupSignature: form.approvalSignature, dateApproval: form.approvalDate, opOffName: form.opOffName, opOffSignature: form.opOffSignature, dateApprovalOp: form.opOffDate, hrName: form.hrName, hrSignature: form.hrSignature, hrDateApproval: form.hrDate }
+      }));
+      if (!submissions.length) throw new Error('No overtime rows were found in the workbook.');
+      const importIds = submissions.map(submission => String(submission.id));
+      const existingIds = new Set();
+      for (let offset = 0; offset < importIds.length; offset += 50) {
+        const ids = importIds.slice(offset, offset + 50).map(id => `"${id.replace(/"/g, '')}"`).join(',');
+        const existing = await sbFetch(`overtime_submissions?id=in.(${ids})&select=id`);
+        (Array.isArray(existing) ? existing : []).forEach(record => existingIds.add(String(record.id)));
+      }
+      const submissionsToRestore = submissions.filter(submission => !existingIds.has(String(submission.id)));
+      for (let offset = 0; offset < submissionsToRestore.length; offset += 50) {
+        await sbFetch('overtime_submissions', { method: 'POST', body: JSON.stringify(submissionsToRestore.slice(offset, offset + 50)) });
+      }
+      if (!submissionsToRestore.length) throw new Error('All overtime forms in this file already exist in the database.');
+      const skipped = submissions.length - submissionsToRestore.length;
+      status.textContent = `Successfully restored ${submissionsToRestore.length} overtime form(s)${skipped ? `; skipped ${skipped} duplicate(s)` : ''}.`;
+      toast(`Successfully restored ${submissionsToRestore.length} overtime form(s)${skipped ? `; skipped ${skipped} duplicate(s)` : ''}.`, 'success');
+      await loadOvertimeRecords();
+    } catch (error) {
+      status.textContent = `Upload failed: ${error.message}`;
+      toast(`Overtime upload failed: ${error.message}`, 'error');
+    } finally {
+      resetInput();
     }
   }
 
