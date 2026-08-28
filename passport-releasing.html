@@ -6081,6 +6081,26 @@
     }
   }
 
+  async function prepareSignatureImageForExport(value) {
+    const imageData = String(value || '');
+    if (!/^data:image\//i.test(imageData) || imageData.length <= 30000) return imageData;
+    return new Promise(resolve => {
+      const image = new Image();
+      image.onload = () => {
+        const scale = Math.min(1, 600 / image.naturalWidth, 180 / image.naturalHeight);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale));
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale));
+        canvas.getContext('2d').drawImage(image, 0, 0, canvas.width, canvas.height);
+        let compressed = canvas.toDataURL('image/jpeg', 0.72);
+        if (compressed.length > 30000) compressed = canvas.toDataURL('image/jpeg', 0.5);
+        resolve(compressed.length <= 32767 ? compressed : '');
+      };
+      image.onerror = () => resolve('');
+      image.src = imageData;
+    });
+  }
+
   async function exportOvertimeRecords() {
     if (!canManageOvertimeRecords()) return;
     try {
@@ -6110,11 +6130,20 @@
         return;
       }
 
-      const headers = ['Form ID', 'Form Type', 'Filed', 'Employee', 'Employee ID', 'Filed By', 'Submitted/Accomplished Date', 'Overtime Date', 'Authorized Hours', 'Actual OT Hours', 'Reason', 'Total Hours', 'Department', 'Supervisor', 'Justification', 'Employee Signature Name', 'Employee Signature', 'Supervisor Approval', 'Approval Signature', 'Approval Date', 'Operation Officer', 'Operation Signature', 'Operation Approval Date', 'HR Officer', 'HR Signature', 'HR Approval Date'];
+      const headers = ['Form ID', 'Form Type', 'Filed', 'Employee', 'Employee ID', 'Filed By', 'Submitted/Accomplished Date', 'Overtime Date', 'Authorized Hours', 'Actual OT Hours', 'Reason', 'Total Hours', 'Department', 'Supervisor', 'Justification', 'Employee Signature Name', 'Employee Signature', 'Employee Signature Image', 'Supervisor Approval', 'Approval Signature', 'Approval Date', 'Operation Officer', 'Operation Signature', 'Operation Approval Date', 'HR Officer', 'HR Signature', 'HR Approval Date'];
+      const signatureImageCache = new Map();
+      const getSignatureImage = async data => {
+        const imageData = data.empSignatureImage || data.empSignatureImageData || '';
+        if (!imageData || signatureImageCache.has(imageData)) return signatureImageCache.get(imageData) || '';
+        const prepared = await prepareSignatureImageForExport(imageData);
+        signatureImageCache.set(imageData, prepared);
+        return prepared;
+      };
       const rows = [];
-      records.forEach(record => {
+      for (const record of records) {
         const data = record.form_data || {};
         const overtimeRows = Array.isArray(data.rows) && data.rows.length ? data.rows : [{}];
+        const signatureImage = await getSignatureImage(data);
         overtimeRows.forEach(row => rows.push([
           record.id || '',
           overtimeRecordType,
@@ -6131,12 +6160,12 @@
           data.department || '',
           data.supervisor || '',
           data.justification || '',
-          data.empSignName || '', data.empSignature || '',
+          data.empSignName || '', data.empSignature || '', signatureImage,
           data.appSupName || data.approvalSupervisor || '', data.appSupSignature || data.approvalSignature || '', data.dateApproval || data.approvalDate || '',
           data.opOffName || '', data.opOffSignature || '', data.dateApprovalOp || '',
           data.hrName || data.hrOfficer || '', data.hrSignature || '', data.hrDateApproval || data.approvalDepartment || ''
         ]));
-      });
+      }
 
       const dateFile = new Date().toISOString().slice(0, 10).replace(/-/g, '');
       const exportFilename = `DFAMPC-OVERTIME-RECORDS-${dateFile}.xlsx`;
@@ -6205,7 +6234,7 @@
         filedBy: indexOf('filed by'), date: indexOf('submitted/accomplished date'), workDate: indexOf('overtime date'),
         auth: indexOf('authorized hours'), actual: indexOf('actual ot hours'), total: indexOf('total hours'),
         department: indexOf('department'), supervisor: indexOf('supervisor'), justification: indexOf('justification'), reason: indexOf('reason'),
-        empSignName: indexOf('employee signature name'), empSignature: indexOf('employee signature'), approvalSupervisor: indexOf('supervisor approval'), approvalSignature: indexOf('approval signature'), approvalDate: indexOf('approval date'),
+        empSignName: indexOf('employee signature name'), empSignature: indexOf('employee signature'), empSignatureImage: indexOf('employee signature image'), approvalSupervisor: indexOf('supervisor approval'), approvalSignature: indexOf('approval signature'), approvalDate: indexOf('approval date'),
         opOffName: indexOf('operation officer'), opOffSignature: indexOf('operation signature'), opOffDate: indexOf('operation approval date'), hrName: indexOf('hr officer'), hrSignature: indexOf('hr signature'), hrDate: indexOf('hr approval date')
       };
       const get = (row, key) => index[key] >= 0 ? String(row[index[key]] ?? '').trim() : '';
@@ -6219,7 +6248,7 @@
         const actual = get(row, 'actual');
         const type = explicitType === 'authorization' || (!explicitType && !actual) ? 'authorization' : 'rendered';
         const key = get(row, 'id') || `${type}|${employee}|${date}`;
-        if (!grouped.has(key)) grouped.set(key, { id: get(row, 'id') || `ot_import_${Date.now()}_${grouped.size}`, type, employee, employeeId: get(row, 'employeeId'), filedBy: get(row, 'filedBy'), date, department: get(row, 'department'), supervisor: get(row, 'supervisor'), justification: get(row, 'justification'), total: get(row, 'total'), empSignName: get(row, 'empSignName'), empSignature: get(row, 'empSignature'), approvalSupervisor: get(row, 'approvalSupervisor'), approvalSignature: get(row, 'approvalSignature'), approvalDate: get(row, 'approvalDate'), opOffName: get(row, 'opOffName'), opOffSignature: get(row, 'opOffSignature'), opOffDate: get(row, 'opOffDate'), hrName: get(row, 'hrName'), hrSignature: get(row, 'hrSignature'), hrDate: get(row, 'hrDate'), rows: [] });
+        if (!grouped.has(key)) grouped.set(key, { id: get(row, 'id') || `ot_import_${Date.now()}_${grouped.size}`, type, employee, employeeId: get(row, 'employeeId'), filedBy: get(row, 'filedBy'), date, department: get(row, 'department'), supervisor: get(row, 'supervisor'), justification: get(row, 'justification'), total: get(row, 'total'), empSignName: get(row, 'empSignName'), empSignature: get(row, 'empSignature'), empSignatureImage: get(row, 'empSignatureImage'), approvalSupervisor: get(row, 'approvalSupervisor'), approvalSignature: get(row, 'approvalSignature'), approvalDate: get(row, 'approvalDate'), opOffName: get(row, 'opOffName'), opOffSignature: get(row, 'opOffSignature'), opOffDate: get(row, 'opOffDate'), hrName: get(row, 'hrName'), hrSignature: get(row, 'hrSignature'), hrDate: get(row, 'hrDate'), rows: [] });
         const form = grouped.get(key);
         const workDate = get(row, 'workDate');
         if (workDate || get(row, 'auth') || actual || get(row, 'reason')) form.rows.push({ date: workDate, auth: get(row, 'auth'), ...(type === 'rendered' ? { actual } : { reason: get(row, 'reason') || get(row, 'justification') }) });
@@ -6227,8 +6256,8 @@
       const submissions = [...grouped.values()].filter(form => form.rows.length).map(form => ({
         id: form.id, submitted_by: form.filedBy, submitted_by_name: form.employee,
         created_at: new Date().toISOString(), form_data: form.type === 'authorization'
-          ? { formType: 'authorization', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, approvalSupervisor: form.approvalSupervisor, approvalSignature: form.approvalSignature, approvalDate: form.approvalDate, hrOfficer: form.hrName, hrSignature: form.hrSignature, approvalDepartment: form.hrDate }
-          : { formType: 'rendered', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, appSupName: form.approvalSupervisor, appSupSignature: form.approvalSignature, dateApproval: form.approvalDate, opOffName: form.opOffName, opOffSignature: form.opOffSignature, dateApprovalOp: form.opOffDate, hrName: form.hrName, hrSignature: form.hrSignature, hrDateApproval: form.hrDate }
+          ? { formType: 'authorization', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, empSignatureImage: form.empSignatureImage, approvalSupervisor: form.approvalSupervisor, approvalSignature: form.approvalSignature, approvalDate: form.approvalDate, hrOfficer: form.hrName, hrSignature: form.hrSignature, approvalDepartment: form.hrDate }
+          : { formType: 'rendered', name: form.employee, employeeId: form.employeeId, dateAccomplished: form.date, dateSubmitted: form.date, supervisor: form.supervisor, department: form.department, rows: form.rows, total: form.total, totalHours: form.total, justification: form.justification, empSignName: form.empSignName, empSignature: form.empSignature, empSignatureImage: form.empSignatureImage, appSupName: form.approvalSupervisor, appSupSignature: form.approvalSignature, dateApproval: form.approvalDate, opOffName: form.opOffName, opOffSignature: form.opOffSignature, dateApprovalOp: form.opOffDate, hrName: form.hrName, hrSignature: form.hrSignature, hrDateApproval: form.hrDate }
       }));
       if (!submissions.length) throw new Error('No overtime rows were found in the workbook.');
       const importIds = submissions.map(submission => String(submission.id));
