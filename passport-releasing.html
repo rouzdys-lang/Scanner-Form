@@ -3976,8 +3976,19 @@
     const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
     const dateFile = new Date().toISOString().slice(0,10).replace(/-/g,'');
 
-    const headers = ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Date Applied','DOR From','DOR To','Status','Verifier'];
-    const rows = items.map(s => [
+    const isWexpressManifest = isWexpressDatabaseName(dbName);
+    const headers = isWexpressManifest
+      ? ['HWB No','Tracking No','Pick-up Date','Destination Station','Consignee','Consignee Address','Status']
+      : ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Date Applied','DOR From','DOR To','Status','Verifier'];
+    const rows = items.map(s => isWexpressManifest ? [
+      String(s.tracking || '').trim(),
+      String(s.tracking || '').trim(),
+      String(s.row?.date_applied || '').trim(),
+      String(s.row?.destination_station || '').trim(),
+      String(s.row?.consignee || '').trim(),
+      String(s.row?.consignee_address || s.row?.address || '').trim(),
+      String(s.status || 'In Warehouse').trim()
+    ] : [
       s.tracking,
       s.row?.last_name  || '',
       s.row?.first_name || '',
@@ -4045,6 +4056,9 @@
       first_name: s.row?.first_name || '',
       middle_name: s.row?.middle_name || '',
       address: s.row?.address || '',
+      consignee: s.row?.consignee || '',
+      consignee_address: s.row?.consignee_address || s.row?.address || '',
+      destination_station: s.row?.destination_station || '',
       contact_number: s.row?.contact_number || '',
       contact_number2: s.row?.contact_number2 || '',
       date_applied: s.row?.date_applied || '',
@@ -4102,8 +4116,19 @@
     const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
     const dateFile = today.replace(/-/g,'');
 
-    const headers = ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Released Date'];
-    const rows = items.map(s => [
+    const isWexpressRelease = isWexpressDatabaseName(dbName);
+    const headers = isWexpressRelease
+      ? ['HWB No','Tracking No','Pick-up Date','Destination Station','Consignee','Consignee Address','Status']
+      : ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Released Date'];
+    const rows = items.map(s => isWexpressRelease ? [
+      String(s.tracking || '').trim(),
+      String(s.tracking || '').trim(),
+      String(s.row?.date_applied || '').trim(),
+      String(s.row?.destination_station || '').trim(),
+      String(s.row?.consignee || '').trim(),
+      String(s.row?.consignee_address || s.row?.address || '').trim(),
+      'Released'
+    ] : [
       s.tracking,
       s.row?.last_name   || '',
       s.row?.first_name  || '',
@@ -4115,7 +4140,7 @@
     ]);
 
     const wb2 = makeStyledWorkbook(
-      `DFAMPC - ${dbName} RELEASED`,
+      isWexpressRelease ? `DFAMPC - ${dbName} RELEASED` : `DFAMPC - ${dbName} RELEASED`,
       `Date: ${dateStr}`,
       'Total Released',
       items.length,
@@ -4556,6 +4581,10 @@
   }
 
   async function exportReleasedCSV() {
+    const selectedDb = String(document.getElementById('dbFilter')?.value || '').trim();
+    const activeDb = String(currentDB || '').trim();
+    const isWexpressExport = isWexpressDatabaseName(selectedDb) || isWexpressDatabaseName(activeDb);
+
     // Get date filters from UI
     const from = document.getElementById('releasedDateFrom').value;
     const to = document.getElementById('releasedDateTo').value;
@@ -4599,22 +4628,37 @@
     const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
     const dateFile = new Date().toISOString().slice(0,10).replace(/-/g,'');
 
-    const headers = ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Original DB','Released Date'];
-    const dataRows = allRows.map(r => [
-      r.tracking_number, r.last_name, r.first_name, r.middle_name,
-      r.address, r.contact_number, r.contact_number2,
-      r.original_source, r.released_date
-    ]);
+    const headers = isWexpressExport
+      ? ['HWB No','Tracking No','Pick-up Date','Destination Station','Consignee','Consignee Address','Status']
+      : ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Original DB','Released Date'];
+    const dataRows = isWexpressExport
+      ? allRows.map(r => {
+          const w = getWexpressEntryDetails(r);
+          return [
+            String(r.tracking_number || '').trim(),
+            String(r.tracking_number || '').trim(),
+            String(r.date_applied || '').trim(),
+            String(r.destination_station || w.destination || '').trim(),
+            String(r.consignee || w.fullConsignee || '').trim(),
+            String(r.consignee_address || w.address || '').trim(),
+            String(r.status || 'Released').trim()
+          ];
+        })
+      : allRows.map(r => [
+          r.tracking_number, r.last_name, r.first_name, r.middle_name,
+          r.address, r.contact_number, r.contact_number2,
+          r.original_source, r.released_date
+        ]);
 
     const wb = makeStyledWorkbook(
-      'DFAMPC - RELEASED DATABASE EXPORT',
+      isWexpressExport ? 'DFAMPC - WEXPRESS RELEASED EXPORT' : 'DFAMPC - RELEASED DATABASE EXPORT',
       `Date: ${dateStr}`,
       'Total Released Records',
       allRows.length,
       headers, dataRows, 'Released'
     );
-    await downloadWorkbook(wb, `DFAMPC-RELEASED-DB-${dateFile}.xlsx`);
-    toast(`✓ Released DB exported — ${allRows.length} total records`, 'success');
+    await downloadWorkbook(wb, isWexpressExport ? `DFAMPC-WEXPRESS-RELEASED-${dateFile}.xlsx` : `DFAMPC-RELEASED-DB-${dateFile}.xlsx`);
+    toast(`✓ Released ${isWexpressExport ? 'WEXPRESS' : 'DB'} export — ${allRows.length} total records`, 'success');
   }
 
   // ==================== EXPORT ENTRIES (ENTIRE DB) ====================
