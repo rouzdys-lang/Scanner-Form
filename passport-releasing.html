@@ -5117,6 +5117,12 @@
     const uncached = [];
 
     allRecords.forEach(r => {
+      // WEXPRESS re-imports must use the live row ID and current database data;
+      // stale browser cache entries cannot be used for corrective updates.
+      if (target === 'WEXPRESS') {
+        uncached.push(r.tracking_number);
+        return;
+      }
       const cached = hotCache.get(r.tracking_number);
       const cachedBelongsToTarget = !cached || !cached.data_source || String(cached.data_source).toUpperCase() === String(target).toUpperCase();
       if (cached && cachedBelongsToTarget) {
