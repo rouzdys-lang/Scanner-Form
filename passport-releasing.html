@@ -5048,6 +5048,22 @@
     const colIdx = {};
     for (const [field, aliases] of Object.entries(COL_MAP)) colIdx[field] = findColIdx(aliases);
 
+    if (target === 'WEXPRESS') {
+      const normalizeHeader = value => String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+      const exactWexpressColumns = {
+        hwb_number: 'hwbno',
+        tracking_number: 'trackingno',
+        date_applied: 'pickupdate',
+        destination_station: 'destinationstation',
+        consignee: 'consignee',
+        consignee_address: 'consigneeaddress'
+      };
+      for (const [field, normalizedName] of Object.entries(exactWexpressColumns)) {
+        const exactIndex = headers.findIndex(header => normalizeHeader(header) === normalizedName);
+        if (exactIndex >= 0) colIdx[field] = exactIndex;
+      }
+    }
+
     function getVal(row, field) {
       const idx = colIdx[field];
       if (idx < 0) return '';
