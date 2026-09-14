@@ -5026,7 +5026,7 @@
       consignee_address: ['consignee address','consigneeaddress','consignee addr','delivery address','deliveryaddress','address'],
       contact_number:  ['mobile 1','mobile1','mobile','contact number','contactnumber','phone','contact'],
       contact_number2: ['mobile 2','mobile2','contact number 2','contactnumber2','contact2','alt mobile'],
-      date_applied:    ['date applied','dateapplied','date_applied'],
+      date_applied:    ['pick-up date','pickup date','pickup_date','date applied','dateapplied','date_applied'],
       dor_from:        ['date of release from','dor from','dorfrom','dor_from','release from'],
       dor_to:          ['date of release to','dor to','dorto','dor_to','release to'],
       status:          ['pod series','podseries','pod_series','pod','status'],  // POD Series â†’ stored as status
@@ -5135,8 +5135,8 @@
         const inList = batch.map(t => `"${t}"`).join(',');
         try {
           const targetFilter = `&data_source=eq.${encodeURIComponent(target)}`;
-          const found = await sbFetch(`entries?tracking_number=in.(${inList})${targetFilter}&select=tracking_number,data_source,id,last_name,first_name,status`);
-          if (found) found.forEach(r => { existingInEntries.set(r.tracking_number, r.data_source); hotCache.set(r.tracking_number, { ...r, _inReleased: false }); });
+          const found = await sbFetch(`entries?tracking_number=in.(${inList})${targetFilter}&select=id,tracking_number,data_source,last_name,first_name,middle_name,address,consignee,consignee_address,destination_station,date_applied,status`);
+          if (found) found.forEach(r => { existingInEntries.set(r.tracking_number, r); hotCache.set(r.tracking_number, { ...r, _inReleased: false }); });
         } catch(e) {}
         try {
           const foundRel = await sbFetch(`released_entries?tracking_number=in.(${inList})&select=*`);
@@ -5171,8 +5171,43 @@
     });
 
     const totalSkipped = filedupes.length + skippedEntries.length + skippedReleased.length;
+    let updated = 0;
+    let failed = 0;
+    let importError = '';
 
-    if (toImport.length === 0) {
+    // WEXPRESS files are authoritative manifests. Re-importing the same HWB
+    // updates corrected consignee/address values instead of silently skipping them.
+    if (target === 'WEXPRESS' && skippedEntries.length > 0) {
+      const updates = allRecords.filter(record => existingInEntries.has(record.tracking_number));
+      for (const record of updates) {
+        const existing = existingInEntries.get(record.tracking_number);
+        try {
+          await sbFetch(`entries?id=eq.${encodeURIComponent(existing.id)}`, {
+            method: 'PATCH',
+            body: JSON.stringify({
+              tracking_number: record.tracking_number,
+              data_source: 'WEXPRESS',
+              last_name: record.last_name,
+              first_name: record.first_name,
+              middle_name: record.middle_name,
+              address: record.address,
+              consignee: record.consignee,
+              consignee_address: record.consignee_address,
+              destination_station: record.destination_station,
+              date_applied: record.date_applied,
+              status: record.status
+            })
+          });
+          updated++;
+          cacheAdd(record);
+        } catch (error) {
+          failed += 1;
+          importError = error.message || 'Failed to update existing WEXPRESS record';
+        }
+      }
+    }
+
+    if (toImport.length === 0 && updated === 0) {
       prog.innerHTML = `
         <div style="color:var(--danger);font-weight:700;margin-bottom:8px;">⚠ Nothing to import — all ${totalInFile} tracking numbers are duplicates!</div>
         ${buildSkipReport(filedupes, skippedEntries, skippedReleased)}`;
@@ -5184,8 +5219,6 @@
 
     // â”€â”€ Insert only non-duplicates â”€â”€
     let imported = 0;
-    let failed = 0;
-    let importError = '';
     const BATCH = 100;
     if (!navigator.onLine) {
       enqueueOfflineImport(toImport);
@@ -5240,8 +5273,8 @@
       ${failed && importError ? `<div style="color:var(--muted);font-size:10px;margin-bottom:8px;word-break:break-word;">Database error: ${String(importError).replace(/[&<>\"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character]))}</div>` : ''}
       ${buildSkipReport(filedupes, skippedEntries, skippedReleased)}`;
 
-    toast(`${failed ? 'Import incomplete' : '✓ Import complete'}: ${imported} saved | ${failed} failed | ${totalSkipped} skipped`, failed ? 'error' : (imported > 0 ? 'success' : 'warning'));
-    writeLog('IMPORT', `Imported ${imported} records to ${target}`, `Failed: ${failed}; Skipped: ${totalSkipped} duplicates`);
+    toast(`${failed ? 'Import incomplete' : '✓ Import complete'}: ${imported} added | ${updated} updated | ${failed} failed | ${totalSkipped} skipped`, failed ? 'error' : (imported > 0 || updated > 0 ? 'success' : 'warning'));
+    writeLog('IMPORT', `Imported ${imported} records to ${target}`, `Updated: ${updated}; Failed: ${failed}; Skipped: ${totalSkipped} duplicates`);
     // Update cache with newly imported records
     toImport.forEach(r => cacheAdd(r));
     updateCacheBadge();
