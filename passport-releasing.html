@@ -4155,7 +4155,46 @@
   }
 
   // ==================== DB PAGE ====================
+  function renderDBHeaderForCurrentFilter() {
+    const db = document.getElementById('dbFilter').value;
+    const table = document.getElementById('dbTable');
+    if (!table) return;
+    const thead = table.querySelector('thead');
+    if (!thead) return;
+    if (isWexpressDatabaseName(db)) {
+      thead.innerHTML = `
+        <tr>
+          <th>#</th>
+          <th>HWB No</th>
+          <th>Tracking No</th>
+          <th>Pick-up Date</th>
+          <th>Destination Station</th>
+          <th>Consignee</th>
+          <th>Consignee Address</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>`;
+    } else {
+      thead.innerHTML = `
+        <tr>
+          <th>#</th>
+          <th>Tracking #</th>
+          <th>Last Name</th>
+          <th>First Name</th>
+          <th>Middle Name</th>
+          <th>Address</th>
+          <th>Contact</th>
+          <th>Status</th>
+          <th>Date Applied</th>
+          <th>DOR From</th>
+          <th>DOR To</th>
+          <th>Actions</th>
+        </tr>`;
+    }
+  }
+
   async function loadDBPage() {
+    renderDBHeaderForCurrentFilter();
     const db = document.getElementById('dbFilter').value;
     const search = dbSearchTerm;
     let url;
@@ -4226,15 +4265,31 @@
       const actionButtons = canEdit
         ? `<button class="btn btn-muted" style="padding:4px 8px;font-size:10px;" onclick='openEditModal(${JSON.stringify(r)})'>Edit</button><button class="btn btn-danger" style="padding:4px 8px;font-size:10px;" onclick="deleteEntry('${r.id}')">Del</button>`
         : `<span style="color:var(--muted);font-size:10px;display:inline-flex;align-items:center;height:28px;">No access</span>`;
-      tr.innerHTML = `
-        <td>${(dbCurrentPage-1)*PAGE_SIZE + i + 1}</td>
-        <td style="font-family:monospace;font-size:11px;">${r.tracking_number}</td>
-        <td>${r.last_name||''}</td><td>${r.first_name||''}</td><td>${r.middle_name||''}</td>
-        <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.address||''}">${r.address||''}</td>
-        <td>${r.contact_number||''}</td>
-        <td><span class="status-pill ${statusClass(r.status)}">${r.status||''}</span></td>
-        <td>${r.date_applied||''}</td><td>${r.dor_from||''}</td><td>${r.dor_to||''}</td>
-        <td>${actionButtons}</td>`;
+
+      const isWexpress = isWexpressDatabaseName(String(r.data_source || db || ''));
+      if (isWexpress) {
+        const w = getWexpressEntryDetails(r);
+        tr.innerHTML = `
+          <td>${(dbCurrentPage-1)*PAGE_SIZE + i + 1}</td>
+          <td style="font-family:monospace;font-size:11px;">${r.tracking_number || ''}</td>
+          <td>${r.tracking_number || ''}</td>
+          <td>${r.date_applied || ''}</td>
+          <td>${w.destination || ''}</td>
+          <td>${w.fullConsignee || ''}</td>
+          <td style="max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${w.address || ''}">${w.address || ''}</td>
+          <td><span class="status-pill ${statusClass(r.status)}">${r.status || ''}</span></td>
+          <td>${actionButtons}</td>`;
+      } else {
+        tr.innerHTML = `
+          <td>${(dbCurrentPage-1)*PAGE_SIZE + i + 1}</td>
+          <td style="font-family:monospace;font-size:11px;">${r.tracking_number}</td>
+          <td>${r.last_name||''}</td><td>${r.first_name||''}</td><td>${r.middle_name||''}</td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.address||''}">${r.address||''}</td>
+          <td>${r.contact_number||''}</td>
+          <td><span class="status-pill ${statusClass(r.status)}">${r.status||''}</span></td>
+          <td>${r.date_applied||''}</td><td>${r.dor_from||''}</td><td>${r.dor_to||''}</td>
+          <td>${actionButtons}</td>`;
+      }
       tbody.appendChild(tr);
     });
 
@@ -4255,6 +4310,36 @@
     if (s === 'Return to Origin') return 'pill-claimed';
     if (s === 'Cancelled Delivery') return 'pill-cancel';
     return 'pill-warehouse';
+  }
+
+  function isWexpressDatabaseName(db) {
+    return String(db || '').toUpperCase() === 'WEXPRESS';
+  }
+
+  function splitConsigneeName(value) {
+    const raw = String(value || '').trim();
+    if (!raw) return { last_name: '', first_name: '', middle_name: '' };
+    if (raw.includes(',')) {
+      const [last, ...rest] = raw.split(',');
+      const first = rest.join(',').trim();
+      return { last_name: last.trim(), first_name: first, middle_name: '' };
+    }
+    const parts = raw.split(/\s+/).filter(Boolean);
+    if (parts.length <= 1) return { last_name: raw, first_name: '', middle_name: '' };
+    const last = parts.pop();
+    return { last_name: last, first_name: parts.join(' '), middle_name: '' };
+  }
+
+  function getWexpressEntryDetails(r) {
+    const consignee = String(r.consignee || `${r.last_name || ''} ${r.first_name || ''}`.trim() || '').trim();
+    const split = splitConsigneeName(consignee);
+    const lastName = r.last_name || split.last_name || '';
+    const firstName = r.first_name || split.first_name || '';
+    const middleName = r.middle_name || split.middle_name || '';
+    const address = r.consignee_address || r.address || '';
+    const destination = r.destination_station || '';
+    const fullConsignee = r.consignee || `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
+    return { lastName, firstName, middleName, address, destination, fullConsignee };
   }
 
   async function deleteEntry(id) {
@@ -4580,13 +4665,21 @@
     const dateStr = new Date().toLocaleDateString('en-US', { month:'numeric', day:'numeric', year:'numeric' });
     const dateFile = new Date().toISOString().slice(0,10).replace(/-/g,'');
     const exportName = db === ALL_DB_FILTER ? 'ALL-ACCESSIBLE' : (db || 'SELECTED-DB');
+    const isWexpressExport = isWexpressDatabaseName(String(db || ''));
 
-    const headers = ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Data Source','Status','Date Applied','DOR From','DOR To','Created At'];
-    const dataRows = allRows.map(r => [
-      r.tracking_number, r.last_name, r.first_name, r.middle_name,
-      r.address, r.contact_number, r.contact_number2,
-      r.data_source || r.original_source || '', r.status, r.date_applied, r.dor_from, r.dor_to, r.created_at
-    ]);
+    const headers = isWexpressExport
+      ? ['HWB No','Tracking No','Pick-up Date','Destination Station','Consignee','Consignee Address','Status']
+      : ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Data Source','Status','Date Applied','DOR From','DOR To','Created At'];
+    const dataRows = isWexpressExport
+      ? allRows.map(r => {
+          const w = getWexpressEntryDetails(r);
+          return [r.tracking_number || '', r.tracking_number || '', r.date_applied || '', w.destination || '', w.fullConsignee || '', w.address || '', r.status || ''];
+        })
+      : allRows.map(r => [
+          r.tracking_number, r.last_name, r.first_name, r.middle_name,
+          r.address, r.contact_number, r.contact_number2,
+          r.data_source || r.original_source || '', r.status, r.date_applied, r.dor_from, r.dor_to, r.created_at
+        ]);
 
     const wb = makeStyledWorkbook(
       `DFAMPC - ENTRIES DATABASE EXPORT - ${exportName}`,
@@ -4978,11 +5071,13 @@
       if (seenInFile.has(tn)) { filedupes.push(tn); return; }
       seenInFile.add(tn);
       const podSeries = getVal(row, 'status');
-      const consigneeParts = getVal(row, 'consignee').split(',').map(part => part.trim()).filter(Boolean);
-      const lastName = getVal(row, 'last_name') || consigneeParts[0] || '';
-      const firstName = getVal(row, 'first_name') || consigneeParts[1] || '';
-      const middleName = getVal(row, 'middle_name') || consigneeParts.slice(2).join(', ');
-      const consigneeAddress = getVal(row, 'consignee_address') || getVal(row, 'address');
+      const consigneeRaw = getVal(row, 'consignee') || getVal(row, 'last_name') || getVal(row, 'first_name') || '';
+      const splitName = splitConsigneeName(consigneeRaw || `${getVal(row,'last_name') || ''} ${getVal(row,'first_name') || ''}`.trim());
+      const lastName = getVal(row, 'last_name') || splitName.last_name || '';
+      const firstName = getVal(row, 'first_name') || splitName.first_name || '';
+      const middleName = getVal(row, 'middle_name') || splitName.middle_name || '';
+      const destinationStation = getVal(row, 'destination_station') || '';
+      const consigneeAddress = getVal(row, 'consignee_address') || getVal(row, 'address') || '';
       const address = target === 'WEXPRESS' ? consigneeAddress : getVal(row, 'address');
       allRecords.push({
         id: 'e_' + Date.now() + Math.random().toString(36).slice(2, 8),
@@ -4992,6 +5087,9 @@
         first_name:      firstName,
         middle_name:     middleName,
         address,
+        destination_station: destinationStation,
+        consignee:       consigneeRaw,
+        consignee_address: consigneeAddress,
         contact_number:  getVal(row, 'contact_number'),
         contact_number2: getVal(row, 'contact_number2'),
         date_applied:    getVal(row, 'date_applied'),
