@@ -5485,9 +5485,11 @@
 
     let results = []; // â† was missing, causing ReferenceError
 
-    const DBS = ['ASEANA','POW','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected'];
+    const allowed = getUserAllowedDatabases(currentUser) || [];
+    const DBS = ['ASEANA','POW','WEXPRESS','Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected']
+      .filter(db => allowed.length === 0 || allowed.includes(db));
 
-    // Search all DBs in parallel
+    // Search all allowed DBs in parallel
     const dbResults = await Promise.all(DBS.map(db =>
       sbFetch(`entries?data_source=eq.${encodeURIComponent(db)}&or=(tracking_number.ilike.*${encodeURIComponent(q)}*,last_name.ilike.*${encodeURIComponent(q)}*,first_name.ilike.*${encodeURIComponent(q)}*)&limit=20`).catch(() => [])
     ));
