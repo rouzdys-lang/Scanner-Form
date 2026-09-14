@@ -451,17 +451,43 @@
     }
   }
 
-  // Compares entries ignoring the savedAt timestamp, so re-saving the exact
-  // same content (e.g. clicking Download again without changing anything)
-  // is recognized as a duplicate instead of creating a new record.
-  function normalizeForCompare(data){
-    const { savedAt, ...rest } = data;
-    return JSON.stringify(rest);
+  // Compare using a duplicate key that matches the real business rule:
+  // same employee and same overtime date/hour entries should not be filed again,
+  // even if the justification or signatures differ slightly.
+  function normalizeText(v){
+    return String(v || '').trim().toLowerCase();
+  }
+
+  function normalizeHourValue(v){
+    const num = Number(v);
+    if(!Number.isFinite(num)) return '';
+    return Number(num.toFixed(2)).toString();
+  }
+
+  function buildDuplicateKey(data){
+    const employeeId = normalizeText(data.employeeId);
+    const employeeName = normalizeText(data.name);
+    const rowsKey = (data.rows || [])
+      .filter(r => r && (r.date || r.auth || r.actual))
+      .map(r => `${normalizeText(r.date)}|${normalizeHourValue(r.auth)}|${normalizeHourValue(r.actual)}`)
+      .sort()
+      .join(';');
+
+    // Same employee ID + same employee name + same OT date + same authorized and
+    // rendered hours must be treated as the same filing.
+    return `${employeeId}|${employeeName}|${rowsKey}`;
   }
 
   function findDuplicateEntry(data, all){
-    const target = normalizeForCompare(data);
-    return Object.keys(all).find(id => normalizeForCompare(all[id]) === target) || null;
+    const target = buildDuplicateKey(data);
+    if(!target || !target.includes('|')) return null;
+
+    return Object.keys(all).find(id => {
+      const current = all[id];
+      if(!current) return false;
+      const currentKey = buildDuplicateKey(current);
+      return currentKey === target;
+    }) || null;
   }
 
   // Saves the current form to the local database. Returns {ok, reason}.
@@ -489,17 +515,22 @@
         setStatus(validation);
         return;
       }
+      const duplicates = lsGetAll();
+      if(findDuplicateEntry(data, duplicates)){
+        setStatus('Duplicate overtime filing blocked: same employee ID/name/date and OT hours already saved.');
+        return;
+      }
       window.parent.postMessage({type:'overtime-save', data}, '*');
       setStatus('Saving overtime form to the courier system...');
       return;
     }
     const result = saveCurrentEntryToLocalDb();
-    if(result.reason){
-      setStatus(result.reason);
+    if(result.reason === 'duplicate'){
+      setStatus('Duplicate overtime filing blocked: same employee ID/name/date and OT hours already saved.');
       return;
     }
-    if(result.reason === 'duplicate'){
-      setStatus('This entry is already saved — no duplicate created.');
+    if(result.reason){
+      setStatus(result.reason);
       return;
     }
     if(result.ok){
