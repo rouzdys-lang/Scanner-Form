@@ -4960,8 +4960,11 @@
 
     allRecords.forEach(r => {
       const cached = hotCache.get(r.tracking_number);
-      if (cached) {
-        if (cached._inReleased) existingInReleased.set(r.tracking_number, { date: cached.released_date || '', source: cached.original_source || '' });
+      const cachedBelongsToTarget = !cached || !cached.data_source || String(cached.data_source).toUpperCase() === String(target).toUpperCase();
+      if (cached && cachedBelongsToTarget) {
+        const releasedSource = cached.original_source || cached.data_source || '';
+        const releasedBelongsToTarget = !cached._inReleased || !releasedSource || String(releasedSource).toUpperCase() === String(target).toUpperCase();
+        if (cached._inReleased && releasedBelongsToTarget) existingInReleased.set(r.tracking_number, { date: cached.released_date || '', source: releasedSource });
         else if (!cached._notFound) existingInEntries.set(r.tracking_number, cached.data_source || '');
       } else { uncached.push(r.tracking_number); }
     });
@@ -4973,12 +4976,19 @@
         const batch = uncached.slice(i, i + CHECK_BATCH);
         const inList = batch.map(t => `"${t}"`).join(',');
         try {
-          const found = await sbFetch(`entries?tracking_number=in.(${inList})&select=tracking_number,data_source,id,last_name,first_name,status`);
+          const targetFilter = `&data_source=eq.${encodeURIComponent(target)}`;
+          const found = await sbFetch(`entries?tracking_number=in.(${inList})${targetFilter}&select=tracking_number,data_source,id,last_name,first_name,status`);
           if (found) found.forEach(r => { existingInEntries.set(r.tracking_number, r.data_source); hotCache.set(r.tracking_number, { ...r, _inReleased: false }); });
         } catch(e) {}
         try {
           const foundRel = await sbFetch(`released_entries?tracking_number=in.(${inList})&select=*`);
-          if (foundRel) foundRel.forEach(r => { existingInReleased.set(r.tracking_number, { date: r.released_date, source: r.original_source }); hotCache.set(r.tracking_number, { ...r, _inReleased: true, original_source: r.original_source || r.data_source }); });
+          if (foundRel) foundRel.forEach(r => {
+            const releasedSource = r.original_source || r.data_source || '';
+            if (!releasedSource || String(releasedSource).toUpperCase() === String(target).toUpperCase()) {
+              existingInReleased.set(r.tracking_number, { date: r.released_date, source: releasedSource });
+              hotCache.set(r.tracking_number, { ...r, _inReleased: true, original_source: releasedSource });
+            }
+          });
         } catch(e) {}
       }
       updateCacheBadge();
