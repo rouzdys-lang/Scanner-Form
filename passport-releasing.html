@@ -4619,7 +4619,8 @@
 
   // ==================== EXPORT ENTRIES (ENTIRE DB) ====================
   async function exportEntriesCSV() {
-    const db = document.getElementById('dbFilter')?.value || currentDB || '';
+    const rawDb = document.getElementById('dbFilter')?.value || currentDB || '';
+    const db = (rawDb === ALL_DB_FILTER && isWexpressDatabaseName(String(currentDB || ''))) ? String(currentDB || '') : rawDb;
     const search = dbSearchTerm || '';
     let allRows = [];
     let offset = 0;
