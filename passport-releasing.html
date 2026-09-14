@@ -725,7 +725,11 @@
           <div class="scan-input-wrap">
             <input class="scan-input" id="scanInput" placeholder="Scan barcode here..." autocomplete="off" />
           </div>
-          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;">
+          <div id="wexpressFormatHint" style="display:none;font-size:11px;color:var(--warning);background:rgba(245,158,11,0.08);border:1px solid rgba(245,158,11,0.25);border-radius:8px;padding:8px 10px;margin-top:8px;line-height:1.5;">
+            Expected WEXPRESS HWB format: 11 digits only (example: 10026135058)
+          </div>
+          <div style="margin-top:8px;display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+            <button id="wexpressModeBtn" type="button" class="btn btn-success" onclick="toggleWexpressMode()" style="padding:8px 12px;font-size:11px;">WEXPRESS HWB mode: ON</button>
             <label style="font-size:12px;display:flex;align-items:center;gap:8px;">
               <input type="checkbox" id="allowHoldScan" style="margin:0;" />
               Allow scanning <strong>Hold For Pick Up</strong>
@@ -2810,12 +2814,42 @@
   }
 
   // ==================== SCANNER ====================
+  let wexpressScanMode = true;
+
+  function toggleWexpressMode() {
+    if (currentDB !== 'WEXPRESS') {
+      toast('Switch the current database to WEXPRESS before using HWB scan mode.', 'warning');
+      return;
+    }
+    wexpressScanMode = !wexpressScanMode;
+    const btn = document.getElementById('wexpressModeBtn');
+    if (btn) {
+      btn.textContent = wexpressScanMode ? 'WEXPRESS HWB mode: ON' : 'WEXPRESS HWB mode: OFF';
+      btn.className = wexpressScanMode ? 'btn btn-success' : 'btn btn-muted';
+    }
+    const hint = document.getElementById('wexpressFormatHint');
+    if (hint) {
+      hint.style.display = wexpressScanMode ? 'block' : 'none';
+    }
+    toast(wexpressScanMode ? 'WEXPRESS HWB scan mode enabled.' : 'WEXPRESS HWB scan mode disabled.', 'info');
+  }
+
   function selectDB(db) {
     if (currentUser && !getUserAllowedDatabases(currentUser).includes(db)) {
       toast(`Access denied: ${db} is not assigned to your account`, 'error');
       db = ensureDatabaseAccess(currentDB);
     }
     currentDB = db;
+    wexpressScanMode = (db === 'WEXPRESS');
+    const btn = document.getElementById('wexpressModeBtn');
+    if (btn) {
+      btn.textContent = wexpressScanMode ? 'WEXPRESS HWB mode: ON' : 'WEXPRESS HWB mode: OFF';
+      btn.className = wexpressScanMode ? 'btn btn-success' : 'btn btn-muted';
+    }
+    const hint = document.getElementById('wexpressFormatHint');
+    if (hint) {
+      hint.style.display = (db === 'WEXPRESS' && wexpressScanMode) ? 'block' : 'none';
+    }
     document.getElementById('currentDB').textContent = db;
     updateDashboardSummary();
     // Sync dropdown value
@@ -2831,7 +2865,16 @@
   let todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: '' };
 
   function getScanTrackingLength() {
-    return currentDB === 'WEXPRESS' ? 11 : TRACKING_LENGTH;
+    return (currentDB === 'WEXPRESS' && wexpressScanMode) ? 11 : TRACKING_LENGTH;
+  }
+
+  function normalizeWexpressCode(value) {
+    return String(value || '').replace(/[^A-Za-z0-9]/g, '').toUpperCase();
+  }
+
+  function isValidWexpressHwb(value) {
+    const cleaned = normalizeWexpressCode(value);
+    return /^\d{11}$/.test(cleaned);
   }
 
   function getTodayKey() {
@@ -2997,6 +3040,11 @@
   async function processScan(trackingNum) {
     trackingNum = trackingNum.toUpperCase().trim();
     if (!trackingNum) return;
+
+    if (currentDB === 'WEXPRESS' && wexpressScanMode && !isValidWexpressHwb(trackingNum)) {
+      toast(`Invalid WEXPRESS HWB: ${trackingNum}. Expected 11 digits only.`, 'error');
+      return;
+    }
 
     // â”€â”€ DUPLICATE CHECK: already in this session â”€â”€
     if (scanSession.find(s => s.tracking === trackingNum)) {
@@ -3354,21 +3402,31 @@
     const raw = document.getElementById('bulkArea').value;
     if (!raw.trim()) return;
 
+    const bulkChunkLength = (currentDB === 'WEXPRESS' && wexpressScanMode) ? 11 : TRACKING_LENGTH;
+
     // â”€â”€ Parse + deduplicate + split concatenated barcodes â”€â”€
     const seen = new Set();
     const lines = [];
     raw.split('\n').forEach(line => {
       line = line.trim().toUpperCase();
       if (!line) return;
-      if (line.length > TRACKING_LENGTH && line.length % TRACKING_LENGTH === 0) {
-        for (let i = 0; i < line.length; i += TRACKING_LENGTH) {
-          const chunk = line.slice(i, i + TRACKING_LENGTH);
+      if (currentDB === 'WEXPRESS' && wexpressScanMode && !isValidWexpressHwb(line)) {
+        return; // ignore invalid WEXPRESS HWB entries in bulk scan
+      }
+      if (line.length > bulkChunkLength && line.length % bulkChunkLength === 0) {
+        for (let i = 0; i < line.length; i += bulkChunkLength) {
+          const chunk = line.slice(i, i + bulkChunkLength);
           if (!seen.has(chunk)) { seen.add(chunk); lines.push(chunk); }
         }
       } else {
         if (!seen.has(line)) { seen.add(line); lines.push(line); }
       }
     });
+
+    if ((currentDB === 'WEXPRESS' && wexpressScanMode) && lines.length === 0) {
+      toast('No valid WEXPRESS HWB entries were found in the bulk input.', 'warning');
+      return;
+    }
 
     if (lines.length === 0) return;
     document.getElementById('bulkArea').value = '';
@@ -4914,6 +4972,7 @@
     dataRows.forEach(row => {
       if (!row || row.every(c => !c && c !== 0)) return; // skip empty rows
       const hwb = getVal(row, 'hwb_number').toUpperCase().replace(/\s+/g,'');
+      if (target === 'WEXPRESS' && !isValidWexpressHwb(hwb)) return; // skip invalid WEXPRESS HWB rows
       const tn = (target === 'WEXPRESS' ? hwb : (hwb || getVal(row, 'tracking_number'))).toUpperCase().replace(/\s+/g,'');
       if (!tn || tn.length < 5) return; // skip if no tracking number
       if (seenInFile.has(tn)) { filedupes.push(tn); return; }
