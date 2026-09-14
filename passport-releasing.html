@@ -5023,7 +5023,7 @@
       address:         ['address','delivery address','deliveryaddress'],
       destination_station: ['destination station','destination','station'],
       consignee:       ['consignee','recipient'],
-      consignee_address: ['consignee address','consigneeaddress'],
+      consignee_address: ['consignee address','consigneeaddress','consignee addr','delivery address','deliveryaddress','address'],
       contact_number:  ['mobile 1','mobile1','mobile','contact number','contactnumber','phone','contact'],
       contact_number2: ['mobile 2','mobile2','contact number 2','contactnumber2','contact2','alt mobile'],
       date_applied:    ['date applied','dateapplied','date_applied'],
@@ -5071,13 +5071,17 @@
       if (seenInFile.has(tn)) { filedupes.push(tn); return; }
       seenInFile.add(tn);
       const podSeries = getVal(row, 'status');
-      const consigneeRaw = getVal(row, 'consignee') || getVal(row, 'last_name') || getVal(row, 'first_name') || '';
-      const splitName = splitConsigneeName(consigneeRaw || `${getVal(row,'last_name') || ''} ${getVal(row,'first_name') || ''}`.trim());
+      const consigneeRaw = getVal(row, 'consignee') || '';
+      const nameFallback = `${getVal(row,'last_name') || ''} ${getVal(row,'first_name') || ''}`.trim();
+      const consigneeValue = consigneeRaw || nameFallback;
+      const splitName = splitConsigneeName(consigneeValue);
       const lastName = getVal(row, 'last_name') || splitName.last_name || '';
       const firstName = getVal(row, 'first_name') || splitName.first_name || '';
       const middleName = getVal(row, 'middle_name') || splitName.middle_name || '';
       const destinationStation = getVal(row, 'destination_station') || '';
-      const consigneeAddress = getVal(row, 'consignee_address') || getVal(row, 'address') || '';
+      const consigneeAddress = target === 'WEXPRESS'
+        ? getVal(row, 'consignee_address')
+        : getVal(row, 'address');
       const address = target === 'WEXPRESS' ? consigneeAddress : getVal(row, 'address');
       allRecords.push({
         id: 'e_' + Date.now() + Math.random().toString(36).slice(2, 8),
@@ -5088,7 +5092,7 @@
         middle_name:     middleName,
         address,
         destination_station: destinationStation,
-        consignee:       consigneeRaw,
+        consignee:       consigneeValue,
         consignee_address: consigneeAddress,
         contact_number:  getVal(row, 'contact_number'),
         contact_number2: getVal(row, 'contact_number2'),
