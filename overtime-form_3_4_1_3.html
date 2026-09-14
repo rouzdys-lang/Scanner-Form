@@ -266,6 +266,17 @@
   const embeddedInCourierApp = window.self !== window.top;
   let rowId = 0;
 
+  function confirmOvertimeSubmission() {
+    return new Promise(resolve => {
+      const overlay = document.createElement('div');
+      overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:9999;';
+      overlay.innerHTML = '<div style="background:#fff;color:#111;padding:24px;border-radius:10px;max-width:360px;width:calc(100% - 32px);text-align:center;box-shadow:0 12px 35px rgba(0,0,0,.25);"><div style="font-size:18px;font-weight:700;margin-bottom:10px;">Confirm overtime submission?</div><div style="font-size:13px;margin-bottom:18px;">Do you want to save this overtime form?</div><div style="display:flex;gap:10px;justify-content:center;"><button type="button" data-confirm="no" style="padding:9px 22px;border:1px solid #bbb;border-radius:6px;background:#f3f3f3;cursor:pointer;">No</button><button type="button" data-confirm="yes" style="padding:9px 22px;border:0;border-radius:6px;background:#1677ff;color:#fff;cursor:pointer;">Yes</button></div></div>';
+      document.body.appendChild(overlay);
+      overlay.querySelector('[data-confirm="no"]').onclick = () => { overlay.remove(); resolve(false); };
+      overlay.querySelector('[data-confirm="yes"]').onclick = () => { overlay.remove(); resolve(true); };
+    });
+  }
+
   if(embeddedInCourierApp){
     document.documentElement.classList.add('embedded-overtime');
   }
@@ -507,7 +518,7 @@
     return { ok: saved, reason: saved ? null : 'storage-failed' };
   }
 
-  window.saveRecord = function(){
+  window.saveRecord = async function(){
     if(embeddedInCourierApp){
       const data = collectFormData();
       const validation = validateSubmission(data);
@@ -518,6 +529,10 @@
       const duplicates = lsGetAll();
       if(findDuplicateEntry(data, duplicates)){
         setStatus('Duplicate overtime filing blocked: same employee ID/name/date and OT hours already saved.');
+        return;
+      }
+      if(!await confirmOvertimeSubmission()){
+        setStatus('Submission canceled.');
         return;
       }
       window.parent.postMessage({type:'overtime-save', data}, '*');
