@@ -629,7 +629,7 @@
       <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
     </div>
     <div id="overtime-form-authorization" class="overtime-form-panel">
-      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260827-authorization-fix" title="Overtime Authorization form"></iframe>
+      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260914-confirmation" title="Overtime Authorization form"></iframe>
     </div>
     <div id="overtime-form-rendered" class="overtime-form-panel active">
       <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
@@ -5180,6 +5180,8 @@
 
     // â”€â”€ Insert only non-duplicates â”€â”€
     let imported = 0;
+    let failed = 0;
+    let importError = '';
     const BATCH = 100;
     if (!navigator.onLine) {
       enqueueOfflineImport(toImport);
@@ -5194,9 +5196,14 @@
           prog.innerHTML = `<span style="color:var(--muted);">⌛ Inserting... ${imported}/${toImport.length}</span>`;
         } catch(e) {
           const remaining = toImport.slice(i);
-          enqueueOfflineImport(remaining);
-          imported += remaining.length;
-          prog.innerHTML = `<span style="color:var(--warning);">⚠ Network error — ${remaining.length} records queued locally for next sync.</span>`;
+          failed += remaining.length;
+          importError = e.message || 'Unknown database error';
+          if (!navigator.onLine) {
+            enqueueOfflineImport(remaining);
+            prog.innerHTML = `<span style="color:var(--warning);">⚠ Offline mode — ${remaining.length} records queued locally; none were saved to the database yet.</span>`;
+          } else {
+            prog.innerHTML = `<span style="color:var(--danger);">✖ Database rejected the import — ${remaining.length} record(s) were not saved.</span>`;
+          }
           break;
         }
       }
@@ -5205,12 +5212,16 @@
     // â”€â”€ Final report â”€â”€
     prog.innerHTML = `
       <div style="margin-bottom:10px;">
-        <span style="color:var(--success);font-weight:700;font-size:14px;">✓ Import Complete</span>
+        <span style="color:${failed ? 'var(--danger)' : 'var(--success)'};font-weight:700;font-size:14px;">${failed ? '✖ Import incomplete' : '✓ Import Complete'}</span>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;">
         <div style="background:rgba(34,197,94,0.1);border:1px solid var(--success);border-radius:6px;padding:10px;text-align:center;">
           <div style="font-size:22px;font-weight:800;color:var(--success);">${imported}</div>
           <div style="font-size:10px;color:var(--muted);">IMPORTED</div>
+        </div>
+        <div style="background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;padding:10px;text-align:center;">
+          <div style="font-size:22px;font-weight:800;color:var(--danger);">${failed}</div>
+          <div style="font-size:10px;color:var(--muted);">FAILED</div>
         </div>
         <div style="background:rgba(239,68,68,0.1);border:1px solid var(--danger);border-radius:6px;padding:10px;text-align:center;">
           <div style="font-size:22px;font-weight:800;color:var(--danger);">${totalSkipped}</div>
@@ -5221,10 +5232,12 @@
           <div style="font-size:10px;color:var(--muted);">TOTAL IN FILE</div>
         </div>
       </div>
+      ${failed && target === 'WEXPRESS' ? `<div style="color:var(--danger);font-size:11px;margin-bottom:8px;"><b>WEXPRESS database setup required:</b> Supabase rejected the WEXPRESS fields. Add <b>consignee</b>, <b>consignee_address</b>, and <b>destination_station</b> columns to the <b>entries</b> table, then import again.</div>` : ''}
+      ${failed && importError ? `<div style="color:var(--muted);font-size:10px;margin-bottom:8px;word-break:break-word;">Database error: ${String(importError).replace(/[&<>\"]/g, character => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character]))}</div>` : ''}
       ${buildSkipReport(filedupes, skippedEntries, skippedReleased)}`;
 
-    toast(`✓ Imported ${imported} | Skipped ${totalSkipped} duplicates`, imported > 0 ? 'success' : 'warning');
-    writeLog('IMPORT', `Imported ${imported} records to ${target}`, `Skipped: ${totalSkipped} duplicates`);
+    toast(`${failed ? 'Import incomplete' : '✓ Import complete'}: ${imported} saved | ${failed} failed | ${totalSkipped} skipped`, failed ? 'error' : (imported > 0 ? 'success' : 'warning'));
+    writeLog('IMPORT', `Imported ${imported} records to ${target}`, `Failed: ${failed}; Skipped: ${totalSkipped} duplicates`);
     // Update cache with newly imported records
     toImport.forEach(r => cacheAdd(r));
     updateCacheBadge();
