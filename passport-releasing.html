@@ -4331,14 +4331,14 @@
   }
 
   function getWexpressEntryDetails(r) {
-    const consignee = String(r.consignee || `${r.last_name || ''} ${r.first_name || ''}`.trim() || '').trim();
-    const split = splitConsigneeName(consignee);
+    const rawConsignee = String(r.consignee || '').trim();
+    const split = splitConsigneeName(rawConsignee || `${r.last_name || ''} ${r.first_name || ''}`.trim());
     const lastName = r.last_name || split.last_name || '';
     const firstName = r.first_name || split.first_name || '';
     const middleName = r.middle_name || split.middle_name || '';
-    const address = r.consignee_address || r.address || '';
-    const destination = r.destination_station || '';
-    const fullConsignee = r.consignee || `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
+    const address = String(r.consignee_address || r.address || '').trim();
+    const destination = String(r.destination_station || '').trim();
+    const fullConsignee = rawConsignee || `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
     return { lastName, firstName, middleName, address, destination, fullConsignee };
   }
 
@@ -4673,7 +4673,15 @@
     const dataRows = isWexpressExport
       ? allRows.map(r => {
           const w = getWexpressEntryDetails(r);
-          return [r.tracking_number || '', r.tracking_number || '', r.date_applied || '', w.destination || '', w.fullConsignee || '', w.address || '', r.status || ''];
+          return [
+            String(r.tracking_number || '').trim(),
+            String(r.tracking_number || '').trim(),
+            String(r.date_applied || '').trim(),
+            String(w.destination || '').trim(),
+            String(w.fullConsignee || '').trim(),
+            String(w.address || '').trim(),
+            String(r.status || '').trim()
+          ];
         })
       : allRows.map(r => [
           r.tracking_number, r.last_name, r.first_name, r.middle_name,
