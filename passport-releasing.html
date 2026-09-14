@@ -4923,11 +4923,8 @@
       const lastName = getVal(row, 'last_name') || consigneeParts[0] || '';
       const firstName = getVal(row, 'first_name') || consigneeParts[1] || '';
       const middleName = getVal(row, 'middle_name') || consigneeParts.slice(2).join(', ');
-      const station = getVal(row, 'destination_station');
       const consigneeAddress = getVal(row, 'consignee_address') || getVal(row, 'address');
-      const address = target === 'WEXPRESS'
-        ? [station, consigneeAddress].filter(Boolean).join(' | ')
-        : getVal(row, 'address');
+      const address = target === 'WEXPRESS' ? consigneeAddress : getVal(row, 'address');
       allRecords.push({
         id: 'e_' + Date.now() + Math.random().toString(36).slice(2, 8),
         tracking_number: tn,
