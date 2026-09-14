@@ -708,6 +708,7 @@
           <select id="dbDropdown" class="form-control" onchange="selectDB(this.value)" style="font-weight:700;font-size:13px;padding:10px 12px;border:2px solid var(--accent);border-radius:8px;color:var(--text);background:rgba(8,14,24,0.96);">
             <option value="ASEANA">ASEANA</option>
             <option value="POW">POW</option>
+            <option value="WEXPRESS">WEXPRESS</option>
             <!-- Megamall removed per request -->
             <option value="Resolved">✓ Resolved</option>
             <option value="Suspended">🚫 Suspended</option>
@@ -788,6 +789,7 @@
       <select id="dbFilter" class="form-control" style="width:200px;" onchange="dbCurrentPage=1;loadDBPage()">
         <option value="ASEANA">ASEANA</option>
         <option value="POW">POW</option>
+        <option value="WEXPRESS">WEXPRESS</option>
         <option value="Resolved">Resolved</option>
         <option value="Suspended">Suspended</option>
         <option value="Hold For Pick Up">Hold For Pick Up</option>
@@ -923,6 +925,7 @@
         <select id="importTarget" class="form-control">
           <option value="ASEANA">ASEANA</option>
           <option value="POW">POW</option>
+          <option value="WEXPRESS">WEXPRESS</option>
           <!-- Megamall removed per request -->
           <option value="Resolved">Resolved</option>
           <option value="Suspended">Suspended</option>
@@ -985,6 +988,17 @@
             <tr><td style="padding:3px 6px;">Document 1–5</td><td style="color:var(--muted);padding:3px 6px;">optional</td></tr>
           </table>
         </div>
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;grid-column:1 / -1;">
+          <div style="font-size:11px;font-weight:800;color:var(--success);margin-bottom:10px;">WEXPRESS — HWB MANIFEST</div>
+          <table style="width:100%;font-size:11px;border-collapse:collapse;">
+            <tr><td style="padding:3px 6px;"><span style="color:var(--danger);font-weight:700;">HWB No</span></td><td style="color:var(--muted);padding:3px 6px;">required and used for scanning</td></tr>
+            <tr style="background:rgba(0,0,0,0.03);"><td style="padding:3px 6px;">Tracking No</td><td style="color:var(--muted);padding:3px 6px;">optional reference</td></tr>
+            <tr><td style="padding:3px 6px;">Pick-up Date</td><td style="color:var(--muted);padding:3px 6px;">stored as date applied</td></tr>
+            <tr style="background:rgba(0,0,0,0.03);"><td style="padding:3px 6px;">Destination Station</td><td style="color:var(--muted);padding:3px 6px;">stored with the address</td></tr>
+            <tr><td style="padding:3px 6px;">Consignee</td><td style="color:var(--muted);padding:3px 6px;">stored as the name</td></tr>
+            <tr style="background:rgba(0,0,0,0.03);"><td style="padding:3px 6px;">Consignee Address</td><td style="color:var(--muted);padding:3px 6px;">stored as the delivery address</td></tr>
+          </table>
+        </div>
       </div>
 
       <div style="margin-top:12px;padding:10px 14px;background:rgba(26,86,219,0.06);border-left:3px solid var(--accent);border-radius:4px;font-size:11px;color:var(--muted);">
@@ -1011,6 +1025,7 @@
             <option value="">— Choose database —</option>
             <option value="ASEANA">ASEANA</option>
             <option value="POW">POW</option>
+            <option value="WEXPRESS">WEXPRESS</option>
             <!-- Megamall removed per request -->
             <option value="Resolved">Resolved</option>
             <option value="Suspended">Suspended</option>
@@ -1038,6 +1053,7 @@
           <select id="deleteTarget" class="form-control">
             <option value="ASEANA">ASEANA</option>
             <option value="POW">POW</option>
+            <option value="WEXPRESS">WEXPRESS</option>
             <!-- Megamall removed per request -->
             <option value="Resolved">Resolved</option>
             <option value="Suspended">Suspended</option>
@@ -1285,6 +1301,7 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="ASEANA" style="margin-right:6px;" /> ASEANA</label>
           <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="POW" style="margin-right:6px;" /> POW</label>
+          <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="WEXPRESS" style="margin-right:6px;" /> WEXPRESS</label>
           <!-- Megamall removed per request -->
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px;">Choose which primary database(s) this user may access. The default status databases remain visible to everyone.</div>
@@ -1544,7 +1561,7 @@
   }
   const PAGE_SIZE = 100;
   const BLOCKED_STATUSES = ['Change Address', 'Cancel Delivery']; // Hold For Pick Up handled separately with full-screen alert + hard stop
-  const DATABASE_MAIN = ['ASEANA','POW'];
+  const DATABASE_MAIN = ['ASEANA','POW','WEXPRESS'];
   const DATABASE_DEFAULT_STATUSES = ['Resolved','Suspended','Hold For Pick Up','Return to Origin','Cancelled Delivery','No Record and Rejected'];
   const DATABASE_ALL = [...DATABASE_MAIN, ...DATABASE_DEFAULT_STATUSES];
   // Global helper for detecting Hold-for-pick-up text variants
@@ -2807,11 +2824,15 @@
   }
 
   // ==================== SMART SCANNER ENGINE ====================
-  const TRACKING_LENGTH = 12;   // exact digit count of your tracking numbers
+  const TRACKING_LENGTH = 12;   // standard tracking number length
   const scanQueue = [];          // queue of tracking numbers waiting to be processed
   let scanProcessing = false;    // true while queue is being drained
   let scanBufferTimer = null;
   let todayActivity = { scans: 0, releases: 0, exports: 0, imports: 0, day: '' };
+
+  function getScanTrackingLength() {
+    return currentDB === 'WEXPRESS' ? 11 : TRACKING_LENGTH;
+  }
 
   function getTodayKey() {
     return new Date().toISOString().slice(0, 10);
@@ -2872,8 +2893,9 @@
     const val = scanInputEl.value.trim();
     scanInputEl.value = '';
     if (!val) return false;
-    for (let i = 0; i < val.length; i += TRACKING_LENGTH) {
-      enqueue(val.slice(i, i + TRACKING_LENGTH));
+    const scanLength = getScanTrackingLength();
+    for (let i = 0; i < val.length; i += scanLength) {
+      enqueue(val.slice(i, i + scanLength));
     }
     return true;
   }
@@ -2883,10 +2905,11 @@
     scanInputEl.addEventListener('input', function() {
       const val = this.value;
 
-      // As soon as we have 12 or more chars, grab complete 12-digit chunks immediately
-      while (this.value.length >= TRACKING_LENGTH) {
-        const chunk = this.value.slice(0, TRACKING_LENGTH);
-        this.value = this.value.slice(TRACKING_LENGTH); // remove first 12 chars instantly
+      const scanLength = getScanTrackingLength();
+      // Grab complete scanner chunks immediately; WEXPRESS HWBs are 11 digits.
+      while (this.value.length >= scanLength) {
+        const chunk = this.value.slice(0, scanLength);
+        this.value = this.value.slice(scanLength);
         enqueue(chunk);
       }
 
@@ -2985,14 +3008,16 @@
 
     // â”€â”€ HOT CACHE LOOKUP â”€â”€
     let record = hotCache.get(trackingNum);
+    if (currentDB === 'WEXPRESS' && record && record.data_source !== 'WEXPRESS') record = null;
 
     if (!record) {
       // Cache miss â€” fetch from DB (only happens once per unique tracking number)
       try {
         // Check released first (parallel with entries lookup)
+        const entryFilter = currentDB === 'WEXPRESS' ? '&data_source=eq.WEXPRESS' : '';
         const [relRes, entRes] = await Promise.all([
           sbFetch(`released_entries?tracking_number=eq.${encodeURIComponent(trackingNum)}&select=*&limit=1`),
-          sbFetch(`entries?tracking_number=eq.${encodeURIComponent(trackingNum)}&select=*&limit=1`)
+          sbFetch(`entries?tracking_number=eq.${encodeURIComponent(trackingNum)}${entryFilter}&select=*&limit=1`)
         ]);
         if (relRes && relRes.length > 0) {
           record = { ...relRes[0], _inReleased: true, original_source: relRes[0].original_source || relRes[0].data_source };
@@ -3384,7 +3409,8 @@
         const batch = chunks.slice(i, i + CONCURRENCY);
         const results = await Promise.all(batch.map(b => {
           const inList = b.map(t => `"${t}"`).join(',');
-          return sbFetch(`entries?tracking_number=in.(${inList})&select=id,tracking_number,data_source,last_name,first_name,middle_name,address,contact_number,contact_number2,status,date_applied,dor_from,dor_to`).catch(() => []);
+          const sourceFilter = currentDB === 'WEXPRESS' ? '&data_source=eq.WEXPRESS' : '';
+          return sbFetch(`entries?tracking_number=in.(${inList})${sourceFilter}&select=id,tracking_number,data_source,last_name,first_name,middle_name,address,contact_number,contact_number2,status,date_applied,dor_from,dor_to`).catch(() => []);
         }));
         results.flat().forEach(r => {
           hotCache.set(r.tracking_number, { ...r, _inReleased: false });
@@ -4816,9 +4842,9 @@
     if (allRows.length === 0) { prog.textContent = 'âš ï¸ No data found in file.'; return; }
 
     // â”€â”€ AUTO-DETECT HEADER ROW (scans first 20 rows) â”€â”€
-    const HEADER_KEYWORDS = ['tracking','lastname','last name','firstname','first name',
+    const HEADER_KEYWORDS = ['hwb','tracking','lastname','last name','firstname','first name',
       'middlename','middle name','address','mobile','pod','pod series','no',
-      'date applied','date of release','dor'];
+      'pick-up date','pickup date','destination station','consignee','date applied','date of release','dor'];
     let headerRowIdx = -1;
     for (let i = 0; i < Math.min(allRows.length, 20); i++) {
       const row = allRows[i].map(c => String(c||'').toLowerCase().trim());
@@ -4838,11 +4864,15 @@
     // No, Tracking, LastName, FirstName, MiddleName, Address, Mobile 1, Mobile 2,
     // Date Applied, Date of release From, Date of release to, POD Series
     const COL_MAP = {
-      tracking_number: ['tracking','tracking number','trackingnumber','tracking_number'],
+      hwb_number:      ['hwb no','hwb number','hwb','hwb_no'],
+      tracking_number: ['tracking','tracking no','tracking number','trackingnumber','tracking_number'],
       last_name:       ['lastname','last name','last_name','surname'],
       first_name:      ['firstname','first name','first_name','given name'],
       middle_name:     ['middlename','middle name','middle_name','mi'],
       address:         ['address','delivery address','deliveryaddress'],
+      destination_station: ['destination station','destination','station'],
+      consignee:       ['consignee','recipient'],
+      consignee_address: ['consignee address','consigneeaddress'],
       contact_number:  ['mobile 1','mobile1','mobile','contact number','contactnumber','phone','contact'],
       contact_number2: ['mobile 2','mobile2','contact number 2','contactnumber2','contact2','alt mobile'],
       date_applied:    ['date applied','dateapplied','date_applied'],
@@ -4883,19 +4913,29 @@
 
     dataRows.forEach(row => {
       if (!row || row.every(c => !c && c !== 0)) return; // skip empty rows
-      const tn = getVal(row, 'tracking_number').toUpperCase().replace(/\s+/g,'');
+      const hwb = getVal(row, 'hwb_number').toUpperCase().replace(/\s+/g,'');
+      const tn = (target === 'WEXPRESS' ? hwb : (hwb || getVal(row, 'tracking_number'))).toUpperCase().replace(/\s+/g,'');
       if (!tn || tn.length < 5) return; // skip if no tracking number
       if (seenInFile.has(tn)) { filedupes.push(tn); return; }
       seenInFile.add(tn);
       const podSeries = getVal(row, 'status');
+      const consigneeParts = getVal(row, 'consignee').split(',').map(part => part.trim()).filter(Boolean);
+      const lastName = getVal(row, 'last_name') || consigneeParts[0] || '';
+      const firstName = getVal(row, 'first_name') || consigneeParts[1] || '';
+      const middleName = getVal(row, 'middle_name') || consigneeParts.slice(2).join(', ');
+      const station = getVal(row, 'destination_station');
+      const consigneeAddress = getVal(row, 'consignee_address') || getVal(row, 'address');
+      const address = target === 'WEXPRESS'
+        ? [station, consigneeAddress].filter(Boolean).join(' | ')
+        : getVal(row, 'address');
       allRecords.push({
         id: 'e_' + Date.now() + Math.random().toString(36).slice(2, 8),
         tracking_number: tn,
         data_source:     target,
-        last_name:       getVal(row, 'last_name'),
-        first_name:      getVal(row, 'first_name'),
-        middle_name:     getVal(row, 'middle_name'),
-        address:         getVal(row, 'address'),
+        last_name:       lastName,
+        first_name:      firstName,
+        middle_name:     middleName,
+        address,
         contact_number:  getVal(row, 'contact_number'),
         contact_number2: getVal(row, 'contact_number2'),
         date_applied:    getVal(row, 'date_applied'),
@@ -6598,6 +6638,7 @@
     const finalAssigned = assigned.length === 0 && user.role !== 'viewer' ? [...DATABASE_MAIN] : assigned;
     const hasASEANA = finalAssigned.includes('ASEANA');
     const hasPOW = finalAssigned.includes('POW');
+    const hasWEXPRESS = finalAssigned.includes('WEXPRESS');
     const hasMegamall = finalAssigned.includes('Megamall');
     panel.style.display = 'block';
     panel.innerHTML = `
@@ -6618,6 +6659,7 @@
         <div style="display:flex;gap:10px;flex-wrap:wrap;">
           <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="ASEANA" style="margin-right:6px;" ${hasASEANA ? 'checked' : ''} /> ASEANA</label>
           <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="POW" style="margin-right:6px;" ${hasPOW ? 'checked' : ''} /> POW</label>
+          <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="WEXPRESS" style="margin-right:6px;" ${hasWEXPRESS ? 'checked' : ''} /> WEXPRESS</label>
           <label style="font-size:12px;cursor:pointer;"><input type="checkbox" data-allowed-db value="Megamall" style="margin-right:6px;" ${hasMegamall ? 'checked' : ''} /> Megamall</label>
         </div>
         <div style="font-size:11px;color:var(--muted);margin-top:6px;">Choose which primary database(s) this user may access. The default status databases remain visible to everyone.
