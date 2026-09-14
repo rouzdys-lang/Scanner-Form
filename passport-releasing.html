@@ -4056,9 +4056,6 @@
       first_name: s.row?.first_name || '',
       middle_name: s.row?.middle_name || '',
       address: s.row?.address || '',
-      consignee: s.row?.consignee || '',
-      consignee_address: s.row?.consignee_address || s.row?.address || '',
-      destination_station: s.row?.destination_station || '',
       contact_number: s.row?.contact_number || '',
       contact_number2: s.row?.contact_number2 || '',
       date_applied: s.row?.date_applied || '',
@@ -4602,6 +4599,7 @@
 
     // Build query with date filters
     let qs = `released_entries?order=released_date.desc,id.desc`;
+    if (isWexpressExport) qs += '&original_source=eq.WEXPRESS';
     if (from) qs += `&released_date=gte.${from}`;
     if (to) qs += `&released_date=lte.${to}`;
 
