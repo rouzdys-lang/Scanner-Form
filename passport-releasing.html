@@ -4081,7 +4081,7 @@
         contact_number: row.contact_number || '',
         contact_number2: row.contact_number2 || '',
         date_applied: row.date_applied || '',
-        dor_from: row.dor_from || '',
+        dor_from: wexpressDetails?.destination || row.dor_from || '',
         dor_to: row.dor_to || '',
         status: 'Released',
         scan_date: now,
@@ -4665,7 +4665,7 @@
             String(r.tracking_number || '').trim(),
             String(r.tracking_number || '').trim(),
             String(r.date_applied || '').trim(),
-            String(r.destination_station || w.destination || '').trim(),
+            String(r.destination_station || r.destination || r.station || r.dor_from || w.destination || '').trim(),
             String(r.consignee || w.fullConsignee || '').trim(),
             String(r.consignee_address || w.address || '').trim(),
             String(r.status || 'Released').trim()
