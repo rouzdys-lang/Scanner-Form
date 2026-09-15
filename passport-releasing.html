@@ -4375,7 +4375,7 @@
     const firstName = r.first_name || split.first_name || '';
     const middleName = r.middle_name || split.middle_name || '';
     const address = String(r.consignee_address || r.address || '').trim();
-    const destination = String(r.destination_station || '').trim();
+    const destination = String(r.destination_station || r.destination || r.station || '').trim();
     const fullConsignee = rawConsignee || `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
     return { lastName, firstName, middleName, address, destination, fullConsignee };
   }
