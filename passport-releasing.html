@@ -4388,7 +4388,13 @@
     const firstName = r.first_name || split.first_name || '';
     const middleName = r.middle_name || split.middle_name || '';
     const address = String(r.consignee_address || r.address || '').trim();
-    const destination = String(r.destination_station || r.destination || r.station || r.dor_from || '').trim();
+    const destinationField = Object.entries(r || {}).find(([key, value]) => {
+      const normalizedKey = key.toLowerCase().replace(/[^a-z0-9]/g, '');
+      return normalizedKey.includes('destination') || normalizedKey === 'station';
+    });
+    const destination = String(
+      r.destination_station || r.destination || r.station || destinationField?.[1] || r.dor_from || ''
+    ).trim();
     const fullConsignee = rawConsignee || `${firstName}${lastName ? ' ' + lastName : ''}`.trim();
     return { lastName, firstName, middleName, address, destination, fullConsignee };
   }
