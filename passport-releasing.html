@@ -4040,9 +4040,22 @@
 
   // ==================== EXPORT RELEASED ====================
   async function exportReleased() {
-    const valid = scanSession.filter(s => !s.blocked && s.status !== 'not-found');
+    let valid = scanSession.filter(s => !s.blocked && s.status !== 'not-found');
     if (valid.length === 0) { toast('No valid scans to release', 'warning'); return; }
     if (!confirm(`This will RELEASE ${valid.length} items.\nThey will be:\n• Exported to Excel\n• Moved to Released DB\n• Deleted from main database\n\nContinue?`)) return;
+
+    // WEXPRESS exports must use the live row so destination_station is not lost
+    // when an older saved scan session is released.
+    if (isWexpressDatabaseName(currentDB) && navigator.onLine) {
+      valid = await Promise.all(valid.map(async item => {
+        try {
+          const rows = await sbFetch(`entries?tracking_number=eq.${encodeURIComponent(item.tracking)}&data_source=eq.WEXPRESS&select=*&limit=1`);
+          return rows?.[0] ? { ...item, row: rows[0], id: rows[0].id } : item;
+        } catch (e) {
+          return item;
+        }
+      }));
+    }
 
     const verifier = document.getElementById('verifierName').value.trim() || 'Unknown';
     const now = new Date().toISOString();
