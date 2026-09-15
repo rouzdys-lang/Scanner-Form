@@ -4050,29 +4050,33 @@
 
     toast('Processing release...', 'info');
 
-    // 1. Build released_entries records
-    const releasedRecords = valid.map(s => ({
-      id: 'rel_' + s.tracking + '_' + Date.now() + Math.random().toString(36).slice(2, 6),
-      tracking_number: s.tracking,
-      original_source: s.source || currentDB,
-      last_name: s.row?.last_name || '',
-      first_name: s.row?.first_name || '',
-      middle_name: s.row?.middle_name || '',
-      address: s.row?.address || '',
-      consignee: s.row?.consignee || `${s.row?.first_name || ''} ${s.row?.last_name || ''}`.trim(),
-      consignee_address: s.row?.consignee_address || s.row?.address || '',
-      destination_station: s.row?.destination_station || '',
-      contact_number: s.row?.contact_number || '',
-      contact_number2: s.row?.contact_number2 || '',
-      date_applied: s.row?.date_applied || '',
-      dor_from: s.row?.dor_from || '',
-      dor_to: s.row?.dor_to || '',
-      status: 'Released',
-      scan_date: now,
-      released_at: now,
-      released_date: today,
-      created_at: s.row?.created_at || now
-    }));
+    // 1. Build released_entries records. The Released DB keeps the shared schema;
+    // WEXPRESS-only columns are used for export but are not sent to this table.
+    const releasedRecords = valid.map(s => {
+      const row = s.row || {};
+      const wexpressDetails = isWexpressDatabaseName(currentDB)
+        ? getWexpressEntryDetails(row)
+        : null;
+      return {
+        id: 'rel_' + s.tracking + '_' + Date.now() + Math.random().toString(36).slice(2, 6),
+        tracking_number: s.tracking,
+        original_source: s.source || currentDB,
+        last_name: row.last_name || wexpressDetails?.lastName || '',
+        first_name: row.first_name || wexpressDetails?.firstName || '',
+        middle_name: row.middle_name || wexpressDetails?.middleName || '',
+        address: row.address || row.consignee_address || '',
+        contact_number: row.contact_number || '',
+        contact_number2: row.contact_number2 || '',
+        date_applied: row.date_applied || '',
+        dor_from: row.dor_from || '',
+        dor_to: row.dor_to || '',
+        status: 'Released',
+        scan_date: now,
+        released_at: now,
+        released_date: today,
+        created_at: row.created_at || now
+      };
+    });
 
     // 2. Insert into released_entries
     try {
