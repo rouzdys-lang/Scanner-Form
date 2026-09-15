@@ -3468,7 +3468,7 @@
         const results = await Promise.all(batch.map(b => {
           const inList = b.map(t => `"${t}"`).join(',');
           const sourceFilter = currentDB === 'WEXPRESS' ? '&data_source=eq.WEXPRESS' : '';
-          return sbFetch(`entries?tracking_number=in.(${inList})${sourceFilter}&select=id,tracking_number,data_source,last_name,first_name,middle_name,address,contact_number,contact_number2,status,date_applied,dor_from,dor_to`).catch(() => []);
+          return sbFetch(`entries?tracking_number=in.(${inList})${sourceFilter}&select=id,tracking_number,data_source,last_name,first_name,middle_name,address,consignee,consignee_address,destination_station,contact_number,contact_number2,status,date_applied,dor_from,dor_to`).catch(() => []);
         }));
         results.flat().forEach(r => {
           hotCache.set(r.tracking_number, { ...r, _inReleased: false });
