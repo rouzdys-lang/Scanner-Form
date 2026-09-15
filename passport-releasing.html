@@ -3056,7 +3056,8 @@
 
     // â”€â”€ HOT CACHE LOOKUP â”€â”€
     let record = hotCache.get(trackingNum);
-    if (currentDB === 'WEXPRESS' && record && record.data_source !== 'WEXPRESS') record = null;
+    // WEXPRESS records must be refreshed so consignee fields cannot come from stale cache data.
+    if (currentDB === 'WEXPRESS') record = null;
 
     if (!record) {
       // Cache miss â€” fetch from DB (only happens once per unique tracking number)
@@ -3436,7 +3437,9 @@
     if (btn) btn.disabled = true;
 
     // â”€â”€ Split: cached vs uncached â”€â”€
-    const uncached = lines.filter(tn => !hotCache.has(tn));
+    const uncached = currentDB === 'WEXPRESS'
+      ? lines
+      : lines.filter(tn => !hotCache.has(tn));
     updateBtn(`▶ Fetching ${uncached.length} unknown...`);
     let fetched = 0;
 
@@ -4056,6 +4059,9 @@
       first_name: s.row?.first_name || '',
       middle_name: s.row?.middle_name || '',
       address: s.row?.address || '',
+      consignee: s.row?.consignee || `${s.row?.first_name || ''} ${s.row?.last_name || ''}`.trim(),
+      consignee_address: s.row?.consignee_address || s.row?.address || '',
+      destination_station: s.row?.destination_station || '',
       contact_number: s.row?.contact_number || '',
       contact_number2: s.row?.contact_number2 || '',
       date_applied: s.row?.date_applied || '',
@@ -4117,15 +4123,20 @@
     const headers = isWexpressRelease
       ? ['HWB No','Tracking No','Pick-up Date','Destination Station','Consignee','Consignee Address','Status']
       : ['Tracking Number','Last Name','First Name','Middle Name','Address','Contact Number 1','Contact Number 2','Released Date'];
-    const rows = items.map(s => isWexpressRelease ? [
-      String(s.tracking || '').trim(),
-      String(s.tracking || '').trim(),
-      String(s.row?.date_applied || '').trim(),
-      String(s.row?.destination_station || '').trim(),
-      String(s.row?.consignee || '').trim(),
-      String(s.row?.consignee_address || s.row?.address || '').trim(),
-      'Released'
-    ] : [
+    const rows = items.map(s => {
+      if (isWexpressRelease) {
+        const w = getWexpressEntryDetails(s.row || {});
+        return [
+          String(s.tracking || '').trim(),
+          String(s.tracking || '').trim(),
+          String(s.row?.date_applied || '').trim(),
+          String(w.destination || '').trim(),
+          String(w.fullConsignee || '').trim(),
+          String(w.address || '').trim(),
+          'Released'
+        ];
+      }
+      return [
       s.tracking,
       s.row?.last_name   || '',
       s.row?.first_name  || '',
@@ -4134,7 +4145,8 @@
       s.row?.contact_number  || '',
       s.row?.contact_number2 || '',
       today
-    ]);
+      ];
+    });
 
     const wb2 = makeStyledWorkbook(
       isWexpressRelease ? `DFAMPC - ${dbName} RELEASED` : `DFAMPC - ${dbName} RELEASED`,
