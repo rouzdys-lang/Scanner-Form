@@ -4057,6 +4057,14 @@
       }));
     }
 
+    if (isWexpressDatabaseName(currentDB)) {
+      const missingDestination = valid.filter(item => !getWexpressEntryDetails(item.row || {}).destination);
+      if (missingDestination.length > 0) {
+        toast('WEXPRESS destination is missing in the source record. Re-import the WEXPRESS manifest before releasing.', 'error');
+        return;
+      }
+    }
+
     const verifier = document.getElementById('verifierName').value.trim() || 'Unknown';
     const now = new Date().toISOString();
     const today = new Date().toISOString().slice(0, 10);
@@ -5153,6 +5161,11 @@
         const exactIndex = headers.findIndex(header => normalizeHeader(header) === normalizedName);
         if (exactIndex >= 0) colIdx[field] = exactIndex;
       }
+      const destinationIndex = headers.findIndex(header => {
+        const normalized = normalizeHeader(header);
+        return ['destinationstation', 'destination', 'destinationstn', 'deststation', 'station'].includes(normalized);
+      });
+      if (destinationIndex >= 0) colIdx.destination_station = destinationIndex;
     }
 
     function getVal(row, field) {
