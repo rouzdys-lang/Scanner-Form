@@ -114,6 +114,11 @@
     .overtime-record-tab { padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; background: rgba(8,14,24,0.9); color: var(--muted); font-size: 11px; font-weight: 800; cursor: pointer; }
     .overtime-record-tab.active { background: linear-gradient(135deg, rgba(102,243,225,0.18), rgba(69,184,255,0.14)); border-color: var(--accent); color: var(--text); }
     .overtime-frame { width: 100%; height: calc(100vh - 190px); min-height: 760px; border: 0; background: #fff; display: block; }
+    #overtimeMyRecords { margin-top: 16px; padding: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); }
+    #overtimeMyRecords h2 { margin-bottom: 10px; color: var(--accent); font-size: 14px; }
+    #overtimeMyRecords .table-wrap { overflow-x: auto; }
+    #overtimeMyRecords table { min-width: 900px; }
+    @media print { #overtimeMyRecords { display: none !important; } }
 
     /* SCANNER PAGE */
     .scanner-grid { display: grid; grid-template-columns: 380px 1fr; gap: 16px; }
@@ -634,6 +639,15 @@
     <div id="overtime-form-rendered" class="overtime-form-panel active">
       <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
     </div>
+    <section id="overtimeMyRecords" aria-labelledby="overtimeMyRecordsTitle">
+      <h2 id="overtimeMyRecordsTitle">My Overtime Records</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Filed</th><th>Employee</th><th>Filed By</th><th>Form</th><th>Overtime Date</th><th>Authorized Hours</th><th>Actual OT Hours</th><th>Reason</th></tr></thead>
+          <tbody id="overtimeMyRecordsBody"><tr><td colspan="8">Loading your overtime records...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <div id="page-overtime-records" class="page">
@@ -2749,20 +2763,34 @@
       if (frame === authorizationFrame) validateOvertimeAuthorization(data);
       else validateOvertimeSubmission(data);
       data.formType = frame === authorizationFrame ? 'authorization' : 'rendered';
+      const submittedBy = String(currentUser?.username || '');
+      const recordId = 'ot_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random().toString(36).slice(2, 10));
+      const submittedAt = new Date().toISOString();
+      const submissions = [{
+        id: recordId,
+        submitted_by: submittedBy,
+        submitted_by_name: String(data.name || '').trim(),
+        form_data: data,
+        created_at: submittedAt
+      }];
+      if (submittedBy && submittedBy.toLowerCase() !== 'supervisor') {
+        submissions.push({
+          id: `ot_supervisor_archive_${recordId}`,
+          submitted_by: 'supervisor',
+          submitted_by_name: String(data.name || '').trim(),
+          form_data: { ...data, supervisorArchiveCopy: true, masterOwnerUsername: submittedBy, masterOfRecordId: recordId },
+          created_at: submittedAt
+        });
+      }
       await sbFetch('overtime_submissions', {
         method: 'POST',
-        body: JSON.stringify({
-          id: 'ot_' + (crypto.randomUUID ? crypto.randomUUID() : Date.now() + Math.random().toString(36).slice(2, 10)),
-          submitted_by: currentUser ? currentUser.username : '',
-          submitted_by_name: String(data.name || '').trim(),
-          form_data: data,
-          created_at: new Date().toISOString()
-        })
+        body: JSON.stringify(submissions)
       });
       frame.contentWindow.postMessage({ type: 'overtime-reset' }, '*');
       if (frame === renderedFrame) setTimeout(() => { frame.src = frame.src; }, 50);
       frame.contentWindow.postMessage({type:'overtime-save-result', ok:true}, '*');
       toast('Overtime form saved successfully.', 'success');
+      loadMyOvertimeRecords();
     } catch(error){
       console.error('Overtime save failed:', error);
       frame.contentWindow.postMessage({type:'overtime-save-result', ok:false}, '*');
@@ -2809,6 +2837,7 @@
     if (name === 'released-db') { loadReleasedPage(); setTimeout(initRelScanner, 100); }
     if (name === 'bulk-delete') loadDBCounts();
     if (name === 'users') loadUsers();
+    if (name === 'overtime') loadMyOvertimeRecords();
     if (name === 'overtime-records') loadOvertimeRecords();
     if (name === 'logs') { logPage=1; loadActivityLog(); }
   }
@@ -6121,6 +6150,7 @@
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById('page-overtime').classList.add('active');
       setActiveNavOption('overtime');
+      loadMyOvertimeRecords();
     } else if (role === 'viewer') {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       document.getElementById('page-search').classList.add('active');
@@ -6251,10 +6281,16 @@
       : 'rendered';
   }
 
+  function isSupervisorArchiveRecord(record) {
+    const data = record?.form_data || {};
+    return data.supervisorArchiveCopy === true || String(data.supervisorArchiveCopy).toLowerCase() === 'true';
+  }
+
   function getVisibleOvertimeRecords() {
     const from = document.getElementById('overtimeDateFrom')?.value || '';
     const to = document.getElementById('overtimeDateTo')?.value || '';
     return overtimeRecords.filter(record => {
+      if (isSupervisorArchiveRecord(record)) return false;
       if (getOvertimeRecordType(record) !== overtimeRecordType) return false;
       const data = record.form_data || {};
       const date = String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '').slice(0, 10);
@@ -6439,6 +6475,31 @@
     }
   }
 
+  async function ensureSupervisorOvertimeArchives(records) {
+    const originals = [...new Map(records
+      .filter(record => !isSupervisorArchiveRecord(record))
+      .map(record => [String(record.id), record])).values()];
+    const archiveCopies = originals.map(record => ({
+      id: `ot_supervisor_archive_${record.id}`,
+      submitted_by: 'supervisor',
+      submitted_by_name: record.submitted_by_name || '',
+      form_data: {
+        ...(record.form_data || {}),
+        supervisorArchiveCopy: true,
+        masterOwnerUsername: record.submitted_by || '',
+        masterOfRecordId: String(record.id)
+      },
+      created_at: record.created_at || new Date().toISOString()
+    }));
+    for (let offset = 0; offset < archiveCopies.length; offset += 50) {
+      await sbFetch('overtime_submissions', {
+        method: 'POST',
+        headers: { ...HEADERS, 'Prefer': 'resolution=ignore-duplicates,return=representation' },
+        body: JSON.stringify(archiveCopies.slice(offset, offset + 50))
+      });
+    }
+  }
+
   async function deleteOvertimeRecord(id) {
     id = decodeURIComponent(String(id || ''));
     if (!canManageOvertimeRecords() || !String(id || '').trim()) {
@@ -6447,6 +6508,9 @@
     }
     if (!id || !confirm('Delete this overtime record permanently?')) return;
     try {
+      const record = await getFullOvertimeRecord({ id });
+      if (isSupervisorArchiveRecord(record)) throw new Error('Supervisor archive records cannot be deleted from this list.');
+      await ensureSupervisorOvertimeArchives([record]);
       const response = await fetch(`${SUPABASE_URL}/rest/v1/overtime_submissions?id=eq.${encodeURIComponent(String(id))}`, {
         method: 'DELETE',
         headers: { ...HEADERS, 'Prefer': 'return=representation' }
@@ -6502,6 +6566,7 @@
       const to = document.getElementById('overtimeDateTo')?.value || '';
       const records = allRecords.filter(record => {
         if (!selectedIds.has(String(record.id))) return false;
+        if (isSupervisorArchiveRecord(record)) return false;
         if (getOvertimeRecordType(record) !== overtimeRecordType) return false;
         const data = record.form_data || {};
         const date = String(data.dateAccomplished || data.accomplishedDate || data.dateSubmitted || data.submittedDate || '').slice(0, 10);
@@ -6562,6 +6627,7 @@
         return;
       }
 
+      await ensureSupervisorOvertimeArchives(records);
       let deleted = 0;
       const deleteIds = records.map(record => String(record.id));
       for (let offset = 0; offset < deleteIds.length; offset += 50) {
@@ -6666,6 +6732,109 @@
     }
   }
 
+  let myOvertimeAutoExportTimer = null;
+
+  function scheduleMyOvertimeAutoExport(username, lastExportAt) {
+    if (myOvertimeAutoExportTimer) clearTimeout(myOvertimeAutoExportTimer);
+    const interval = 30 * 24 * 60 * 60 * 1000;
+    const delay = Math.min(24 * 24 * 60 * 60 * 1000, Math.max(1000, lastExportAt ? interval - (Date.now() - lastExportAt) : 1000));
+    myOvertimeAutoExportTimer = setTimeout(() => {
+      if (currentUser?.username === username) loadMyOvertimeRecords();
+    }, delay);
+  }
+
+  async function autoExportMyOvertimeRecords(records, username) {
+    if (String(username).toLowerCase() === 'supervisor' || !records.length) return;
+    const storageKey = `dfampc_overtime_auto_export_${String(username).toLowerCase()}`;
+    const lastExportAt = Number(localStorage.getItem(storageKey)) || 0;
+    const interval = 30 * 24 * 60 * 60 * 1000;
+    if (lastExportAt && Date.now() - lastExportAt < interval) {
+      scheduleMyOvertimeAutoExport(username, lastExportAt);
+      return;
+    }
+
+    const headers = ['Filed At', 'Form Type', 'Employee', 'Work Date', 'Authorized Hours', 'Actual OT Hours', 'Reason', 'Total Form Hours'];
+    const rows = [];
+    records.forEach(record => {
+      const data = record.form_data || {};
+      const overtimeRows = Array.isArray(data.rows) ? data.rows : [];
+      overtimeRows.forEach(row => rows.push([
+        record.created_at || '',
+        getOvertimeRecordType(record),
+        data.name || data.employeeName || '',
+        row.date || '',
+        row.auth || '',
+        row.actual || '',
+        row.reason || '',
+        data.total || data.totalHours || ''
+      ]));
+    });
+    if (!rows.length) return;
+
+    const today = new Date();
+    const dateFile = today.toISOString().slice(0, 10).replace(/-/g, '');
+    const safeUsername = String(username).replace(/[^a-z0-9_-]+/gi, '_');
+    const sheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+    sheet['!cols'] = headers.map(header => ({ wch: Math.max(14, Math.min(32, header.length + 4)) }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, sheet, 'My Overtime');
+    XLSX.writeFile(workbook, `DFAMPC-OVERTIME-${safeUsername}-${dateFile}.xlsx`);
+    await ensureSupervisorOvertimeArchives(records);
+    const deletableRecords = records.filter(record =>
+      !isSupervisorArchiveRecord(record) && String(record.submitted_by || '').toLowerCase() === String(username).toLowerCase()
+    );
+    for (let offset = 0; offset < deletableRecords.length; offset += 50) {
+      const ids = deletableRecords.slice(offset, offset + 50).map(record => `"${String(record.id).replace(/"/g, '')}"`).join(',');
+      await sbFetch(`overtime_submissions?id=in.(${ids})&submitted_by=eq.${encodeURIComponent(username)}`, { method: 'DELETE' });
+    }
+    localStorage.setItem(storageKey, String(today.getTime()));
+    scheduleMyOvertimeAutoExport(username, today.getTime());
+    loadMyOvertimeRecords();
+  }
+
+  async function loadMyOvertimeRecords() {
+    const body = document.getElementById('overtimeMyRecordsBody');
+    const username = currentUser?.username;
+    if (!body || !username) return;
+    body.innerHTML = '<tr><td colspan="8">Loading your overtime records...</td></tr>';
+    try {
+      const [ownRecords, archiveResponse] = await Promise.all([
+        sbFetch(`overtime_submissions?submitted_by=eq.${encodeURIComponent(username)}&select=id,created_at,submitted_by,form_data&order=created_at.desc&limit=5000`),
+        sbFetch(`overtime_submissions?form_data-%3E%3EmasterOwnerUsername=eq.${encodeURIComponent(username)}&form_data-%3E%3EsupervisorArchiveCopy=eq.true&select=id,created_at,submitted_by,form_data&order=created_at.desc&limit=5000`).catch(error => {
+          console.warn('Could not load supervisor overtime archive:', error);
+          return [];
+        })
+      ]);
+      if (currentUser?.username !== username) return;
+      const ownedRecords = Array.isArray(ownRecords)
+        ? ownRecords.filter(record => String(record.submitted_by || '').toLowerCase() === String(username).toLowerCase())
+        : [];
+      const archiveRecords = Array.isArray(archiveResponse)
+        ? archiveResponse.filter(isSupervisorArchiveRecord)
+        : [];
+      const recordsById = new Map([...ownedRecords, ...archiveRecords].map(record => [String(record.id), record]));
+      const uniqueRecords = [...recordsById.values()];
+      const originalIds = new Set(uniqueRecords.filter(record => !isSupervisorArchiveRecord(record)).map(record => String(record.id)));
+      const visibleRecords = uniqueRecords.filter(record =>
+        !isSupervisorArchiveRecord(record) || !originalIds.has(String(record.form_data?.masterOfRecordId || ''))
+      );
+      const rows = visibleRecords.flatMap(record => {
+        const data = record.form_data || {};
+        const overtimeRows = Array.isArray(data.rows) ? data.rows : [];
+        const filedBy = isSupervisorArchiveRecord(record) ? data.masterOwnerUsername || 'N/A' : record.submitted_by || 'N/A';
+        return overtimeRows.map(row => `<tr><td>${escapeOvertimeText(record.created_at ? new Date(record.created_at).toLocaleString() : '')}</td><td>${escapeOvertimeText(data.name || data.employeeName || 'N/A')}</td><td>${escapeOvertimeText(filedBy)}</td><td>${escapeOvertimeText(getOvertimeRecordType(record))}</td><td>${escapeOvertimeText(row.date || 'N/A')}</td><td>${escapeOvertimeText(row.auth || 'N/A')}</td><td>${escapeOvertimeText(row.actual || 'N/A')}</td><td>${escapeOvertimeText(row.reason || 'N/A')}</td></tr>`);
+      });
+      body.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="8">No overtime records filed yet.</td></tr>';
+      try {
+        await autoExportMyOvertimeRecords(visibleRecords, username);
+      } catch (error) {
+        console.warn('Automatic overtime export failed:', error);
+      }
+    } catch (error) {
+      body.innerHTML = `<tr><td colspan="8">Could not load your overtime records: ${escapeOvertimeText(error.message)}</td></tr>`;
+    }
+  }
+
   async function loadOvertimeRecordsLegacy() {
     if (!canManageOvertimeRecords()) return;
     const body = document.getElementById('overtimeRecordsBody');
@@ -6720,7 +6889,7 @@
       const maxRecords = 5000;
       const records = [];
       for (let offset = 0; offset < maxRecords; offset += pageSize) {
-        const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Ejustification&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
+        const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Ejustification,form_data-%3E%3EsupervisorArchiveCopy,form_data-%3E%3EmasterOwnerUsername,form_data-%3E%3EmasterOfRecordId&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
         if (!Array.isArray(page) || page.length === 0) break;
         records.push(...page);
         if (page.length < pageSize) break;
@@ -6747,6 +6916,9 @@
           totalHours: record.totalHours || '',
           total: record.total || '',
           justification: record.justification || '',
+          supervisorArchiveCopy: record.supervisorArchiveCopy === true || String(record.supervisorArchiveCopy).toLowerCase() === 'true',
+          masterOwnerUsername: record.masterOwnerUsername || '',
+          masterOfRecordId: record.masterOfRecordId || '',
           rows: Array.isArray(rows) ? rows : []
         };
       });
