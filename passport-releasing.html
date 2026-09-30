@@ -2560,7 +2560,7 @@
   let overtimeFilingRefreshTimer = null;
 
   function isOvertimeFilingControlRecord(record) {
-    return String(record?.id || '') === OVERTIME_CONTROL_RECORD_ID;
+    return String(record?.id || '').startsWith(OVERTIME_CONTROL_RECORD_ID);
   }
 
   function renderOvertimeFilingState() {
@@ -2597,7 +2597,8 @@
   async function loadOvertimeFilingSetting() {
     invalidateSbCacheForPath('overtime_submissions');
     try {
-      const rows = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}&select=id,form_data&limit=1`);
+      const settingPath = `overtime_submissions?id=like.${encodeURIComponent(`${OVERTIME_CONTROL_RECORD_ID}*`)}&select=id,form_data,created_at&order=created_at.desc,id.desc&limit=1`;
+      const rows = await sbFetch(settingPath);
       const setting = Array.isArray(rows) ? rows[0]?.form_data : null;
       overtimeFilingEnabled = !setting || !(setting.overtimeFilingEnabled === false || String(setting.overtimeFilingEnabled).toLowerCase() === 'false');
       overtimeFilingLoadError = false;
@@ -2625,28 +2626,20 @@
     overtimeFilingSaveInProgress = true;
     renderOvertimeFilingState();
     try {
-      invalidateSbCacheForPath('overtime_submissions');
-      const rows = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}&select=id&limit=1`);
-      const formData = { settingType: 'overtime-filing', overtimeFilingEnabled: nextEnabled, updatedAt: new Date().toISOString() };
-      if (Array.isArray(rows) && rows.length) {
-        await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}`, {
-          method: 'PATCH',
-          body: JSON.stringify({ form_data: formData })
-        });
-      } else {
-        await sbFetch('overtime_submissions', {
-          method: 'POST',
-          body: JSON.stringify([{
-            id: OVERTIME_CONTROL_RECORD_ID,
-            submitted_by: currentUser.username,
-            submitted_by_name: 'SYSTEM SETTING',
-            form_data: formData,
-            created_at: new Date().toISOString()
-          }])
-        });
-      }
-      overtimeFilingEnabled = nextEnabled;
-      overtimeFilingLoadError = false;
+      const updatedAt = new Date().toISOString();
+      const recordId = `${OVERTIME_CONTROL_RECORD_ID}_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      await sbFetch('overtime_submissions', {
+        method: 'POST',
+        body: JSON.stringify([{
+          id: recordId,
+          submitted_by: currentUser.username,
+          submitted_by_name: 'SYSTEM SETTING',
+          form_data: { settingType: 'overtime-filing', overtimeFilingEnabled: nextEnabled, updatedAt },
+          created_at: updatedAt
+        }])
+      });
+      const savedEnabled = await loadOvertimeFilingSetting();
+      if (savedEnabled !== nextEnabled) throw new Error('The saved setting could not be verified.');
       toast(`Overtime filing turned ${nextEnabled ? 'ON' : 'OFF'}.`, 'success');
     } catch (error) {
       toast('Could not update overtime filing: ' + error.message, 'error');
