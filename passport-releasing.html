@@ -629,16 +629,23 @@
 
   <!-- ========== SCANNER PAGE ========== -->
   <div id="page-overtime" class="page">
-    <div class="overtime-tabs" role="tablist" aria-label="Overtime forms">
-      <button type="button" class="overtime-tab" role="tab" aria-selected="false" data-overtime-form="authorization" onclick="showOvertimeForm('authorization')">Overtime Authorization Form</button>
-      <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
+    <div id="overtimeFilingOwnerControl" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px;padding:12px 14px;border:1px solid var(--border);border-radius:8px;background:var(--surface);">
+      <strong id="overtimeFilingOwnerStatus">Checking overtime filing...</strong>
+      <button type="button" id="overtimeFilingToggle" class="btn btn-warning" onclick="toggleOvertimeFiling()" disabled>Checking...</button>
     </div>
-    <div id="overtime-form-authorization" class="overtime-form-panel">
-      <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260914-confirmation" title="Overtime Authorization form"></iframe>
+    <div id="overtimeFilingContent" style="display:none;">
+      <div class="overtime-tabs" role="tablist" aria-label="Overtime forms">
+        <button type="button" class="overtime-tab" role="tab" aria-selected="false" data-overtime-form="authorization" onclick="showOvertimeForm('authorization')">Overtime Authorization Form</button>
+        <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
+      </div>
+      <div id="overtime-form-authorization" class="overtime-form-panel">
+        <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260914-confirmation" title="Overtime Authorization form"></iframe>
+      </div>
+      <div id="overtime-form-rendered" class="overtime-form-panel active">
+        <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
+      </div>
     </div>
-    <div id="overtime-form-rendered" class="overtime-form-panel active">
-      <iframe class="overtime-frame" id="overtimeFrame" src="./overtime-form_3_4_1_3.html?embedded=1" title="Actual Rendered Overtime form"></iframe>
-    </div>
+    <div id="overtimeFilingNotice" role="status" style="margin:16px 0;padding:18px;border:1px solid var(--border);border-radius:8px;background:var(--surface);color:var(--muted);">Checking overtime filing availability...</div>
     <section id="overtimeMyRecords" aria-labelledby="overtimeMyRecordsTitle">
       <h2 id="overtimeMyRecordsTitle">My Overtime Records</h2>
       <div class="table-wrap">
@@ -2546,6 +2553,100 @@
     });
   }
 
+  const OVERTIME_CONTROL_RECORD_ID = 'ot_system_overtime_filing';
+  let overtimeFilingEnabled = null;
+  let overtimeFilingLoadError = false;
+  let overtimeFilingSaveInProgress = false;
+
+  function isOvertimeFilingControlRecord(record) {
+    return String(record?.id || '') === OVERTIME_CONTROL_RECORD_ID;
+  }
+
+  function renderOvertimeFilingState() {
+    const ownerControl = document.getElementById('overtimeFilingOwnerControl');
+    const ownerStatus = document.getElementById('overtimeFilingOwnerStatus');
+    const toggleButton = document.getElementById('overtimeFilingToggle');
+    const formContent = document.getElementById('overtimeFilingContent');
+    const notice = document.getElementById('overtimeFilingNotice');
+    const isOwner = String(currentUser?.username || '').toLowerCase() === 'supervisor';
+    const isEnabled = overtimeFilingEnabled === true;
+
+    if (ownerControl) ownerControl.style.display = isOwner ? 'flex' : 'none';
+    if (ownerStatus) {
+      ownerStatus.textContent = overtimeFilingEnabled === null
+        ? 'Overtime filing status unavailable'
+        : `Overtime filing is ${isEnabled ? 'ON' : 'OFF'}`;
+    }
+    if (toggleButton) {
+      toggleButton.textContent = overtimeFilingEnabled === null ? 'Unavailable' : isEnabled ? 'Turn Off' : 'Turn On';
+      toggleButton.disabled = !isOwner || overtimeFilingEnabled === null || overtimeFilingSaveInProgress;
+      toggleButton.className = `btn ${isEnabled ? 'btn-danger' : 'btn-success'}`;
+    }
+    if (formContent) formContent.style.display = isEnabled ? '' : 'none';
+    if (notice) {
+      notice.style.display = isEnabled ? 'none' : 'block';
+      notice.textContent = overtimeFilingEnabled === false
+        ? 'Overtime filing is currently turned off by the owner.'
+        : overtimeFilingLoadError
+          ? 'Overtime filing availability could not be checked. Please refresh and try again.'
+          : 'Checking overtime filing availability...';
+    }
+  }
+
+  async function loadOvertimeFilingSetting() {
+    invalidateSbCacheForPath('overtime_submissions');
+    try {
+      const rows = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}&select=id,form_data&limit=1`);
+      const setting = Array.isArray(rows) ? rows[0]?.form_data : null;
+      overtimeFilingEnabled = !setting || !(setting.overtimeFilingEnabled === false || String(setting.overtimeFilingEnabled).toLowerCase() === 'false');
+      overtimeFilingLoadError = false;
+      renderOvertimeFilingState();
+      return overtimeFilingEnabled;
+    } catch (error) {
+      overtimeFilingEnabled = null;
+      overtimeFilingLoadError = true;
+      renderOvertimeFilingState();
+      throw error;
+    }
+  }
+
+  async function toggleOvertimeFiling() {
+    if (String(currentUser?.username || '').toLowerCase() !== 'supervisor' || overtimeFilingEnabled === null || overtimeFilingSaveInProgress) return;
+    const nextEnabled = !overtimeFilingEnabled;
+    overtimeFilingSaveInProgress = true;
+    renderOvertimeFilingState();
+    try {
+      invalidateSbCacheForPath('overtime_submissions');
+      const rows = await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}&select=id&limit=1`);
+      const formData = { settingType: 'overtime-filing', overtimeFilingEnabled: nextEnabled, updatedAt: new Date().toISOString() };
+      if (Array.isArray(rows) && rows.length) {
+        await sbFetch(`overtime_submissions?id=eq.${encodeURIComponent(OVERTIME_CONTROL_RECORD_ID)}`, {
+          method: 'PATCH',
+          body: JSON.stringify({ form_data: formData })
+        });
+      } else {
+        await sbFetch('overtime_submissions', {
+          method: 'POST',
+          body: JSON.stringify([{
+            id: OVERTIME_CONTROL_RECORD_ID,
+            submitted_by: currentUser.username,
+            submitted_by_name: 'SYSTEM SETTING',
+            form_data: formData,
+            created_at: new Date().toISOString()
+          }])
+        });
+      }
+      overtimeFilingEnabled = nextEnabled;
+      overtimeFilingLoadError = false;
+      toast(`Overtime filing turned ${nextEnabled ? 'ON' : 'OFF'}.`, 'success');
+    } catch (error) {
+      toast('Could not update overtime filing: ' + error.message, 'error');
+    } finally {
+      overtimeFilingSaveInProgress = false;
+      renderOvertimeFilingState();
+    }
+  }
+
   function buildNavigationMenu(role = 'admin') {
     const container = document.getElementById('navButtons');
     if (!container) return;
@@ -2759,6 +2860,7 @@
     const frame = event.source === authorizationFrame?.contentWindow ? authorizationFrame : renderedFrame;
     if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
     try{
+      if (await loadOvertimeFilingSetting() !== true) throw new Error('Overtime filing is currently turned off by the owner.');
       const data = { ...(event.data.data || {}) };
       if (frame === authorizationFrame) validateOvertimeAuthorization(data);
       else validateOvertimeSubmission(data);
@@ -6131,6 +6233,8 @@
   function applyRoleUI() {
     if (!currentUser) return;
     const role = currentUser.role;
+    renderOvertimeFilingState();
+    loadOvertimeFilingSetting().catch(error => console.warn('Overtime filing status check failed:', error));
     document.body.classList.toggle('overtime-user', role === 'overtime');
 
     const supervisorBadge = currentUser.username === 'supervisor' ? ` <span style="color:#f59e0b;font-size:10px;font-weight:700;">[SUPERVISOR]</span>` : '';
@@ -6290,6 +6394,7 @@
     const from = document.getElementById('overtimeDateFrom')?.value || '';
     const to = document.getElementById('overtimeDateTo')?.value || '';
     return overtimeRecords.filter(record => {
+      if (isOvertimeFilingControlRecord(record)) return false;
       if (isSupervisorArchiveRecord(record)) return false;
       if (getOvertimeRecordType(record) !== overtimeRecordType) return false;
       const data = record.form_data || {};
@@ -6807,7 +6912,7 @@
       ]);
       if (currentUser?.username !== username) return;
       const ownedRecords = Array.isArray(ownRecords)
-        ? ownRecords.filter(record => String(record.submitted_by || '').toLowerCase() === String(username).toLowerCase())
+        ? ownRecords.filter(record => !isOvertimeFilingControlRecord(record) && String(record.submitted_by || '').toLowerCase() === String(username).toLowerCase())
         : [];
       const archiveRecords = Array.isArray(archiveResponse)
         ? archiveResponse.filter(isSupervisorArchiveRecord)
@@ -6891,7 +6996,7 @@
       for (let offset = 0; offset < maxRecords; offset += pageSize) {
         const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Ejustification,form_data-%3E%3EsupervisorArchiveCopy,form_data-%3E%3EmasterOwnerUsername,form_data-%3E%3EmasterOfRecordId&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
         if (!Array.isArray(page) || page.length === 0) break;
-        records.push(...page);
+        records.push(...page.filter(record => !isOvertimeFilingControlRecord(record)));
         if (page.length < pageSize) break;
       }
       records.sort((left, right) => String(right.created_at || '').localeCompare(String(left.created_at || '')));
