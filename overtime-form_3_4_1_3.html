@@ -64,6 +64,7 @@
     font-size:12px;font-weight:700;letter-spacing:0.2px;
     margin-bottom:8px;
   }
+  .date-guidance{font-size:12px;font-weight:700;color:#b42318;margin:-2px 0 8px;}
 
   /* ---------- Table ---------- */
   table.ot-table{width:100%;border-collapse:collapse;font-size:13px;}
@@ -160,7 +161,7 @@
 
   /* ---------- Print ---------- */
   @media print{
-    .toolbar, .records{display:none !important;}
+    .toolbar, .records, .date-guidance{display:none !important;}
     #ot-app{padding:0;max-width:100%;}
   }
 </style>
@@ -188,6 +189,7 @@
 
   <section class="block">
     <div class="section-label">Date(s) of Overtime Work</div>
+    <div class="date-guidance">PETSA KUNG KAILAN KA NAG OVERTIME</div>
     <table class="ot-table" id="ot-table">
       <thead>
         <tr>
