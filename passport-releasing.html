@@ -2571,23 +2571,26 @@
     const notice = document.getElementById('overtimeFilingNotice');
     const isOwner = String(currentUser?.username || '').toLowerCase() === 'supervisor';
     const isEnabled = overtimeFilingEnabled === true;
+    const shouldBlockForCurrentUser = !isOwner && overtimeFilingEnabled === false;
 
     if (ownerControl) ownerControl.style.display = isOwner ? 'flex' : 'none';
     if (ownerStatus) {
       ownerStatus.textContent = overtimeFilingEnabled === null
         ? 'Overtime filing status unavailable'
-        : `Overtime filing is ${isEnabled ? 'ON' : 'OFF'}`;
+        : `Overtime filing is ${isEnabled ? 'ON' : 'OFF'}${isOwner ? ' (supervisor access always remains enabled)' : ''}`;
     }
     if (toggleButton) {
       toggleButton.textContent = overtimeFilingEnabled === null ? 'Unavailable' : isEnabled ? 'Turn Off' : 'Turn On';
       toggleButton.disabled = !isOwner || overtimeFilingEnabled === null || overtimeFilingSaveInProgress;
       toggleButton.className = `btn ${isEnabled ? 'btn-danger' : 'btn-success'}`;
     }
-    if (formContent) formContent.style.display = isEnabled ? '' : 'none';
+    if (formContent) formContent.style.display = shouldBlockForCurrentUser ? 'none' : '';
     if (notice) {
-      notice.style.display = isEnabled ? 'none' : 'block';
+      notice.style.display = shouldBlockForCurrentUser ? 'block' : 'none';
       notice.textContent = overtimeFilingEnabled === false
-        ? 'Overtime filing is currently turned off by the owner.'
+        ? isOwner
+          ? 'Overtime filing is disabled for other users, but the supervisor can still access the form.'
+          : 'Overtime filing is currently turned off by the owner.'
         : overtimeFilingLoadError
           ? 'Overtime filing availability could not be checked. Please refresh and try again.'
           : 'Checking overtime filing availability...';
