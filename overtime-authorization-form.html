@@ -22,7 +22,7 @@
     input, textarea { width: 100%; border: 0; outline: 0; font: inherit; color: #111; background: transparent; text-transform: uppercase; }
     textarea { min-height: 34px; resize: vertical; }
     .section-title { margin: 18px 0 5px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
-    .date-guidance { margin: 0 0 5px; font-size: 10px; font-weight: 700; }
+    .date-guidance { margin: 0 0 5px; color: #b42318; font-size: 12px; font-weight: 700; }
     table { width: 100%; border-collapse: collapse; }
     th, td { height: 29px; border: 1px solid #222; padding: 4px 7px; text-align: left; }
     th { text-align: center; font-weight: 700; }
@@ -55,6 +55,9 @@
       .grid-three-top .field:last-child { grid-column: 1 / -1; }
       .field { min-height: 48px; }
       .label { font-size: 10px; }
+    }
+    @media print {
+      .date-guidance { display: none !important; }
     }
   </style>
 </head>
