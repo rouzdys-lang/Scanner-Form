@@ -6910,6 +6910,12 @@
       loadMyOvertimeRecords();
     }
 
+    const OVERTIME_SUMMARY_LIMIT = 200;
+
+    function buildOvertimeSummarySelect() {
+      return 'id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Edepartment,form_data-%3E%3Esupervisor,form_data-%3E%3Ejustification,form_data-%3E%3EsupervisorArchiveCopy,form_data-%3E%3EmasterOwnerUsername,form_data-%3E%3EmasterOfRecordId';
+    }
+
     async function loadMyOvertimeRecords() {
       const body = document.getElementById('overtimeMyRecordsBody');
       const username = currentUser?.username;
@@ -6917,8 +6923,8 @@
       body.innerHTML = '<tr><td colspan="8">Loading your overtime records...</td></tr>';
       try {
         const [ownRecords, archiveResponse] = await Promise.all([
-          sbFetch(`overtime_submissions?submitted_by=eq.${encodeURIComponent(username)}&select=id,created_at,submitted_by,form_data&order=created_at.desc&limit=5000`),
-          sbFetch(`overtime_submissions?form_data-%3E%3EmasterOwnerUsername=eq.${encodeURIComponent(username)}&form_data-%3E%3EsupervisorArchiveCopy=eq.true&select=id,created_at,submitted_by,form_data&order=created_at.desc&limit=5000`).catch(error => {
+          sbFetch(`overtime_submissions?submitted_by=eq.${encodeURIComponent(username)}&select=${buildOvertimeSummarySelect()}&order=created_at.desc&limit=${OVERTIME_SUMMARY_LIMIT}`),
+          sbFetch(`overtime_submissions?form_data-%3E%3EmasterOwnerUsername=eq.${encodeURIComponent(username)}&form_data-%3E%3EsupervisorArchiveCopy=eq.true&select=${buildOvertimeSummarySelect()}&order=created_at.desc&limit=${OVERTIME_SUMMARY_LIMIT}`).catch(error => {
             console.warn('Could not load supervisor overtime archive:', error);
             return [];
           })
@@ -7004,10 +7010,10 @@
       body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
       try {
         const pageSize = 100;
-        const maxRecords = 5000;
+        const maxRecords = OVERTIME_SUMMARY_LIMIT;
         const records = [];
         for (let offset = 0; offset < maxRecords; offset += pageSize) {
-          const page = await sbFetch(`overtime_submissions?select=id,created_at,submitted_by,submitted_by_name,form_data-%3E%3EformType,form_data-%3E%3Ename,form_data-%3E%3EemployeeName,form_data-%3E%3EemployeeId,form_data-%3E%3EdateAccomplished,form_data-%3E%3EaccomplishedDate,form_data-%3E%3EdateSubmitted,form_data-%3E%3EsubmittedDate,form_data-%3E%3EtotalHours,form_data-%3E%3Etotal,form_data-%3E%3Erows,form_data-%3E%3Ejustification,form_data-%3E%3EsupervisorArchiveCopy,form_data-%3E%3EmasterOwnerUsername,form_data-%3E%3EmasterOfRecordId&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
+          const page = await sbFetch(`overtime_submissions?select=${buildOvertimeSummarySelect()}&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
           if (!Array.isArray(page) || page.length === 0) break;
           records.push(...page.filter(record => !isOvertimeFilingControlRecord(record)));
           if (page.length < pageSize) break;
