@@ -2865,7 +2865,10 @@
     const frame = event.source === authorizationFrame?.contentWindow ? authorizationFrame : renderedFrame;
     if (!frame || event.source !== frame.contentWindow || !event.data || event.data.type !== 'overtime-save') return;
     try{
-      if (await loadOvertimeFilingSetting() !== true) throw new Error('Overtime filing is currently turned off by the owner.');
+      const isSupervisor = String(currentUser?.username || '').toLowerCase() === 'supervisor';
+      if (!isSupervisor && (await loadOvertimeFilingSetting() !== true)) {
+        throw new Error('Overtime filing is currently turned off by the owner.');
+      }
       const data = { ...(event.data.data || {}) };
       if (frame === authorizationFrame) validateOvertimeAuthorization(data);
       else validateOvertimeSubmission(data);
