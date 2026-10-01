@@ -637,7 +637,6 @@
         <div class="overtime-tabs" role="tablist" aria-label="Overtime forms">
           <button type="button" class="overtime-tab" role="tab" aria-selected="false" data-overtime-form="authorization" onclick="showOvertimeForm('authorization')">Overtime Authorization Form</button>
           <button type="button" class="overtime-tab active" role="tab" aria-selected="true" data-overtime-form="rendered" onclick="showOvertimeForm('rendered')">Overtime Rendered Form</button>
-          <button type="button" class="btn btn-success" id="downloadOvertimeWordBtn" onclick="downloadActiveOvertimeFormWord()" style="margin-left:auto;padding:8px 12px;font-size:11px;display:inline-flex;align-items:center;gap:6px;">Download as Word</button>
         </div>
         <div id="overtime-form-authorization" class="overtime-form-panel">
           <iframe class="overtime-frame" id="overtimeAuthorizationFrame" src="./overtime-authorization-form.html?embedded=1&amp;v=20260914-confirmation" title="Overtime Authorization form"></iframe>
@@ -2556,35 +2555,6 @@
         tab.classList.toggle('active', active);
         tab.setAttribute('aria-selected', String(active));
       });
-    }
-
-    function getActiveOvertimeFrame() {
-      const activeTab = document.querySelector('.overtime-tab.active')?.dataset.overtimeForm;
-      return activeTab === 'authorization'
-        ? document.getElementById('overtimeAuthorizationFrame')
-        : document.getElementById('overtimeFrame');
-    }
-
-    function downloadActiveOvertimeFormWord() {
-      const activeFormType = document.querySelector('.overtime-tab.active')?.dataset.overtimeForm === 'authorization' ? 'authorization' : 'rendered';
-      const templateHtml = activeFormType === 'authorization'
-        ? buildOvertimeAuthorizationDocumentHtml({ form_data: {} })
-        : buildOvertimeDocumentHtml({ form_data: {} });
-
-      if (!templateHtml || !String(templateHtml).trim()) {
-        toast('The overtime template could not be generated.', 'warning');
-        return;
-      }
-
-      const blob = new Blob(['\ufeff', templateHtml], { type: 'application/msword' });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `${activeFormType === 'authorization' ? 'overtime_authorization_template' : 'overtime_rendered_template'}.doc`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
     }
 
     const OVERTIME_CONTROL_RECORD_ID = 'ot_system_overtime_filing';
