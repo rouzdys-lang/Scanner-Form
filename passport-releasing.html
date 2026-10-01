@@ -2566,49 +2566,21 @@
     }
 
     function downloadActiveOvertimeFormWord() {
-      const frame = getActiveOvertimeFrame();
-      if (!frame) {
-        toast('No overtime form is available to download.', 'warning');
-        return;
-      }
-
-      const frameDoc = frame.contentDocument || frame.contentWindow?.document;
-      if (!frameDoc) {
-        toast('Please wait until the overtime form finishes loading.', 'warning');
-        return;
-      }
-
       const activeFormType = document.querySelector('.overtime-tab.active')?.dataset.overtimeForm === 'authorization' ? 'authorization' : 'rendered';
-      const formName = activeFormType === 'authorization' ? 'Overtime Authorization Form' : 'Actual Rendered Overtime Form';
-      const sourceNode = frameDoc.body || frameDoc.documentElement;
-      const htmlContent = String(sourceNode?.innerHTML || '').trim();
-      if (!htmlContent) {
-        toast('The overtime form is empty and cannot be downloaded.', 'warning');
+      const templateHtml = activeFormType === 'authorization'
+        ? buildOvertimeAuthorizationDocumentHtml({ form_data: {} })
+        : buildOvertimeDocumentHtml({ form_data: {} });
+
+      if (!templateHtml || !String(templateHtml).trim()) {
+        toast('The overtime template could not be generated.', 'warning');
         return;
       }
 
-      const docHtml = `<!DOCTYPE html>
-        <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word">
-        <head>
-          <meta charset="utf-8">
-          <title>${formName}</title>
-          <style>
-            @page { size: 8.5in 11in; margin: .5in; }
-            body { font-family: Arial, sans-serif; color: #000; margin: 0; }
-            table { border-collapse: collapse; width: 100%; }
-            th, td { border: 1px solid #000; padding: 6px; vertical-align: top; }
-            img { max-width: 100%; height: auto; }
-            p, div, span, td, th, input, textarea, select { text-transform: uppercase; }
-          </style>
-        </head>
-        <body>${htmlContent}</body>
-        </html>`;
-
-      const blob = new Blob(['\ufeff', docHtml], { type: 'application/msword' });
+      const blob = new Blob(['\ufeff', templateHtml], { type: 'application/msword' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.download = `${activeFormType === 'authorization' ? 'overtime_authorization' : 'overtime_rendered'}.doc`;
+      link.download = `${activeFormType === 'authorization' ? 'overtime_authorization_template' : 'overtime_rendered_template'}.doc`;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
