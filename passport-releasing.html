@@ -6435,14 +6435,24 @@
         : 'rendered';
     }
 
+    function getOvertimeFilerIdentity(value) {
+      const displayName = String(value || '').trim().replace(/\s+/g, ' ').toLocaleUpperCase();
+      const compactName = displayName.replace(/[.\s]/g, '');
+      if (compactName === 'MYLENEDPAJAREE' || compactName === 'MYLENEDPAJARES') {
+        return { key: 'MYLENEDPAJARES', displayName: 'MYLENE D. PAJARES' };
+      }
+      return { key: compactName, displayName };
+    }
+
     function getMonthlyOvertimeReportData(month) {
       const dailyByFilerAndDate = new Map();
       overtimeRecords
         .filter(record => !isOvertimeFilingControlRecord(record) && !isSupervisorArchiveRecord(record) && getOvertimeRecordType(record) === 'rendered')
         .forEach(record => {
           const data = record.form_data || {};
-          const filer = String(data.name || data.employeeName || '').trim();
-          const filerKey = filer.toLocaleLowerCase().replace(/\s+/g, ' ');
+          const filerIdentity = getOvertimeFilerIdentity(data.name || data.employeeName);
+          const filer = filerIdentity.displayName;
+          const filerKey = filerIdentity.key;
           const consularOffice = String(data.department || data.consularOffice || '').trim();
           if (!filer || !filerKey) return;
           (Array.isArray(data.rows) ? data.rows : []).forEach(row => {
@@ -6471,7 +6481,8 @@
       );
       const totalsByFiler = new Map();
       dailyRecords.forEach(record => {
-        const key = record.filer.toLocaleLowerCase().replace(/\s+/g, ' ');
+        const identity = getOvertimeFilerIdentity(record.filer);
+        const key = identity.key;
         const total = totalsByFiler.get(key) || { filer: record.filer, offices: new Set(), days: 0, hours: 0 };
         total.days += 1;
         total.hours += record.hours;
