@@ -6436,8 +6436,8 @@
     }
 
     function getOvertimeFilerIdentity(value) {
-      const displayName = String(value || '').trim().replace(/\s+/g, ' ').toLocaleUpperCase();
-      const compactName = displayName.replace(/[.\s]/g, '');
+      const displayName = String(value || '').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').trim().replace(/\s+/g, ' ').toLocaleUpperCase();
+      const compactName = displayName.replace(/[^A-Z0-9]/g, '');
       if (compactName === 'MYLENEDPAJAREE' || compactName === 'MYLENEDPAJARES') {
         return { key: 'MYLENEDPAJARES', displayName: 'MYLENE D. PAJARES' };
       }
@@ -6446,8 +6446,20 @@
 
     function getMonthlyOvertimeReportData(month) {
       const dailyByFilerAndDate = new Map();
+      const originalRecordIds = new Set(overtimeRecords
+        .filter(record => !isSupervisorArchiveRecord(record) && !isOvertimeFilingControlRecord(record))
+        .map(record => String(record.id)));
+      const seenArchiveMasters = new Set();
       overtimeRecords
-        .filter(record => !isOvertimeFilingControlRecord(record) && !isSupervisorArchiveRecord(record) && getOvertimeRecordType(record) === 'rendered')
+        .filter(record => {
+          if (isOvertimeFilingControlRecord(record)) return false;
+          if (!isSupervisorArchiveRecord(record)) return true;
+          const masterId = String(record.form_data?.masterOfRecordId || record.id || '');
+          if (originalRecordIds.has(masterId) || seenArchiveMasters.has(masterId)) return false;
+          seenArchiveMasters.add(masterId);
+          return true;
+        })
+        .filter(record => getOvertimeRecordType(record) === 'rendered')
         .forEach(record => {
           const data = record.form_data || {};
           const filerIdentity = getOvertimeFilerIdentity(data.name || data.employeeName);
@@ -6507,14 +6519,14 @@
       const { summary, dailyRecords } = getMonthlyOvertimeReportData(monthInput.value);
       const formatHours = hours => Number(hours.toFixed(2)).toLocaleString(undefined, { maximumFractionDigits: 2 });
       summaryBody.innerHTML = summary.length
-        ? summary.map(record => `<tr><td>${escapeOvertimeText(record.filer)}</td><td>${escapeOvertimeText(record.offices.join(', ') || 'N/A')}</td><td>${record.days}</td><td>${formatHours(record.hours)}</td></tr>`).join('')
+        ? summary.map(record => `<tr><td>${escapeOvertimeText(record.filer.toLocaleUpperCase())}</td><td>${escapeOvertimeText(record.offices.join(', ') || 'N/A')}</td><td>${record.days}</td><td>${formatHours(record.hours)}</td></tr>`).join('')
         : '<tr><td colspan="4">No rendered overtime records for this month.</td></tr>';
       dailyBody.innerHTML = dailyRecords.length
         ? dailyRecords.map(record => {
           const submittedDate = record.submittedAt ? new Date(record.submittedAt) : null;
           const submittedLabel = submittedDate && !Number.isNaN(submittedDate.getTime()) ? submittedDate.toLocaleString() : 'N/A';
           const workDateLabel = new Date(`${record.workDate}T00:00:00`).toLocaleDateString();
-          return `<tr><td>${escapeOvertimeText(record.filer)}</td><td>${escapeOvertimeText(record.consularOffice || 'N/A')}</td><td>${escapeOvertimeText(workDateLabel)}</td><td>${formatHours(record.hours)}</td><td>${escapeOvertimeText(submittedLabel)}</td></tr>`;
+          return `<tr><td>${escapeOvertimeText(record.filer.toLocaleUpperCase())}</td><td>${escapeOvertimeText(record.consularOffice || 'N/A')}</td><td>${escapeOvertimeText(workDateLabel)}</td><td>${formatHours(record.hours)}</td><td>${escapeOvertimeText(submittedLabel)}</td></tr>`;
         }).join('')
         : '<tr><td colspan="5">No rendered overtime records for this month.</td></tr>';
     }
@@ -6610,15 +6622,15 @@
         const summarySheet = workbook.addWorksheet('Monthly Summary');
         styleReportSheet(summarySheet, 4, 'MONTHLY ACTUAL OVERTIME SUMMARY', `Reporting period: ${monthLabel}`);
         summarySheet.columns = [
-          { header: 'Filer', key: 'filer', width: 34 },
-          { header: 'Consular Office(s)', key: 'office', width: 36 },
-          { header: 'Overtime Days', key: 'days', width: 18 },
-          { header: 'Total Actual OT Hours', key: 'hours', width: 24 }
+          { key: 'filer', width: 34 },
+          { key: 'office', width: 36 },
+          { key: 'days', width: 18 },
+          { key: 'hours', width: 24 }
         ];
-        const summaryHeader = summarySheet.addRow(summarySheet.columns.map(column => column.header));
+        const summaryHeader = summarySheet.addRow(['Filer', 'Consular Office(s)', 'Overtime Days', 'Total Actual OT Hours']);
         styleTableHeader(summaryHeader);
         summary.forEach(record => summarySheet.addRow({
-          filer: record.filer,
+          filer: record.filer.toLocaleUpperCase(),
           office: record.offices.join(', ') || 'N/A',
           days: record.days,
           hours: Number(record.hours.toFixed(2))
@@ -6648,16 +6660,16 @@
         const dailySheet = workbook.addWorksheet('Day-to-Day Records');
         styleReportSheet(dailySheet, 5, 'DAY-TO-DAY ACTUAL OVERTIME RECORDS', `Reporting period: ${monthLabel} | One record per filer and work date`);
         dailySheet.columns = [
-          { header: 'Filer', key: 'filer', width: 32 },
-          { header: 'Consular Office', key: 'office', width: 34 },
-          { header: 'Work Date', key: 'workDate', width: 18 },
-          { header: 'Actual OT Hours', key: 'hours', width: 20 },
-          { header: 'Submitted At', key: 'submittedAt', width: 26 }
+          { key: 'filer', width: 32 },
+          { key: 'office', width: 34 },
+          { key: 'workDate', width: 18 },
+          { key: 'hours', width: 20 },
+          { key: 'submittedAt', width: 26 }
         ];
-        const dailyHeader = dailySheet.addRow(dailySheet.columns.map(column => column.header));
+        const dailyHeader = dailySheet.addRow(['Filer', 'Consular Office', 'Work Date', 'Actual OT Hours', 'Submitted At']);
         styleTableHeader(dailyHeader);
         dailyRecords.forEach(record => dailySheet.addRow({
-          filer: record.filer,
+          filer: record.filer.toLocaleUpperCase(),
           office: record.consularOffice || 'N/A',
           workDate: new Date(Number(record.workDate.slice(0, 4)), Number(record.workDate.slice(5, 7)) - 1, Number(record.workDate.slice(8, 10))),
           hours: Number(record.hours.toFixed(2)),
@@ -6677,7 +6689,8 @@
         const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
-        link.download = `DFAMPC-OVERTIME-MONTHLY-${month.replace('-', '')}.xlsx`;
+        const exportVersion = new Date().toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+        link.download = `DFAMPC-OVERTIME-MONTHLY-${month.replace('-', '')}-${exportVersion}.xlsx`;
         link.click();
         setTimeout(() => URL.revokeObjectURL(url), 1000);
         toast('Professional monthly overtime Excel report downloaded.', 'success');
@@ -7299,9 +7312,8 @@
       body.innerHTML = '<tr><td colspan="7">Loading overtime records...</td></tr>';
       try {
         const pageSize = 100;
-        const maxRecords = OVERTIME_SUMMARY_LIMIT;
         const records = [];
-        for (let offset = 0; offset < maxRecords; offset += pageSize) {
+        for (let offset = 0; ; offset += pageSize) {
           const page = await sbFetch(`overtime_submissions?select=${buildOvertimeSummarySelect()}&order=created_at.desc,id.desc&limit=${pageSize}&offset=${offset}`);
           if (!Array.isArray(page) || page.length === 0) break;
           records.push(...page.filter(record => !isOvertimeFilingControlRecord(record)));
